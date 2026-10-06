@@ -1,0 +1,20 @@
+# PDFZero — 100% Client-Side Private PDF Tools
+
+> Free, browser-based PDF utilities engineered for zero data leaks. Files are processed locally on your device using WebAssembly and client-side JavaScript. Files are never transmitted to any external server.
+
+## Core Features & Tools
+- Merge PDF (/tools/merge-pdf): Combine multiple PDF documents into a single organized file in seconds.
+- Compress PDF (/tools/compress-pdf): Reduce file size directly in your browser with optimized downsampling.
+- Split PDF (/tools/split-pdf): Extract individual pages or ranges into separate standalone PDF documents.
+- Rotate PDF (/tools/rotate-pdf): Rotate PDF pages permanently by 90, 180, or 270 degrees.
+- Protect PDF (/tools/protect-pdf): Secure PDF files with AES passwords and client-side encryption.
+- Unlock PDF (/tools/unlock-pdf): Remove password security from your PDF documents client-side.
+- Page Numbers (/tools/page-numbers): Stamp page numbers with custom font, size, and alignment.
+- JPG to PDF (/tools/jpg-to-pdf): Convert PNG/JPEG images into formatted PDF documents.
+- PDF to JPG (/tools/pdf-to-jpg): Convert pages into crisp, high-resolution JPEG/PNG images.
+- PDF to Word (/tools/pdf-to-word): Extract text and structure from PDFs into editable .docx documents.
+
+## Security & Architecture
+- Architecture: 100% Client-side static Jamstack site.
+- Libraries: pdf-lib, pdfjs-dist, jsPDF, WebAssembly.
+- Privacy Guarantee: Zero server upload. Complete air-gap capable local processing.

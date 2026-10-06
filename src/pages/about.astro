@@ -1,0 +1,41 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="About PDFZero — Privacy-First Document Utilities"
+  description="Why we built PDFZero: to provide 100% free, fast, and completely private document processing directly in the browser."
+>
+  <div class="max-w-4xl mx-auto px-4 py-16">
+    <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight mb-4">About PDFZero</h1>
+    <p class="text-lg text-slate-600 mb-8 leading-relaxed">
+      A modern, completely free PDF tool suite designed from the ground up for maximum user privacy and zero data leakage.
+    </p>
+
+    <div class="space-y-8 text-slate-700 leading-relaxed">
+      <section>
+        <h2 class="text-2xl font-bold text-slate-900 mb-3">The Problem with Traditional PDF Sites</h2>
+        <p>
+          Most conventional PDF tools require you to upload your files to remote cloud servers. While convenient, this poses a fundamental privacy risk. Whether you're merging tax declarations, medical histories, legal contracts, or confidential business proposals, handing your documents to unknown cloud infrastructure shouldn't be necessary.
+        </p>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-bold text-slate-900 mb-3">Our 100% Client-Side Solution</h2>
+        <p>
+          Thanks to advancements in WebAssembly and client-side JavaScript engines, modern browsers are more than capable of executing complex document manipulations locally. PDFZero leverages high-performance libraries like <code>pdf-lib</code> and <code>pdf.js</code> to process your files right on your CPU and RAM.
+        </p>
+        <div class="mt-4 p-4 rounded-xl bg-slate-100 border border-slate-200 text-sm">
+          <strong>Air-Gap Capable:</strong> Once a tool page is loaded in your browser, you could literally disconnect your internet connection and the PDF manipulation will still work completely.
+        </div>
+      </section>
+
+      <section>
+        <h2 class="text-2xl font-bold text-slate-900 mb-3">How We Stay Free</h2>
+        <p>
+          We believe essential productivity tools should remain accessible to everyone without paywalls, watermark stamps, or email subscriptions. We monetize PDFZero through non-intrusive, policy-compliant advertising provided by Google AdSense.
+        </p>
+      </section>
+    </div>
+  </div>
+</BaseLayout>

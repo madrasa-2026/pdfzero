@@ -1,0 +1,37 @@
+help_outline
+Help
+manage_accounts
+User settings
+	
+notifications
+Messages
+1
+Sitemaps
+Add a new sitemap
+https://pdfzero.pages.dev/
+SUBMIT
+Submitted sitemaps
+
+Sitemap
+	Type
+	Submitted
+	Last read
+	Status
+	
+Discovered pages	
+Discovered videos	
+/sitemap-index.xml	Unknown	7 Oct 2026		Couldn't fetch	0	0	
+Rows per page:
+5
+10
+25
+50
+100
+250
+500
+1-1 of 1
+
+Sitemaps
+See sitemaps that Google has found on your site, and submit new ones.
+Learn more
+Got it

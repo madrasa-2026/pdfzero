@@ -1,0 +1,434 @@
+---
+// UnlockPdfIsland.astro - Interactive client-side PDF password removal tool
+---
+
+<div id="unlock-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  
+
+  <!-- Error Alert Container -->
+  <div id="unlock-error-banner" class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Unlock Error</h4>
+      <p id="unlock-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-unlock-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="unlock-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition shadow-sm hover:shadow-md cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="unlock-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-slate-100 group-hover:bg-slate-900 flex items-center justify-center text-slate-700 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-brand-600 transition">
+      Select password-protected PDF to unlock
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your secured PDF here, or click to choose from your device.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose Protected PDF
+    </div>
+
+    <div class="mt-6 flex items-center justify-center gap-4 text-xs text-slate-400">
+      <span>Cap: Max 100MB</span>
+      <span>•</span>
+      <span>Permanent restriction removal</span>
+      <span>•</span>
+      <span>Zero cloud uploads</span>
+    </div>
+  </div>
+
+  <!-- 2. Password Entry & Settings Section -->
+  <div id="unlock-settings-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm text-left">
+    <!-- Selected File Header -->
+    <div class="flex items-center justify-between pb-6 border-b border-slate-200 mb-6">
+      <div class="flex items-center gap-3 min-w-0 pr-2">
+        <div class="w-10 h-10 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center flex-shrink-0 font-bold">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <p id="unlock-file-name" class="text-sm font-bold text-slate-900 truncate">document.pdf</p>
+          <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+            <span id="unlock-file-size">0 KB</span>
+            <span>•</span>
+            <span id="unlock-status-badge" class="font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+              Password Protected
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        id="unlock-change-file-btn"
+        class="text-xs font-semibold text-slate-500 hover:text-red-600 transition flex-shrink-0"
+      >
+        Change File
+      </button>
+    </div>
+
+    <!-- Instructions note -->
+    <div class="mb-6 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 flex items-start gap-3">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-brand-600 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+      </svg>
+      <div>
+        <p class="font-semibold text-slate-800 mb-0.5">Authorization Required</p>
+        <p>Enter the password that opens this document. PDFZero permanently decrypts the file and removes the password prompt so you can freely view, print, and share it.</p>
+      </div>
+    </div>
+
+    <!-- Password Input Box -->
+    <div class="space-y-5 max-w-lg mx-auto">
+      <div>
+        <label for="unlock-password" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+          Document Password <span class="text-red-500">*</span>
+        </label>
+        <div class="relative">
+          <input
+            type="password"
+            id="unlock-password"
+            class="w-full px-4 py-2.5 pr-11 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm font-medium text-slate-800 transition"
+            placeholder="Enter the password..."
+            autocomplete="off"
+          />
+          <button
+            type="button"
+            id="toggle-unlock-pwd-visibility"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 focus:outline-none p-1"
+            title="Toggle password visibility"
+            aria-label="Toggle password visibility"
+          >
+            <svg id="pwd-eye-open" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+            </svg>
+            <svg id="pwd-eye-closed" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div class="pt-4">
+        <button
+          type="button"
+          id="unlock-submit-btn"
+          class="w-full inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-white bg-brand-600 hover:bg-brand-700 active:bg-brand-800 transition shadow-sm hover:shadow"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+          </svg>
+          Unlock PDF
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Progress State -->
+  <div id="unlock-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center">
+    <div class="w-16 h-16 mx-auto mb-4 relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-brand-100 border-t-slate-900 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6 text-brand-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+      </svg>
+    </div>
+    <h3 class="text-lg font-bold text-slate-800 mb-2">Decrypting Document...</h3>
+    <p id="unlock-progress-message" class="text-sm text-slate-500 mb-4">Verifying password and decrypting pages...</p>
+    
+    <div class="w-full max-w-md mx-auto bg-slate-100 rounded-full h-2.5 overflow-hidden">
+      <div id="unlock-progress-bar" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300" style="width: 15%"></div>
+    </div>
+  </div>
+
+  <!-- 4. Success State -->
+  <div id="unlock-success-section" class="hidden bg-white rounded-2xl border border-emerald-200 p-8 shadow-sm text-center">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+
+    <h3 class="text-2xl font-extrabold text-slate-900 mb-1">PDF Successfully Unlocked!</h3>
+    <p class="text-sm text-slate-600 mb-6">Password restrictions have been removed. Your document is ready to download.</p>
+
+    <!-- Unlocked Document Card -->
+    <div class="max-w-md mx-auto bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 text-left flex items-center justify-between">
+      <div class="min-w-0 pr-3">
+        <p id="unlocked-file-name" class="text-sm font-bold text-slate-900 truncate">document_unlocked.pdf</p>
+        <p class="text-xs text-slate-500 mt-0.5">
+          <span id="unlocked-file-size">0 KB</span> • Unencrypted Standard PDF
+        </p>
+      </div>
+      <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 flex-shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+        </svg>
+        Unlocked
+      </span>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+      <a
+        id="download-unlocked-btn"
+        href="#"
+        download="document_unlocked.pdf"
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-sm hover:shadow"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Download Unlocked PDF
+      </a>
+
+      <button
+        type="button"
+        id="unlock-another-btn"
+        class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition"
+      >
+        Unlock Another PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { checkIfEncrypted, unlockPdf } from '../../lib/pdf/unlock';
+
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  let selectedFile: File | null = null;
+  let downloadedBlobUrl: string | null = null;
+
+  const dropZone = document.getElementById('unlock-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('unlock-file-input') as HTMLInputElement;
+  const settingsSection = document.getElementById('unlock-settings-section') as HTMLDivElement;
+  const progressSection = document.getElementById('unlock-progress-section') as HTMLDivElement;
+  const successSection = document.getElementById('unlock-success-section') as HTMLDivElement;
+  const errorBanner = document.getElementById('unlock-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('unlock-error-message') as HTMLParagraphElement;
+  const dismissErrorBtn = document.getElementById('dismiss-unlock-error') as HTMLButtonElement;
+
+  const fileNameEl = document.getElementById('unlock-file-name') as HTMLParagraphElement;
+  const fileSizeEl = document.getElementById('unlock-file-size') as HTMLSpanElement;
+  const statusBadge = document.getElementById('unlock-status-badge') as HTMLSpanElement;
+  const changeFileBtn = document.getElementById('unlock-change-file-btn') as HTMLButtonElement;
+
+  const passwordInput = document.getElementById('unlock-password') as HTMLInputElement;
+  const togglePwdVisibilityBtn = document.getElementById('toggle-unlock-pwd-visibility') as HTMLButtonElement;
+  const eyeOpen = document.getElementById('pwd-eye-open') as HTMLElement;
+  const eyeClosed = document.getElementById('pwd-eye-closed') as HTMLElement;
+
+  const submitBtn = document.getElementById('unlock-submit-btn') as HTMLButtonElement;
+  const progressMsg = document.getElementById('unlock-progress-message') as HTMLParagraphElement;
+  const progressBar = document.getElementById('unlock-progress-bar') as HTMLDivElement;
+
+  const unlockedFileNameEl = document.getElementById('unlocked-file-name') as HTMLParagraphElement;
+  const unlockedFileSizeEl = document.getElementById('unlocked-file-size') as HTMLSpanElement;
+  const downloadBtn = document.getElementById('download-unlocked-btn') as HTMLAnchorElement;
+  const unlockAnotherBtn = document.getElementById('unlock-another-btn') as HTMLButtonElement;
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    if (errorBanner) {
+      errorBanner.classList.add('hidden');
+    }
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  // Password visibility toggle
+  togglePwdVisibilityBtn?.addEventListener('click', () => {
+    if (passwordInput.type === 'password') {
+      passwordInput.type = 'text';
+      eyeOpen?.classList.add('hidden');
+      eyeClosed?.classList.remove('hidden');
+    } else {
+      passwordInput.type = 'password';
+      eyeOpen?.classList.remove('hidden');
+      eyeClosed?.classList.add('hidden');
+    }
+  });
+
+  // Drag and drop events
+  ['dragenter', 'dragover'].forEach((eventName) => {
+    dropZone?.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.add('border-brand-500', 'bg-brand-50/30');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach((eventName) => {
+    dropZone?.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.remove('border-brand-500', 'bg-brand-50/30');
+    });
+  });
+
+  dropZone?.addEventListener('drop', (e) => {
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      handleFileSelected(files[0]);
+    }
+  });
+
+  fileInput?.addEventListener('change', () => {
+    if (fileInput.files && fileInput.files.length > 0) {
+      handleFileSelected(fileInput.files[0]);
+    }
+  });
+
+  async function handleFileSelected(file: File) {
+    hideError();
+
+    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+      showError('Please select a valid PDF file.');
+      return;
+    }
+
+    if (file.size > 100 * 1024 * 1024) {
+      showError('File exceeds the 100MB safety limit. Please upload a smaller file.');
+      return;
+    }
+
+    selectedFile = file;
+    fileNameEl.textContent = file.name;
+    fileSizeEl.textContent = formatBytes(file.size);
+
+    // Probe encryption status
+    try {
+      const probe = await checkIfEncrypted(file);
+      if (probe.isEncrypted) {
+        statusBadge.textContent = 'Password Protected';
+        statusBadge.className = 'font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200';
+      } else {
+        statusBadge.textContent = `Unencrypted (${probe.pageCount || 1} pages)`;
+        statusBadge.className = 'font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200';
+      }
+    } catch {
+      statusBadge.textContent = 'Password Protected';
+    }
+
+    dropZone.classList.add('hidden');
+    progressSection.classList.add('hidden');
+    successSection.classList.add('hidden');
+    settingsSection.classList.remove('hidden');
+
+    passwordInput.value = '';
+    passwordInput.focus();
+  }
+
+  changeFileBtn?.addEventListener('click', resetAll);
+  unlockAnotherBtn?.addEventListener('click', resetAll);
+
+  function resetAll() {
+    hideError();
+    selectedFile = null;
+    if (fileInput) fileInput.value = '';
+    if (passwordInput) passwordInput.value = '';
+    if (downloadedBlobUrl) {
+      URL.revokeObjectURL(downloadedBlobUrl);
+      downloadedBlobUrl = null;
+    }
+
+    dropZone.classList.remove('hidden');
+    settingsSection.classList.add('hidden');
+    progressSection.classList.add('hidden');
+    successSection.classList.add('hidden');
+  }
+
+  // Handle enter key in password input
+  passwordInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submitBtn?.click();
+    }
+  });
+
+  submitBtn?.addEventListener('click', async () => {
+    hideError();
+    if (!selectedFile) return;
+
+    const pwd = passwordInput.value;
+    if (!pwd) {
+      showError('Please enter the document password.');
+      passwordInput.focus();
+      return;
+    }
+
+    // Switch to progress state
+    settingsSection.classList.add('hidden');
+    progressSection.classList.remove('hidden');
+
+    try {
+      const unencryptedBytes = await unlockPdf(selectedFile, pwd, (p) => {
+        if (progressMsg) progressMsg.textContent = p.message;
+        if (progressBar) progressBar.style.width = `${p.percent}%`;
+      });
+
+      const blob = new Blob([unencryptedBytes], { type: 'application/pdf' });
+      if (downloadedBlobUrl) {
+        URL.revokeObjectURL(downloadedBlobUrl);
+      }
+      downloadedBlobUrl = URL.createObjectURL(blob);
+
+      const baseName = selectedFile.name.replace(/\.pdf$/i, '');
+      const downloadName = `${baseName}_unlocked.pdf`;
+
+      if (downloadBtn) {
+        downloadBtn.href = downloadedBlobUrl;
+        downloadBtn.download = downloadName;
+      }
+
+      if (unlockedFileNameEl) unlockedFileNameEl.textContent = downloadName;
+      if (unlockedFileSizeEl) unlockedFileSizeEl.textContent = formatBytes(unencryptedBytes.byteLength);
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+
+      // Auto-trigger download
+      setTimeout(() => {
+        downloadBtn?.click();
+      }, 400);
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      settingsSection.classList.remove('hidden');
+      showError(err?.message || 'Failed to unlock document. Please verify the password and try again.');
+    }
+  });
+</script>

@@ -1,0 +1,367 @@
+---
+// PdfToWordIsland.astro - Interactive client-side PDF to Word (.docx) converter
+---
+
+<div id="pdftoword-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  
+
+  <!-- Error Alert Container -->
+  <div id="word-error-banner" class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Word Conversion Error</h4>
+      <p id="word-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-word-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="word-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition shadow-sm hover:shadow-md cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="word-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-slate-100 group-hover:bg-slate-900 flex items-center justify-center text-slate-700 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-brand-600 transition">
+      Select PDF to convert to Word
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your PDF file here, or click to choose from your device.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF File
+    </div>
+
+    <div class="mt-6 flex items-center justify-center gap-4 text-xs text-slate-400">
+      <span>Cap: Max 100MB</span>
+      <span>•</span>
+      <span>Standard .docx OpenXML</span>
+      <span>•</span>
+      <span>100% In-Browser</span>
+    </div>
+  </div>
+
+  <!-- 2. Settings Section -->
+  <div id="word-settings-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm text-left">
+    <!-- Selected File Header -->
+    <div class="flex items-center justify-between pb-6 border-b border-slate-200 mb-6">
+      <div class="flex items-center gap-3 min-w-0 pr-2">
+        <div class="w-10 h-10 rounded-lg bg-brand-100 text-slate-700 flex items-center justify-center flex-shrink-0 font-bold">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <p id="word-file-name" class="text-sm font-bold text-slate-900 truncate">document.pdf</p>
+          <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+            <span id="word-file-size">0 KB</span>
+            <span>•</span>
+            <span id="word-page-count" class="font-semibold text-slate-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+              0 pages
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        id="word-change-file-btn"
+        class="text-xs font-semibold text-slate-500 hover:text-red-600 transition flex-shrink-0"
+      >
+        Change File
+      </button>
+    </div>
+
+    <!-- Mandatory Honesty Callout -->
+    <div class="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-900 flex items-start gap-3 mb-6">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+      </svg>
+      <div>
+        <h5 class="font-bold text-amber-900 mb-0.5">Basic Conversion (Text & Structure Only)</h5>
+        <p class="text-amber-800 leading-relaxed">
+          This client-side tool extracts textual sentences and paragraphs into an editable .docx format. Complex multi-column layouts, table borders, and vector artwork will not replicate the exact PDF visual geometry.
+        </p>
+      </div>
+    </div>
+
+    <!-- Options Box -->
+    <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6">
+      <h4 class="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">Conversion Options</h4>
+      <label class="flex items-center gap-2.5 text-xs text-slate-700 cursor-pointer">
+        <input
+          type="checkbox"
+          id="word-preserve-breaks"
+          checked
+          class="rounded text-brand-600 focus:ring-brand-500"
+        />
+        <span class="font-medium">Insert Word page breaks between PDF pages</span>
+      </label>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="mt-8 pt-6 border-t border-slate-100 flex items-center justify-end">
+      <button
+        type="button"
+        id="start-word-btn"
+        class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold text-xs text-white bg-slate-900 hover:bg-slate-800 active:scale-[0.98] shadow-button transition flex items-center justify-center gap-2"
+      >
+        <span>Convert to Word (.docx) & Download</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Progress State -->
+  <div id="word-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 sm:p-12 text-center shadow-sm">
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
+      <svg class="animate-spin w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+    </div>
+
+    <h3 class="text-lg font-bold text-slate-800 mb-1">Converting PDF to Word...</h3>
+    <p id="word-progress-message" class="text-xs text-slate-500 mb-6 font-medium">Extracting text items from document pages...</p>
+
+    <!-- Progress Bar -->
+    <div class="w-full max-w-md mx-auto bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
+      <div id="word-progress-bar-fill" class="bg-blue-600 h-full w-0 rounded-full transition-all duration-300"></div>
+    </div>
+    <span id="word-progress-percent" class="block text-xs font-semibold text-slate-700 mt-2">0%</span>
+  </div>
+
+  <!-- 4. Success State -->
+  <div id="word-success-section" class="hidden bg-white rounded-2xl border border-emerald-200 p-8 sm:p-12 text-center shadow-sm">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+      </svg>
+    </div>
+
+    <h3 class="text-2xl font-extrabold text-slate-900 mb-2">Word Document Created!</h3>
+    <p class="text-sm text-slate-600 mb-6">
+      File ready for download: <span id="word-output-info" class="font-bold text-slate-800">--</span>
+    </p>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+      <button
+        type="button"
+        id="word-download-btn"
+        class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-md shadow-emerald-500/20 transition flex items-center justify-center gap-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Word Document (.docx)</span>
+      </button>
+
+      <button
+        type="button"
+        id="word-reset-btn"
+        class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition"
+      >
+        Convert Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import * as pdfjsLib from 'pdfjs-dist';
+  import { convertPdfToWord } from '../../lib/pdf/pdfToWord';
+  import { MAX_FILE_SIZE_BYTES } from '../../lib/pdf/merge';
+
+  if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+  }
+
+  let selectedFile: File | null = null;
+  let downloadedBlobUrl: string | null = null;
+  let activeFilename = 'document.docx';
+
+  // DOM Elements
+  const dropZone = document.getElementById('word-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('word-file-input') as HTMLInputElement;
+  const settingsSection = document.getElementById('word-settings-section') as HTMLDivElement;
+  const fileNameEl = document.getElementById('word-file-name') as HTMLParagraphElement;
+  const fileSizeEl = document.getElementById('word-file-size') as HTMLSpanElement;
+  const pageCountEl = document.getElementById('word-page-count') as HTMLSpanElement;
+  const changeFileBtn = document.getElementById('word-change-file-btn') as HTMLButtonElement;
+  const preserveBreaksCb = document.getElementById('word-preserve-breaks') as HTMLInputElement;
+  const startBtn = document.getElementById('start-word-btn') as HTMLButtonElement;
+
+  const errorBanner = document.getElementById('word-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('word-error-message') as HTMLParagraphElement;
+  const dismissErrorBtn = document.getElementById('dismiss-word-error') as HTMLButtonElement;
+
+  const progressSection = document.getElementById('word-progress-section') as HTMLDivElement;
+  const progressMessage = document.getElementById('word-progress-message') as HTMLParagraphElement;
+  const progressBarFill = document.getElementById('word-progress-bar-fill') as HTMLDivElement;
+  const progressPercent = document.getElementById('word-progress-percent') as HTMLSpanElement;
+
+  const successSection = document.getElementById('word-success-section') as HTMLDivElement;
+  const outputInfoEl = document.getElementById('word-output-info') as HTMLSpanElement;
+  const downloadBtn = document.getElementById('word-download-btn') as HTMLButtonElement;
+  const resetBtn = document.getElementById('word-reset-btn') as HTMLButtonElement;
+
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function clearError() {
+    if (errorBanner) errorBanner.classList.add('hidden');
+  }
+
+  dismissErrorBtn?.addEventListener('click', clearError);
+
+  async function handleFileSelected(file: File) {
+    clearError();
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      showError(`The file "${file.name}" (${formatBytes(file.size)}) exceeds the 100MB in-browser limit.`);
+      return;
+    }
+
+    selectedFile = file;
+    fileNameEl.textContent = file.name;
+    fileSizeEl.textContent = formatBytes(file.size);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });
+      const pdf = await loadingTask.promise;
+      const totalPages = pdf.numPages;
+
+      pageCountEl.textContent = `${totalPages} ${totalPages === 1 ? 'page' : 'pages'}`;
+
+      dropZone.classList.add('hidden');
+      settingsSection.classList.remove('hidden');
+    } catch (err: any) {
+      showError(`Could not read PDF document: ${err.message}`);
+    }
+  }
+
+  fileInput?.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      handleFileSelected(target.files[0]);
+      target.value = '';
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    selectedFile = null;
+    settingsSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+
+  // Drag and drop handlers
+  ['dragenter', 'dragover'].forEach((eventName) => {
+    dropZone?.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-brand-500', 'bg-brand-50/40');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach((eventName) => {
+    dropZone?.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-brand-500', 'bg-brand-50/40');
+    });
+  });
+
+  dropZone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileSelected(e.dataTransfer.files[0]);
+    }
+  });
+
+  // Execute Conversion
+  startBtn?.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    settingsSection.classList.add('hidden');
+    progressSection.classList.remove('hidden');
+    clearError();
+
+    const preserveBreaks = preserveBreaksCb ? preserveBreaksCb.checked : true;
+
+    try {
+      const result = await convertPdfToWord(
+        selectedFile,
+        { preservePageBreaks: preserveBreaks },
+        (prog) => {
+          progressMessage.textContent = prog.message;
+          progressBarFill.style.width = `${prog.percent}%`;
+          progressPercent.textContent = `${prog.percent}%`;
+        }
+      );
+
+      activeFilename = result.filename;
+      if (downloadedBlobUrl) URL.revokeObjectURL(downloadedBlobUrl);
+      downloadedBlobUrl = URL.createObjectURL(result.blob);
+
+      outputInfoEl.textContent = `${result.filename} (${formatBytes(result.blob.size)})`;
+
+      // Auto trigger download
+      triggerDownload();
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      settingsSection.classList.remove('hidden');
+      showError(err.message || 'An error occurred during Word conversion.');
+    }
+  });
+
+  function triggerDownload() {
+    if (!downloadedBlobUrl) return;
+    const a = document.createElement('a');
+    a.href = downloadedBlobUrl;
+    a.download = activeFilename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  downloadBtn?.addEventListener('click', triggerDownload);
+
+  resetBtn?.addEventListener('click', () => {
+    selectedFile = null;
+    if (downloadedBlobUrl) {
+      URL.revokeObjectURL(downloadedBlobUrl);
+      downloadedBlobUrl = null;
+    }
+    successSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+</script>

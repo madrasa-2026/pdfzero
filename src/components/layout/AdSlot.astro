@@ -1,0 +1,36 @@
+---
+interface Props {
+  slotId?: string;
+  format?: 'horizontal' | 'rectangle' | 'leaderboard';
+  class?: string;
+}
+
+const {
+  slotId = '0000000000',
+  format = 'horizontal',
+  class: className = '',
+} = Astro.props;
+
+const formatStyles = {
+  horizontal: 'min-h-[90px] max-w-4xl',
+  rectangle: 'min-h-[250px] max-w-sm',
+  leaderboard: 'min-h-[90px] max-w-5xl',
+};
+---
+
+<div class={`my-6 flex flex-col items-center justify-center ${className}`}>
+  <!-- Clear, non-deceptive advertisement labeling required by Google AdSense Policy -->
+  <span class="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-400 mb-1.5 select-none">
+    Advertisement
+  </span>
+  <div
+    class={`w-full ${formatStyles[format]} bg-slate-50/70 border border-slate-200/80 rounded-xl flex flex-col items-center justify-center p-3 text-center text-slate-400 transition-colors`}
+    data-ad-slot={slotId}
+  >
+    <!-- Ad container placeholder: Real Google AdSense tags insert here -->
+    <div class="flex items-center gap-2 text-[11px] text-slate-400 font-mono">
+      <span class="w-1.5 h-1.5 rounded-full bg-slate-300"></span>
+      <span>Ad Unit #{slotId}</span>
+    </div>
+  </div>
+</div>

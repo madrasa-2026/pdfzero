@@ -1,0 +1,493 @@
+---
+// RotatePdfIsland.astro - Interactive client-side PDF page rotator with visual thumbnails
+---
+
+<div id="rotate-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  
+
+  <!-- Error Alert Container -->
+  <div id="rotate-error-banner" class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Rotation Error</h4>
+      <p id="rotate-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-rotate-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="rotate-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition shadow-sm hover:shadow-md cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="rotate-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-slate-100 group-hover:bg-slate-900 flex items-center justify-center text-slate-700 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-brand-600 transition">
+      Select PDF to rotate
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your PDF file here, or click to choose from your device.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF File
+    </div>
+
+    <div class="mt-6 flex items-center justify-center gap-4 text-xs text-slate-400">
+      <span>Cap: Max 100MB</span>
+      <span>•</span>
+      <span>Visual thumbnail preview</span>
+    </div>
+  </div>
+
+  <!-- 2. Selected File & Rotation Controls Grid -->
+  <div id="rotate-settings-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm text-left">
+    <!-- Header with File Info and Batch Actions -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-200 mb-6">
+      <div class="flex items-center gap-3 min-w-0 pr-2">
+        <div class="w-10 h-10 rounded-lg bg-brand-100 text-slate-700 flex items-center justify-center flex-shrink-0 font-bold">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <p id="rotate-file-name" class="text-sm font-bold text-slate-900 truncate">document.pdf</p>
+          <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+            <span id="rotate-file-size">0 KB</span>
+            <span>•</span>
+            <span id="rotate-page-count" class="font-semibold text-slate-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+              0 pages
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Batch Toolbar -->
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          id="rotate-all-right-btn"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 transition flex items-center gap-1.5"
+        >
+          <span>Rotate All Right ↻</span>
+        </button>
+        <button
+          type="button"
+          id="rotate-all-left-btn"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-700 bg-brand-50 hover:bg-brand-100 border border-brand-200 transition flex items-center gap-1.5"
+        >
+          <span>Rotate All Left ↺</span>
+        </button>
+        <button
+          type="button"
+          id="reset-all-rotations-btn"
+          class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition"
+        >
+          Reset All
+        </button>
+      </div>
+    </div>
+
+    <!-- Thumbnail Loading Status -->
+    <div id="thumbnails-loading" class="py-12 text-center text-slate-500 text-sm flex flex-col items-center gap-2">
+      <svg class="animate-spin w-6 h-6 text-brand-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+      <span>Rendering page previews...</span>
+    </div>
+
+    <!-- Page Thumbnails Grid -->
+    <div id="pages-grid" class="hidden grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 max-h-[500px] overflow-y-auto p-2">
+      <!-- Dynamically generated page preview cards -->
+    </div>
+
+    <!-- Action Bar -->
+    <div class="mt-8 pt-6 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <button
+        type="button"
+        id="rotate-change-file-btn"
+        class="text-xs font-semibold text-slate-500 hover:text-red-600 transition"
+      >
+        Choose a different file
+      </button>
+
+      <button
+        type="button"
+        id="start-rotate-btn"
+        class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold text-xs text-white bg-slate-900 hover:bg-slate-800 active:scale-[0.98] shadow-button transition flex items-center justify-center gap-2"
+      >
+        <span>Save & Download Rotated PDF</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Progress State -->
+  <div id="rotate-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 sm:p-12 text-center shadow-sm">
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
+      <svg class="animate-spin w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+    </div>
+
+    <h3 class="text-lg font-bold text-slate-800 mb-1">Applying Page Rotations...</h3>
+    <p id="rotate-progress-message" class="text-xs text-slate-500 mb-6 font-medium">Re-encoding document in browser memory...</p>
+
+    <!-- Progress Bar -->
+    <div class="w-full max-w-md mx-auto bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
+      <div id="rotate-progress-bar-fill" class="bg-blue-600 h-full w-0 rounded-full transition-all duration-300"></div>
+    </div>
+    <span id="rotate-progress-percent" class="block text-xs font-semibold text-slate-700 mt-2">0%</span>
+  </div>
+
+  <!-- 4. Success State -->
+  <div id="rotate-success-section" class="hidden bg-white rounded-2xl border border-emerald-200 p-8 sm:p-12 text-center shadow-sm">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+      </svg>
+    </div>
+
+    <h3 class="text-2xl font-extrabold text-slate-900 mb-2">PDF Rotated Successfully!</h3>
+    <p class="text-sm text-slate-600 mb-6">
+      File ready for download: <span id="rotate-output-info" class="font-bold text-slate-800">--</span>
+    </p>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+      <button
+        type="button"
+        id="rotate-download-btn"
+        class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-md shadow-emerald-500/20 transition flex items-center justify-center gap-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Rotated PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="rotate-reset-btn"
+        class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition"
+      >
+        Rotate Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import * as pdfjsLib from 'pdfjs-dist';
+  import { rotatePdfPages } from '../../lib/pdf/rotate';
+  import { MAX_FILE_SIZE_BYTES } from '../../lib/pdf/merge';
+
+  if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+  }
+
+  let selectedFile: File | null = null;
+  let pageRotations = new Map<number, number>(); // 1-based page index -> delta in degrees
+  let downloadedBlobUrl: string | null = null;
+
+  // DOM Elements
+  const dropZone = document.getElementById('rotate-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('rotate-file-input') as HTMLInputElement;
+  const settingsSection = document.getElementById('rotate-settings-section') as HTMLDivElement;
+  const fileNameEl = document.getElementById('rotate-file-name') as HTMLParagraphElement;
+  const fileSizeEl = document.getElementById('rotate-file-size') as HTMLSpanElement;
+  const pageCountEl = document.getElementById('rotate-page-count') as HTMLSpanElement;
+  const changeFileBtn = document.getElementById('rotate-change-file-btn') as HTMLButtonElement;
+
+  const thumbnailsLoading = document.getElementById('thumbnails-loading') as HTMLDivElement;
+  const pagesGrid = document.getElementById('pages-grid') as HTMLDivElement;
+
+  const rotateAllRightBtn = document.getElementById('rotate-all-right-btn') as HTMLButtonElement;
+  const rotateAllLeftBtn = document.getElementById('rotate-all-left-btn') as HTMLButtonElement;
+  const resetAllRotationsBtn = document.getElementById('reset-all-rotations-btn') as HTMLButtonElement;
+  const startRotateBtn = document.getElementById('start-rotate-btn') as HTMLButtonElement;
+
+  const errorBanner = document.getElementById('rotate-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('rotate-error-message') as HTMLParagraphElement;
+  const dismissErrorBtn = document.getElementById('dismiss-rotate-error') as HTMLButtonElement;
+
+  const progressSection = document.getElementById('rotate-progress-section') as HTMLDivElement;
+  const progressMessage = document.getElementById('rotate-progress-message') as HTMLParagraphElement;
+  const progressBarFill = document.getElementById('rotate-progress-bar-fill') as HTMLDivElement;
+  const progressPercent = document.getElementById('rotate-progress-percent') as HTMLSpanElement;
+
+  const successSection = document.getElementById('rotate-success-section') as HTMLDivElement;
+  const outputInfoEl = document.getElementById('rotate-output-info') as HTMLSpanElement;
+  const downloadBtn = document.getElementById('rotate-download-btn') as HTMLButtonElement;
+  const resetBtn = document.getElementById('rotate-reset-btn') as HTMLButtonElement;
+
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function clearError() {
+    if (errorBanner) errorBanner.classList.add('hidden');
+  }
+
+  dismissErrorBtn?.addEventListener('click', clearError);
+
+  async function handleFileSelected(file: File) {
+    clearError();
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      showError(
+        `The file "${file.name}" (${formatBytes(file.size)}) exceeds the 100MB in-browser limit.`
+      );
+      return;
+    }
+
+    selectedFile = file;
+    pageRotations.clear();
+
+    fileNameEl.textContent = file.name;
+    fileSizeEl.textContent = formatBytes(file.size);
+
+    dropZone.classList.add('hidden');
+    settingsSection.classList.remove('hidden');
+    thumbnailsLoading.classList.remove('hidden');
+    pagesGrid.classList.add('hidden');
+    pagesGrid.innerHTML = '';
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(buffer) });
+      const pdf = await loadingTask.promise;
+      const totalPages = pdf.numPages;
+
+      pageCountEl.textContent = `${totalPages} ${totalPages === 1 ? 'page' : 'pages'}`;
+
+      // Render thumbnails
+      for (let i = 1; i <= totalPages; i++) {
+        pageRotations.set(i, 0);
+        const page = await pdf.getPage(i);
+        const viewport = page.getViewport({ scale: 0.35 });
+
+        const card = document.createElement('div');
+        card.className = 'page-card flex flex-col items-center bg-slate-50 border border-slate-200 rounded-xl p-3 shadow-xs hover:border-brand-400 transition';
+        card.dataset.page = i.toString();
+
+        card.innerHTML = `
+          <div class="w-full flex items-center justify-between mb-2 text-[11px] font-bold text-slate-600">
+            <span>Page ${i}</span>
+            <span class="angle-badge text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-700">0°</span>
+          </div>
+
+          <div class="preview-wrapper w-full h-36 flex items-center justify-center overflow-hidden bg-white rounded-lg border border-slate-100 shadow-inner my-1">
+            <canvas class="preview-canvas transition-transform duration-200 max-h-32 max-w-full object-contain"></canvas>
+          </div>
+
+          <div class="flex items-center gap-1.5 mt-2 w-full">
+            <button type="button" class="rot-left-btn flex-1 py-1 rounded text-xs font-bold bg-white hover:bg-brand-50 hover:text-slate-700 border border-slate-200 transition" title="Rotate Left 90°">
+              ↺ 90°
+            </button>
+            <button type="button" class="rot-right-btn flex-1 py-1 rounded text-xs font-bold bg-white hover:bg-brand-50 hover:text-slate-700 border border-slate-200 transition" title="Rotate Right 90°">
+              ↻ 90°
+            </button>
+          </div>
+        `;
+
+        const canvas = card.querySelector('canvas') as HTMLCanvasElement;
+        canvas.width = Math.floor(viewport.width);
+        canvas.height = Math.floor(viewport.height);
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          await page.render({ canvasContext: ctx, viewport }).promise;
+        }
+
+        // Attach individual rotation events
+        const angleBadge = card.querySelector('.angle-badge') as HTMLSpanElement;
+
+        card.querySelector('.rot-right-btn')?.addEventListener('click', () => {
+          const current = pageRotations.get(i) || 0;
+          const next = (current + 90) % 360;
+          pageRotations.set(i, next);
+          canvas.style.transform = `rotate(${next}deg)`;
+          angleBadge.textContent = `${next}°`;
+        });
+
+        card.querySelector('.rot-left-btn')?.addEventListener('click', () => {
+          const current = pageRotations.get(i) || 0;
+          const next = (current - 90 + 360) % 360;
+          pageRotations.set(i, next);
+          canvas.style.transform = `rotate(${next}deg)`;
+          angleBadge.textContent = `${next}°`;
+        });
+
+        pagesGrid.appendChild(card);
+      }
+
+      thumbnailsLoading.classList.add('hidden');
+      pagesGrid.classList.remove('hidden');
+    } catch (err: any) {
+      thumbnailsLoading.classList.add('hidden');
+      showError(`Error generating previews: ${err.message}`);
+    }
+  }
+
+  // Batch Toolbar actions
+  rotateAllRightBtn?.addEventListener('click', () => {
+    pagesGrid.querySelectorAll<HTMLDivElement>('.page-card').forEach((card) => {
+      const pageNum = parseInt(card.dataset.page || '1', 10);
+      const current = pageRotations.get(pageNum) || 0;
+      const next = (current + 90) % 360;
+      pageRotations.set(pageNum, next);
+
+      const canvas = card.querySelector('canvas');
+      const badge = card.querySelector('.angle-badge');
+      if (canvas) canvas.style.transform = `rotate(${next}deg)`;
+      if (badge) badge.textContent = `${next}°`;
+    });
+  });
+
+  rotateAllLeftBtn?.addEventListener('click', () => {
+    pagesGrid.querySelectorAll<HTMLDivElement>('.page-card').forEach((card) => {
+      const pageNum = parseInt(card.dataset.page || '1', 10);
+      const current = pageRotations.get(pageNum) || 0;
+      const next = (current - 90 + 360) % 360;
+      pageRotations.set(pageNum, next);
+
+      const canvas = card.querySelector('canvas');
+      const badge = card.querySelector('.angle-badge');
+      if (canvas) canvas.style.transform = `rotate(${next}deg)`;
+      if (badge) badge.textContent = `${next}°`;
+    });
+  });
+
+  resetAllRotationsBtn?.addEventListener('click', () => {
+    pagesGrid.querySelectorAll<HTMLDivElement>('.page-card').forEach((card) => {
+      const pageNum = parseInt(card.dataset.page || '1', 10);
+      pageRotations.set(pageNum, 0);
+
+      const canvas = card.querySelector('canvas');
+      const badge = card.querySelector('.angle-badge');
+      if (canvas) canvas.style.transform = 'rotate(0deg)';
+      if (badge) badge.textContent = '0°';
+    });
+  });
+
+  fileInput?.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      handleFileSelected(target.files[0]);
+      target.value = '';
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    selectedFile = null;
+    settingsSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+
+  // Drag and drop
+  ['dragenter', 'dragover'].forEach((eventName) => {
+    dropZone?.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-brand-500', 'bg-brand-50/40');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach((eventName) => {
+    dropZone?.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-brand-500', 'bg-brand-50/40');
+    });
+  });
+
+  dropZone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileSelected(e.dataTransfer.files[0]);
+    }
+  });
+
+  // Execute Rotation
+  startRotateBtn?.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    settingsSection.classList.add('hidden');
+    progressSection.classList.remove('hidden');
+    clearError();
+
+    const baseName = selectedFile.name.replace(/\.[^/.]+$/, '');
+    const filename = `${baseName}-rotated.pdf`;
+
+    try {
+      const rotatedBytes = await rotatePdfPages(selectedFile, pageRotations, (prog) => {
+        progressMessage.textContent = prog.message;
+        progressBarFill.style.width = `${prog.percent}%`;
+        progressPercent.textContent = `${prog.percent}%`;
+      });
+
+      const blob = new Blob([rotatedBytes], { type: 'application/pdf' });
+      if (downloadedBlobUrl) URL.revokeObjectURL(downloadedBlobUrl);
+      downloadedBlobUrl = URL.createObjectURL(blob);
+
+      outputInfoEl.textContent = `${filename} (${formatBytes(rotatedBytes.byteLength)})`;
+
+      // Auto trigger download
+      triggerDownload();
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      settingsSection.classList.remove('hidden');
+      showError(err.message || 'An error occurred during rotation.');
+    }
+  });
+
+  function triggerDownload() {
+    if (!downloadedBlobUrl || !selectedFile) return;
+    const a = document.createElement('a');
+    a.href = downloadedBlobUrl;
+    const baseName = selectedFile.name.replace(/\.[^/.]+$/, '');
+    a.download = `${baseName}-rotated.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  downloadBtn?.addEventListener('click', triggerDownload);
+
+  resetBtn?.addEventListener('click', () => {
+    selectedFile = null;
+    if (downloadedBlobUrl) {
+      URL.revokeObjectURL(downloadedBlobUrl);
+      downloadedBlobUrl = null;
+    }
+    successSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+</script>

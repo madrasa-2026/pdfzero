@@ -1,0 +1,63 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Privacy Policy & Cookie Disclosures"
+  description="Learn about our zero-upload privacy architecture and how cookies are utilized for Google advertising."
+>
+  <div class="max-w-4xl mx-auto px-4 py-16">
+    <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight mb-4">Privacy Policy</h1>
+    <p class="text-sm text-slate-500 mb-8">Last revised: October 5, 2026</p>
+
+    <div class="space-y-8 text-slate-700 leading-relaxed">
+      <!-- Section 1 -->
+      <section class="bg-emerald-50 border border-emerald-200 rounded-2xl p-6">
+        <h2 class="text-xl font-bold text-emerald-900 mb-2">Our Fundamental Privacy Commitment: Zero Server Uploads</h2>
+        <p class="text-sm text-emerald-800 leading-relaxed">
+          At <strong>PDFZero</strong>, your documents belong to you. Our PDF manipulation tools run entirely within your web browser using WebAssembly and client-side JavaScript. <strong>Your PDF files, photos, passwords, and document contents are never transmitted over the internet to our servers or stored on remote databases.</strong> Once you close or refresh your browser tab, memory used for processing is immediately freed.
+        </p>
+      </section>
+
+      <!-- Section 2 -->
+      <section>
+        <h2 class="text-2xl font-bold text-slate-900 mb-3">1. Information We Do Not Collect</h2>
+        <p>Because processing occurs purely client-side on your local device, we do not access, view, or retain:</p>
+        <ul class="list-disc pl-6 mt-2 space-y-1 text-slate-600">
+          <li>The contents, metadata, or text of your uploaded PDF files.</li>
+          <li>Passwords entered to encrypt or decrypt documents.</li>
+          <li>Extracted image files or converted document downloads.</li>
+        </ul>
+      </section>
+
+      <!-- Section 3: Third Party Advertising & Cookies (Mandatory for Google AdSense) -->
+      <section>
+        <h2 class="text-2xl font-bold text-slate-900 mb-3">2. Advertising & Third-Party Cookies (Google AdSense)</h2>
+        <p class="mb-3">
+          To provide these tools 100% free with no registration required, we partner with third-party vendors, including <strong>Google AdSense</strong>, to display advertisements on our website.
+        </p>
+        <ul class="list-disc pl-6 space-y-2 text-slate-600">
+          <li>Third party vendors, including Google, use cookies to serve ads based on a user's prior visits to this website or other websites.</li>
+          <li>Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to our sites and/or other sites on the Internet.</li>
+          <li>Users may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer" class="text-brand-600 underline">Google Ads Settings</a> or by visiting <a href="https://www.aboutads.info" target="_blank" rel="noopener noreferrer" class="text-brand-600 underline">aboutads.info</a>.</li>
+        </ul>
+      </section>
+
+      <!-- Section 4 -->
+      <section>
+        <h2 class="text-2xl font-bold text-slate-900 mb-3">3. Analytics & Logging</h2>
+        <p>
+          We may gather non-personally identifiable technical information (such as browser type, referring URL, and page load performance) strictly to diagnose technical faults and optimize loading speed.
+        </p>
+      </section>
+
+      <!-- Section 5 -->
+      <section>
+        <h2 class="text-2xl font-bold text-slate-900 mb-3">4. Contacting Us</h2>
+        <p>
+          If you have inquiries concerning this Privacy Policy, please reach out through our <a href="/contact" class="text-brand-600 underline font-medium">Contact Page</a>.
+        </p>
+      </section>
+    </div>
+  </div>
+</BaseLayout>

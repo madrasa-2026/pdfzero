@@ -1,0 +1,29 @@
+{
+  "name": "pdfzero",
+  "type": "module",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/sitemap": "^3.2.1",
+    "@astrojs/tailwind": "^5.1.5",
+    "astro": "^5.4.2",
+    "jszip": "^3.10.2",
+    "pdf-lib": "^1.17.1",
+    "pdf-lib-with-encrypt": "^1.2.1",
+    "pdfjs-dist": "^6.4.299",
+    "tailwindcss": "^3.4.17",
+    "tslib": "^2.8.1"
+  },
+  "devDependencies": {
+    "@types/jszip": "^3.4.0",
+    "@types/node": "^22.13.1",
+    "typescript": "^5.7.3"
+  }
+}

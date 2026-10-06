@@ -1,0 +1,221 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import AdSlot from '../components/layout/AdSlot.astro';
+import { getCollection } from 'astro:content';
+
+const tools = await getCollection('tools');
+const sortedTools = tools.sort((a, b) => (a.data.order || 100) - (b.data.order || 100));
+
+const categories = [
+  { id: 'all', name: 'All Tools' },
+  { id: 'organize', name: 'Organize' },
+  { id: 'optimize', name: 'Optimize' },
+  { id: 'security', name: 'Security' },
+  { id: 'convert', name: 'Convert' },
+];
+
+const categoryIcons: Record<string, string> = {
+  merge: 'M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2',
+  compress: 'M19 14l-7 7m0 0l-7-7m7 7V3',
+  split: 'M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4',
+  rotate: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
+  lock: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z',
+  unlock: 'M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z',
+  numbers: 'M7 20l4-16m2 16l4-16M6 9h14M4 15h14',
+  image: 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z',
+  'file-image': 'M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z',
+  'file-text': 'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z',
+};
+
+const siteSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  'name': 'PDFZero',
+  'url': 'https://pdfzero.pages.dev',
+  'description': 'Free client-side PDF tools. Merge, compress, split, and convert PDFs directly in your browser with zero server uploads.',
+  'potentialAction': {
+    '@type': 'SearchAction',
+    'target': 'https://pdfzero.pages.dev/#tools',
+    'query-input': 'required name=search_term_string'
+  }
+};
+---
+
+<BaseLayout
+  title="PDFZero — Free In-Browser PDF Tools (Zero Uploads)"
+  description="Every PDF tool you need, 100% client-side in your browser. Merge, compress, split, rotate, convert, and protect PDF documents with zero privacy risks."
+>
+  <script type="application/ld+json" set:html={JSON.stringify(siteSchema)} slot="schema" />
+
+  <!-- Hero Section -->
+  <section class="relative pt-16 pb-12 sm:pt-24 sm:pb-16 border-b border-slate-200/80 bg-white">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <!-- Privacy Trust Chip -->
+      <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-slate-900 text-slate-200 shadow-sm border border-slate-800 mb-6">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+        <span>100% Client-Side Engine · Zero Cloud Uploads</span>
+      </div>
+
+      <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold text-slate-900 tracking-[-0.035em] max-w-4xl mx-auto leading-[1.08]">
+        Professional PDF tools.<br class="hidden sm:inline" />
+        <span class="text-slate-500">Processed entirely on your device.</span>
+      </h1>
+
+      <p class="mt-5 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+        Merge, compress, split, and convert documents locally in your browser. No registration, no queues, and zero bytes uploaded to external servers.
+      </p>
+
+      <!-- Quick Action Buttons -->
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
+        <a
+          href="/tools/merge-pdf"
+          class="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm text-white bg-slate-900 hover:bg-slate-800 active:scale-[0.98] shadow-button transition duration-150"
+        >
+          <span>Merge PDF Files</span>
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+          </svg>
+        </a>
+        <a
+          href="/tools/compress-pdf"
+          class="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm text-slate-700 bg-white hover:bg-slate-50 active:scale-[0.98] border border-slate-200/90 shadow-sm transition duration-150"
+        >
+          <span>Compress PDF</span>
+        </a>
+        <a
+          href="#tools"
+          class="px-4 py-3 rounded-xl text-sm font-semibold text-slate-600 hover:text-slate-900 transition"
+        >
+          View all tools ↓
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Top Compliant Ad Unit Placeholder -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <AdSlot format="leaderboard" slotId="top-home" />
+  </div>
+
+  <!-- Tools Directory Section -->
+  <section id="tools" class="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+      <div>
+        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-[-0.025em]">Tools Directory</h2>
+        <p class="text-xs sm:text-sm text-slate-500 mt-1">Select a utility below to begin processing documents client-side.</p>
+      </div>
+
+      <!-- Category Filter Segmented Control -->
+      <div class="flex flex-wrap items-center gap-1 p-1 bg-slate-200/60 rounded-xl border border-slate-200/80">
+        {categories.map((cat, idx) => (
+          <a
+            href={`#tools-${cat.id}`}
+            class={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+              idx === 0
+                ? 'bg-white text-slate-900 shadow-sm'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100/60'
+            }`}
+          >
+            {cat.name}
+          </a>
+        ))}
+      </div>
+    </div>
+
+    <!-- Tools Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+      {sortedTools.map((tool) => (
+        <a
+          href={`/tools/${tool.slug}`}
+          class="group tool-card relative flex flex-col justify-between bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-panel-hover hover:border-slate-300 transition-all duration-200"
+        >
+          <div>
+            <!-- Card Header & Icon -->
+            <div class="flex items-center justify-between mb-4">
+              <div class="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-slate-900 text-slate-700 group-hover:text-white flex items-center justify-center transition duration-200 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d={categoryIcons[tool.data.icon] || categoryIcons.merge} />
+                </svg>
+              </div>
+              <span class="text-[10px] font-mono uppercase tracking-wider text-slate-400 font-semibold">
+                {tool.data.category}
+              </span>
+            </div>
+
+            <!-- Title & Description -->
+            <h3 class="text-base font-bold text-slate-900 group-hover:text-blue-600 transition mb-1.5">
+              {tool.data.title}
+            </h3>
+            <p class="text-xs text-slate-500 leading-relaxed">
+              {tool.data.shortDescription}
+            </p>
+          </div>
+
+          <!-- Footer Action -->
+          <div class="mt-5 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-400 group-hover:text-slate-700 transition">
+            <span>Launch tool</span>
+            <span class="transform group-hover:translate-x-1 transition duration-150">→</span>
+          </div>
+        </a>
+      ))}
+    </div>
+  </section>
+
+  <!-- Value Proposition: Why Client-Side? -->
+  <section class="bg-white border-y border-slate-200/80 py-16">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto mb-12">
+        <h2 class="text-3xl font-extrabold text-slate-900 tracking-[-0.025em]">Engineered for Total Data Privacy</h2>
+        <p class="mt-3 text-sm sm:text-base text-slate-600 leading-relaxed">
+          Conventional cloud converters force you to transmit confidential contracts, tax records, and private paperwork across the internet. PDFZero processes everything directly on your CPU.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Feature 1 -->
+        <div class="p-6 rounded-2xl bg-slate-50/70 border border-slate-200/80">
+          <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center font-bold mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M10 1.944A11.954 11.954 0 012.166 5C2.056 5.649 2 6.319 2 7c0 5.225 3.34 9.67 8 11.317C14.66 16.67 18 12.225 18 7c0-.682-.057-1.35-.166-2.001A11.954 11.954 0 0110 1.944zM11 14a1 1 0 11-2 0 1 1 0 012 0zm0-7a1 1 0 10-2 0v3a1 1 0 102 0V7z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <h3 class="text-base font-bold text-slate-900 mb-1.5">Zero Cloud Uploads</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Your files remain inside your local browser memory sandbox. They are never transmitted over network cables or stored on remote databases.
+          </p>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="p-6 rounded-2xl bg-slate-50/70 border border-slate-200/80">
+          <div class="w-8 h-8 rounded-lg bg-blue-100 text-blue-800 flex items-center justify-center font-bold mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.381z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <h3 class="text-base font-bold text-slate-900 mb-1.5">Zero Network Latency</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            No waiting for massive files to transfer across slow connections. Client-side WebAssembly manipulates document streams instantly.
+          </p>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="p-6 rounded-2xl bg-slate-50/70 border border-slate-200/80">
+          <div class="w-8 h-8 rounded-lg bg-slate-200 text-slate-800 flex items-center justify-center font-bold mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <h3 class="text-base font-bold text-slate-900 mb-1.5">Air-Gap Capable</h3>
+          <p class="text-xs text-slate-600 leading-relaxed">
+            Once loaded, you can disconnect your computer from WiFi or ethernet, and all PDF tools continue to operate with 100% functionality.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Bottom Ad Unit -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <AdSlot format="horizontal" slotId="bottom-home" />
+  </div>
+</BaseLayout>

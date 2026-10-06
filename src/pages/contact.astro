@@ -1,0 +1,59 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Contact Us"
+  description="Have questions or suggestions for PDFZero? Reach out to our team."
+>
+  <div class="max-w-2xl mx-auto px-4 py-16">
+    <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight mb-4">Contact Us</h1>
+    <p class="text-slate-600 mb-8 leading-relaxed">
+      Have feedback, spotted a bug, or want to suggest a new PDF tool? We'd love to hear from you.
+    </p>
+
+    <div class="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+      <form class="space-y-6" onsubmit="event.preventDefault(); alert('Thank you for reaching out! In static mode, please email support@pdfzero.pages.dev directly.');">
+        <div>
+          <label for="name" class="block text-sm font-semibold text-slate-700 mb-1">Your Name</label>
+          <input
+            type="text"
+            id="name"
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
+            placeholder="Jane Doe"
+            required
+          />
+        </div>
+
+        <div>
+          <label for="email" class="block text-sm font-semibold text-slate-700 mb-1">Email Address</label>
+          <input
+            type="email"
+            id="email"
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
+            placeholder="you@example.com"
+            required
+          />
+        </div>
+
+        <div>
+          <label for="message" class="block text-sm font-semibold text-slate-700 mb-1">Message</label>
+          <textarea
+            id="message"
+            rows="5"
+            class="w-full px-4 py-2.5 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-brand-500 text-sm"
+            placeholder="Tell us what's on your mind..."
+            required
+          ></textarea>
+        </div>
+
+        <button
+          type="submit"
+          class="w-full py-3 px-6 rounded-xl font-bold text-white bg-brand-600 hover:bg-brand-700 shadow-sm transition"
+        >
+          Send Message
+        </button>
+      </form>
+    </div>
+  </div>
+</BaseLayout>

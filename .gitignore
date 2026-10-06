@@ -1,0 +1,10 @@
+node_modules/
+dist/
+dist.zip
+.astro/
+*.log
+temp_sessions/
+*.png
+gsc_*.txt
+sitemap_*.txt
+adsense_page.txt

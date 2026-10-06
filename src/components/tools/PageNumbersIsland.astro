@@ -1,0 +1,555 @@
+---
+// PageNumbersIsland.astro - Client-side PDF page numbering tool
+---
+
+<div id="pagenumbers-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  
+
+  <!-- Error Alert Container -->
+  <div id="pn-error-banner" class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Page Numbering Error</h4>
+      <p id="pn-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-pn-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone -->
+  <div
+    id="pn-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition shadow-sm hover:shadow-md cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="pn-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-slate-100 group-hover:bg-slate-900 flex items-center justify-center text-slate-700 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-brand-600 transition">
+      Select PDF to add page numbers
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your PDF file here, or click to browse.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF File
+    </div>
+
+    <div class="mt-6 flex items-center justify-center gap-4 text-xs text-slate-400">
+      <span>Cap: Max 100MB</span>
+      <span>•</span>
+      <span>Custom positions & formats</span>
+    </div>
+  </div>
+
+  <!-- 2. Settings Section -->
+  <div id="pn-settings-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm text-left">
+    <!-- Selected File Info -->
+    <div class="flex items-center justify-between pb-6 border-b border-slate-200 mb-6">
+      <div class="flex items-center gap-3 min-w-0 pr-2">
+        <div class="w-10 h-10 rounded-lg bg-brand-100 text-slate-700 flex items-center justify-center flex-shrink-0 font-bold">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <p id="pn-file-name" class="text-sm font-bold text-slate-900 truncate">document.pdf</p>
+          <div class="flex items-center gap-2 mt-0.5 text-xs text-slate-500">
+            <span id="pn-file-size">0 KB</span>
+            <span>•</span>
+            <span id="pn-page-count" class="font-semibold text-slate-700 bg-brand-50 px-2 py-0.5 rounded border border-brand-200">
+              0 pages
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        id="pn-change-file-btn"
+        class="text-xs font-semibold text-slate-500 hover:text-red-600 transition flex-shrink-0"
+      >
+        Change File
+      </button>
+    </div>
+
+    <!-- Configuration Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <!-- Left Column: Visual Position Selector -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Page Position
+        </label>
+        <p class="text-xs text-slate-500 mb-4">Choose where numbers appear on each page:</p>
+
+        <!-- Mock Page Frame for Position Picker -->
+        <div class="w-full aspect-[4/3] bg-slate-50 border-2 border-slate-200 rounded-xl p-4 flex flex-col justify-between shadow-inner relative">
+          <!-- Top Row -->
+          <div class="flex items-center justify-between">
+            <button
+              type="button"
+              class="pos-btn px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300 bg-white hover:border-brand-500 hover:bg-brand-50 transition"
+              data-position="top-left"
+            >
+              Top Left
+            </button>
+            <button
+              type="button"
+              class="pos-btn px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300 bg-white hover:border-brand-500 hover:bg-brand-50 transition"
+              data-position="top-center"
+            >
+              Top Center
+            </button>
+            <button
+              type="button"
+              class="pos-btn px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300 bg-white hover:border-brand-500 hover:bg-brand-50 transition"
+              data-position="top-right"
+            >
+              Top Right
+            </button>
+          </div>
+
+          <!-- Document Center Placeholder -->
+          <div class="text-center text-xs text-slate-400 font-serif italic select-none">
+            Document Page Body
+          </div>
+
+          <!-- Bottom Row -->
+          <div class="flex items-center justify-between">
+            <button
+              type="button"
+              class="pos-btn px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300 bg-white hover:border-brand-500 hover:bg-brand-50 transition"
+              data-position="bottom-left"
+            >
+              Bottom Left
+            </button>
+            <button
+              type="button"
+              class="pos-btn px-2.5 py-1.5 rounded-lg text-xs font-bold border-2 border-brand-600 bg-brand-50 text-slate-700 shadow-xs transition"
+              data-position="bottom-center"
+            >
+              Bottom Center
+            </button>
+            <button
+              type="button"
+              class="pos-btn px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300 bg-white hover:border-brand-500 hover:bg-brand-50 transition"
+              data-position="bottom-right"
+            >
+              Bottom Right
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Format & Numbering Options -->
+      <div class="space-y-5">
+        <!-- Numbering Format -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+            Numbering Format
+          </label>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="format-card flex items-center gap-2 p-3 rounded-xl border-2 border-brand-600 bg-brand-50/50 cursor-pointer transition">
+              <input type="radio" name="pn-format" value="page-n-of-total" checked class="text-brand-600 focus:ring-brand-500" />
+              <div class="text-xs">
+                <span class="font-bold text-slate-900 block">Page 1 of N</span>
+                <span class="text-slate-500 text-[11px]">e.g. Page 1 of 12</span>
+              </div>
+            </label>
+
+            <label class="format-card flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-white hover:border-brand-300 cursor-pointer transition">
+              <input type="radio" name="pn-format" value="n-of-total" class="text-brand-600 focus:ring-brand-500" />
+              <div class="text-xs">
+                <span class="font-bold text-slate-900 block">1 / N</span>
+                <span class="text-slate-500 text-[11px]">e.g. 1 / 12</span>
+              </div>
+            </label>
+
+            <label class="format-card flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-white hover:border-brand-300 cursor-pointer transition">
+              <input type="radio" name="pn-format" value="page-n" class="text-brand-600 focus:ring-brand-500" />
+              <div class="text-xs">
+                <span class="font-bold text-slate-900 block">Page 1</span>
+                <span class="text-slate-500 text-[11px]">e.g. Page 1</span>
+              </div>
+            </label>
+
+            <label class="format-card flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-white hover:border-brand-300 cursor-pointer transition">
+              <input type="radio" name="pn-format" value="n" class="text-brand-600 focus:ring-brand-500" />
+              <div class="text-xs">
+                <span class="font-bold text-slate-900 block">1</span>
+                <span class="text-slate-500 text-[11px]">Numbers only</span>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Start Page and First Number Inputs -->
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label for="pn-start-page" class="block text-xs font-bold text-slate-700 mb-1">
+              Start on Page
+            </label>
+            <input
+              type="number"
+              id="pn-start-page"
+              value="1"
+              min="1"
+              class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+            />
+            <span class="text-[11px] text-slate-400 mt-1 block">Set to 2 to skip cover</span>
+          </div>
+
+          <div>
+            <label for="pn-first-num" class="block text-xs font-bold text-slate-700 mb-1">
+              Starting Number
+            </label>
+            <input
+              type="number"
+              id="pn-first-num"
+              value="1"
+              min="1"
+              class="w-full px-3 py-2 text-sm border border-slate-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none"
+            />
+            <span class="text-[11px] text-slate-400 mt-1 block">First number shown</span>
+          </div>
+        </div>
+
+        <!-- Live Preview Stamp Chip -->
+        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs">
+          <span class="text-slate-500 font-medium">Sample Stamped Text:</span>
+          <span id="pn-sample-preview" class="font-mono font-bold text-slate-700 bg-white px-2.5 py-1 rounded border border-slate-200 shadow-xs">
+            Page 1 of 1
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="mt-8 pt-6 border-t border-slate-100 flex items-center justify-end">
+      <button
+        type="button"
+        id="start-pn-btn"
+        class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-semibold text-xs text-white bg-slate-900 hover:bg-slate-800 active:scale-[0.98] shadow-button transition flex items-center justify-center gap-2"
+      >
+        <span>Add Page Numbers & Download</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Progress State -->
+  <div id="pn-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 sm:p-12 text-center shadow-sm">
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-brand-50 flex items-center justify-center text-brand-600">
+      <svg class="animate-spin w-6 h-6" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+    </div>
+
+    <h3 class="text-lg font-bold text-slate-800 mb-1">Applying Page Numbers...</h3>
+    <p id="pn-progress-message" class="text-xs text-slate-500 mb-6 font-medium">Stamping text onto document pages...</p>
+
+    <!-- Progress Bar -->
+    <div class="w-full max-w-md mx-auto bg-slate-100 rounded-full h-3 overflow-hidden border border-slate-200">
+      <div id="pn-progress-bar-fill" class="bg-blue-600 h-full w-0 rounded-full transition-all duration-300"></div>
+    </div>
+    <span id="pn-progress-percent" class="block text-xs font-semibold text-slate-700 mt-2">0%</span>
+  </div>
+
+  <!-- 4. Success State -->
+  <div id="pn-success-section" class="hidden bg-white rounded-2xl border border-emerald-200 p-8 sm:p-12 text-center shadow-sm">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+      </svg>
+    </div>
+
+    <h3 class="text-2xl font-extrabold text-slate-900 mb-2">Page Numbers Added Successfully!</h3>
+    <p class="text-sm text-slate-600 mb-6">
+      File ready for download: <span id="pn-output-info" class="font-bold text-slate-800">--</span>
+    </p>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3">
+      <button
+        type="button"
+        id="pn-download-btn"
+        class="w-full sm:w-auto px-8 py-3.5 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 shadow-md shadow-emerald-500/20 transition flex items-center justify-center gap-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Numbered PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="pn-reset-btn"
+        class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 transition"
+      >
+        Number Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  import { addPageNumbers, formatPageText, type PageNumberPosition, type PageNumberFormat } from '../../lib/pdf/pageNumbers';
+  import { MAX_FILE_SIZE_BYTES } from '../../lib/pdf/merge';
+
+  let selectedFile: File | null = null;
+  let totalDocPages = 1;
+  let selectedPosition: PageNumberPosition = 'bottom-center';
+  let selectedFormat: PageNumberFormat = 'page-n-of-total';
+  let downloadedBlobUrl: string | null = null;
+
+  // DOM Elements
+  const dropZone = document.getElementById('pn-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('pn-file-input') as HTMLInputElement;
+  const settingsSection = document.getElementById('pn-settings-section') as HTMLDivElement;
+  const fileNameEl = document.getElementById('pn-file-name') as HTMLParagraphElement;
+  const fileSizeEl = document.getElementById('pn-file-size') as HTMLSpanElement;
+  const pageCountEl = document.getElementById('pn-page-count') as HTMLSpanElement;
+  const changeFileBtn = document.getElementById('pn-change-file-btn') as HTMLButtonElement;
+
+  const startPageInput = document.getElementById('pn-start-page') as HTMLInputElement;
+  const firstNumInput = document.getElementById('pn-first-num') as HTMLInputElement;
+  const samplePreviewEl = document.getElementById('pn-sample-preview') as HTMLSpanElement;
+  const posBtns = document.querySelectorAll<HTMLButtonElement>('.pos-btn');
+  const formatRadios = document.querySelectorAll<HTMLInputElement>('input[name="pn-format"]');
+  const startPnBtn = document.getElementById('start-pn-btn') as HTMLButtonElement;
+
+  const errorBanner = document.getElementById('pn-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('pn-error-message') as HTMLParagraphElement;
+  const dismissErrorBtn = document.getElementById('dismiss-pn-error') as HTMLButtonElement;
+
+  const progressSection = document.getElementById('pn-progress-section') as HTMLDivElement;
+  const progressMessage = document.getElementById('pn-progress-message') as HTMLParagraphElement;
+  const progressBarFill = document.getElementById('pn-progress-bar-fill') as HTMLDivElement;
+  const progressPercent = document.getElementById('pn-progress-percent') as HTMLSpanElement;
+
+  const successSection = document.getElementById('pn-success-section') as HTMLDivElement;
+  const outputInfoEl = document.getElementById('pn-output-info') as HTMLSpanElement;
+  const downloadBtn = document.getElementById('pn-download-btn') as HTMLButtonElement;
+  const resetBtn = document.getElementById('pn-reset-btn') as HTMLButtonElement;
+
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function clearError() {
+    if (errorBanner) errorBanner.classList.add('hidden');
+  }
+
+  dismissErrorBtn?.addEventListener('click', clearError);
+
+  function updatePreviewSample() {
+    const startPage = parseInt(startPageInput.value || '1', 10);
+    const firstNum = parseInt(firstNumInput.value || '1', 10);
+    const totalNumbered = Math.max(1, totalDocPages - (Math.max(1, startPage) - 1));
+    const sample = formatPageText(selectedFormat, firstNum, totalNumbered);
+    samplePreviewEl.textContent = sample;
+  }
+
+  startPageInput?.addEventListener('input', updatePreviewSample);
+  firstNumInput?.addEventListener('input', updatePreviewSample);
+
+  // Position selection
+  posBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      posBtns.forEach((b) => {
+        b.className = 'pos-btn px-2.5 py-1.5 rounded-lg text-xs font-medium border border-slate-300 bg-white hover:border-brand-500 hover:bg-brand-50 transition';
+      });
+      btn.className = 'pos-btn px-2.5 py-1.5 rounded-lg text-xs font-bold border-2 border-brand-600 bg-brand-50 text-slate-700 shadow-xs transition';
+      selectedPosition = (btn.dataset.position || 'bottom-center') as PageNumberPosition;
+    });
+  });
+
+  // Format selection
+  formatRadios.forEach((radio) => {
+    radio.addEventListener('change', () => {
+      selectedFormat = radio.value as PageNumberFormat;
+      document.querySelectorAll('.format-card').forEach((card) => {
+        const input = card.querySelector('input');
+        if (input && input.checked) {
+          card.className = 'format-card flex items-center gap-2 p-3 rounded-xl border-2 border-brand-600 bg-brand-50/50 cursor-pointer transition';
+        } else {
+          card.className = 'format-card flex items-center gap-2 p-3 rounded-xl border border-slate-200 bg-white hover:border-brand-300 cursor-pointer transition';
+        }
+      });
+      updatePreviewSample();
+    });
+  });
+
+  async function handleFileSelected(file: File) {
+    clearError();
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      showError(
+        `The file "${file.name}" (${formatBytes(file.size)}) exceeds the 100MB in-browser limit.`
+      );
+      return;
+    }
+
+    selectedFile = file;
+    fileNameEl.textContent = file.name;
+    fileSizeEl.textContent = formatBytes(file.size);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const pdfDoc = await PDFDocument.load(buffer);
+      totalDocPages = pdfDoc.getPageCount();
+      pageCountEl.textContent = `${totalDocPages} ${totalDocPages === 1 ? 'page' : 'pages'}`;
+      startPageInput.max = totalDocPages.toString();
+
+      updatePreviewSample();
+
+      dropZone.classList.add('hidden');
+      settingsSection.classList.remove('hidden');
+    } catch (err: any) {
+      showError(`Unable to read PDF file: ${err.message}`);
+    }
+  }
+
+  fileInput?.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      handleFileSelected(target.files[0]);
+      target.value = '';
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    selectedFile = null;
+    settingsSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+
+  // Drag and drop handlers
+  ['dragenter', 'dragover'].forEach((eventName) => {
+    dropZone?.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      dropZone.classList.add('border-brand-500', 'bg-brand-50/40');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach((eventName) => {
+    dropZone?.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('border-brand-500', 'bg-brand-50/40');
+    });
+  });
+
+  dropZone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      handleFileSelected(e.dataTransfer.files[0]);
+    }
+  });
+
+  // Execute Page Numbering
+  startPnBtn?.addEventListener('click', async () => {
+    if (!selectedFile) return;
+
+    const startPage = parseInt(startPageInput.value || '1', 10);
+    const firstNum = parseInt(firstNumInput.value || '1', 10);
+
+    if (isNaN(startPage) || startPage < 1 || startPage > totalDocPages) {
+      showError(`Please specify a valid start page between 1 and ${totalDocPages}.`);
+      return;
+    }
+
+    if (isNaN(firstNum) || firstNum < 0) {
+      showError('Please specify a valid starting number.');
+      return;
+    }
+
+    settingsSection.classList.add('hidden');
+    progressSection.classList.remove('hidden');
+    clearError();
+
+    const baseName = selectedFile.name.replace(/\.[^/.]+$/, '');
+    const filename = `${baseName}-numbered.pdf`;
+
+    try {
+      const numberedBytes = await addPageNumbers(
+        selectedFile,
+        {
+          position: selectedPosition,
+          format: selectedFormat,
+          startFromPage: startPage,
+          firstNumber: firstNum,
+          fontSize: 11,
+          margin: 30,
+        },
+        (prog) => {
+          progressMessage.textContent = prog.message;
+          progressBarFill.style.width = `${prog.percent}%`;
+          progressPercent.textContent = `${prog.percent}%`;
+        }
+      );
+
+      const blob = new Blob([numberedBytes], { type: 'application/pdf' });
+      if (downloadedBlobUrl) URL.revokeObjectURL(downloadedBlobUrl);
+      downloadedBlobUrl = URL.createObjectURL(blob);
+
+      outputInfoEl.textContent = `${filename} (${formatBytes(numberedBytes.byteLength)})`;
+
+      // Auto trigger download
+      triggerDownload();
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      settingsSection.classList.remove('hidden');
+      showError(err.message || 'An error occurred while numbering pages.');
+    }
+  });
+
+  function triggerDownload() {
+    if (!downloadedBlobUrl || !selectedFile) return;
+    const a = document.createElement('a');
+    a.href = downloadedBlobUrl;
+    const baseName = selectedFile.name.replace(/\.[^/.]+$/, '');
+    a.download = `${baseName}-numbered.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
+  downloadBtn?.addEventListener('click', triggerDownload);
+
+  resetBtn?.addEventListener('click', () => {
+    selectedFile = null;
+    if (downloadedBlobUrl) {
+      URL.revokeObjectURL(downloadedBlobUrl);
+      downloadedBlobUrl = null;
+    }
+    successSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+</script>
