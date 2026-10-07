@@ -34,7 +34,7 @@ const webAppSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   'name': `${tool.data.title} — AirPDF`,
-  'url': `https://pdfzero.pages.dev/tools/${tool.slug}`,
+  'url': `https://airpdf.pages.dev/tools/${tool.slug}`,
   'description': tool.data.description,
   'applicationCategory': 'UtilitiesApplication',
   'operatingSystem': 'Any',
@@ -71,7 +71,7 @@ const relatedToolCards = allTools
 <BaseLayout
   title={tool.data.title}
   description={tool.data.description}
-  canonicalUrl={`https://pdfzero.pages.dev/tools/${tool.slug}`}
+  canonicalUrl={`https://airpdf.pages.dev/tools/${tool.slug}`}
 >
   <!-- Inject Structured Data in schema slot -->
   <Fragment slot="schema">

@@ -4,7 +4,7 @@ import sitemap from '@astrojs/sitemap';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://pdfzero.pages.dev',
+  site: 'https://airpdf.pages.dev',
   output: 'static',
   integrations: [
     tailwind({
