@@ -18,7 +18,7 @@ howToSteps:
     description: "Click Save & Download. The internal PDF coordinate matrix is updated permanently for universal compatibility."
 faqs:
   - question: "Is this rotation permanent or just a temporary preview?"
-    answer: "The rotation is 100% permanent. PDFZero rewrites the internal /Rotate dictionary entry of each modified page object. When you download the file, it will display correctly across all PDF viewers, printers, and operating systems."
+    answer: "The rotation is 100% permanent. AirPDF rewrites the internal /Rotate dictionary entry of each modified page object. When you download the file, it will display correctly across all PDF viewers, printers, and operating systems."
   - question: "Can I rotate only a single page without affecting the rest?"
     answer: "Yes. Every page thumbnail card features independent 90-degree clockwise rotation buttons, allowing you to fix individual orientation errors without changing other pages."
   - question: "Does rotating degrade page resolution or recompress images?"
@@ -34,11 +34,11 @@ relatedTools: ["merge-pdf", "split-pdf", "page-numbers"]
 
 Mobile document scanners, office multifunction copiers, and automated batch scanning systems frequently produce pages rotated sideways (90 degrees) or completely upside down (180 degrees). Reading upside-down contracts or having to manually rotate pages in Acrobat every time you open a file creates ongoing frustration.
 
-PDFZero fixes page orientations permanently. Unlike simple desktop readers that only temporarily spin your viewport during viewing, our tool modifies the true structural /Rotate orientation vector inside the PDF file itself. Once saved, your pages open upright automatically on every device, tablet, and commercial printing press.
+AirPDF fixes page orientations permanently. Unlike simple desktop readers that only temporarily spin your viewport during viewing, our tool modifies the true structural /Rotate orientation vector inside the PDF file itself. Once saved, your pages open upright automatically on every device, tablet, and commercial printing press.
 
 ### Interactive Visual Thumbnail Gallery
 
-No more guessing which page numbers are oriented wrong. As soon as you select a document, PDFZero renders crisp visual canvas previews of every sheet. You can quickly skim your entire document, locate erroneous landscape or upside-down pages, and rotate them individually with a single click.
+No more guessing which page numbers are oriented wrong. As soon as you select a document, AirPDF renders crisp visual canvas previews of every sheet. You can quickly skim your entire document, locate erroneous landscape or upside-down pages, and rotate them individually with a single click.
 
 ### Why In-Browser Page Rotation Matters
 

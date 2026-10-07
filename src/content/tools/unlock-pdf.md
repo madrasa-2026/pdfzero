@@ -18,7 +18,7 @@ howToSteps:
     description: "Save a permanent, unencrypted version of your document that opens anywhere without repeated password prompts."
 faqs:
   - question: "Can this tool bypass or crack a password if I don't know it?"
-    answer: "No. PDFZero does not perform brute-force attacks or bypass unknown encryption. It provides a secure, convenient utility for authorized users to decrypt documents and permanently strip password prompts when the valid password is known."
+    answer: "No. AirPDF does not perform brute-force attacks or bypass unknown encryption. It provides a secure, convenient utility for authorized users to decrypt documents and permanently strip password prompts when the valid password is known."
   - question: "Is it legal to remove passwords from PDF documents?"
     answer: "Yes, provided you are the rightful copyright owner, creator, or have explicit authorized permission from the owner to remove security restrictions from the file."
   - question: "Will unlocking the document affect its visual appearance or fonts?"
@@ -34,13 +34,13 @@ relatedTools: ["protect-pdf", "split-pdf", "merge-pdf"]
 
 Password-protected PDFs are essential for secure transmission, but repeatedly typing long, complex passphrases every time you need to review an archived document, print a statement, or share an agreement with internal colleagues quickly becomes tedious. Furthermore, some workflow automation tools, printers, and cloud archiving systems cannot index or process password-locked files.
 
-PDFZero provides a fast, client-side solution that removes encryption restrictions permanently. Once you authenticate with the valid document password, our tool produces a clean, unencrypted standard PDF that can be opened, edited, and printed without annoying security prompts.
+AirPDF provides a fast, client-side solution that removes encryption restrictions permanently. Once you authenticate with the valid document password, our tool produces a clean, unencrypted standard PDF that can be opened, edited, and printed without annoying security prompts.
 
 ### Privacy-Preserving In-Browser Decryption
 
 Many web services claim to "unlock" PDFs by transferring your files and passwords to external servers—posing severe privacy and compliance risks for financial, legal, and medical documents. 
 
-PDFZero never sends your files or passphrases over the internet. Decryption is performed entirely within your browser's memory using modern cryptographic algorithms. Once processed, the clean PDF is saved directly to your downloads folder, and all memory buffers are cleared when you navigate away.
+AirPDF never sends your files or passphrases over the internet. Decryption is performed entirely within your browser's memory using modern cryptographic algorithms. Once processed, the clean PDF is saved directly to your downloads folder, and all memory buffers are cleared when you navigate away.
 
 ### When to Use PDF Password Removal
 

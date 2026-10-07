@@ -20,13 +20,13 @@ faqs:
   - question: "What is the difference between 150 DPI and 300 DPI?"
     answer: "150 DPI (Balanced) provides crisp, readable images optimized for web sharing, email, and social presentations with compact file sizes. 300 DPI (High Clarity) delivers double the pixel density, ideal for professional print reproduction and archival magnification."
   - question: "Can I convert multi-page documents?"
-    answer: "Yes. PDFZero automatically renders every page of multi-page documents sequentially. If your file contains multiple pages, you will receive an organized ZIP archive containing all numbered image files."
+    answer: "Yes. AirPDF automatically renders every page of multi-page documents sequentially. If your file contains multiple pages, you will receive an organized ZIP archive containing all numbered image files."
   - question: "Should I select JPG or PNG format?"
     answer: "Choose JPG for documents featuring color photographs, textured brochures, and general scans. Choose PNG if your document contains vector diagrams, sharp line art, or requires crisp font edges with zero compression artifacts."
   - question: "Are my files uploaded to an external server?"
     answer: "No. Conversion is performed entirely within your web browser using HTML5 Canvas and WebAssembly. Your confidential documents never leave your local device."
   - question: "What is the maximum supported PDF size?"
-    answer: "PDFZero handles documents up to 100MB directly in your browser. For very long documents with hundreds of pages, we recommend processing in page batches for optimal browser responsiveness."
+    answer: "AirPDF handles documents up to 100MB directly in your browser. For very long documents with hundreds of pages, we recommend processing in page batches for optimal browser responsiveness."
 relatedTools: ["jpg-to-pdf", "compress-pdf", "split-pdf"]
 ---
 
@@ -34,7 +34,7 @@ relatedTools: ["jpg-to-pdf", "compress-pdf", "split-pdf"]
 
 Whether you need to share a presentation slide on LinkedIn, embed a chart into a blog post, or import an architectural diagram into graphic editing software, extracting PDF pages as image files is a necessary everyday task. Many modern social platforms and content management systems do not natively display PDF files, requiring images for previews and publications.
 
-PDFZero converts your PDF pages into stunning, high-resolution JPG or PNG images directly in your browser window. By harnessing the client-side power of PDF.js and modern WebAssembly, pages are rendered into pristine image rasters without relying on slow remote server queues.
+AirPDF converts your PDF pages into stunning, high-resolution JPG or PNG images directly in your browser window. By harnessing the client-side power of PDF.js and modern WebAssembly, pages are rendered into pristine image rasters without relying on slow remote server queues.
 
 ### Choose Between Fast Web Sharing and Print-Grade Resolution
 
@@ -44,4 +44,4 @@ Tailor your output to your exact distribution requirements:
 
 ### Seamless ZIP Packaging for Multi-Page Files
 
-Converting a lengthy document shouldn't force you to download dozens of individual image files manually. For multi-page documents, PDFZero automatically packages all rendered images into a structured ZIP archive labeled with sequential page numbers (page_1.jpg, page_2.jpg), ready for one-click unzipping on Mac, Windows, and mobile devices.
+Converting a lengthy document shouldn't force you to download dozens of individual image files manually. For multi-page documents, AirPDF automatically packages all rendered images into a structured ZIP archive labeled with sequential page numbers (page_1.jpg, page_2.jpg), ready for one-click unzipping on Mac, Windows, and mobile devices.

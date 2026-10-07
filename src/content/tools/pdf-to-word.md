@@ -27,7 +27,7 @@ faqs:
   - question: "Are my sensitive business documents uploaded anywhere?"
     answer: "Never. All text parsing, XML compilation, and ZIP packaging occur strictly within your browser's local memory. No confidential data ever leaves your device."
   - question: "Is there any cost or subscription required?"
-    answer: "PDFZero is 100% free with no account creation, no email registration, and no daily conversion quotas."
+    answer: "AirPDF is 100% free with no account creation, no email registration, and no daily conversion quotas."
 relatedTools: ["merge-pdf", "pdf-to-jpg", "split-pdf"]
 ---
 
@@ -35,7 +35,7 @@ relatedTools: ["merge-pdf", "pdf-to-jpg", "split-pdf"]
 
 We have all received a PDF document that we needed to edit urgently—whether an outdated contract template, a résumé that needs refreshing, or meeting minutes requiring updates. Because PDFs are engineered to be static digital prints rather than dynamic word-processing files, editing text directly without original source documents can be difficult.
 
-PDFZero provides a free, instant bridge back to editable formats. By parsing the underlying text streams of your PDF and mapping them into standard OpenXML paragraph containers, our tool generates an editable .docx file ready for Microsoft Word or Google Docs in a fraction of a second.
+AirPDF provides a free, instant bridge back to editable formats. By parsing the underlying text streams of your PDF and mapping them into standard OpenXML paragraph containers, our tool generates an editable .docx file ready for Microsoft Word or Google Docs in a fraction of a second.
 
 ### Transparent & Honest Conversion Standards
 
@@ -45,4 +45,4 @@ Unlike unscrupulous web converters that promise "100% identical layout cloning" 
 
 ### Why Privacy-First Conversion Matters
 
-Enterprise confidentiality policies and data protection regulations (such as GDPR and HIPAA) often strictly prohibit uploading company internal documents to random cloud converter websites. With PDFZero, you can convert contracts and internal correspondence with total confidence, knowing that not a single word ever departs your device.
+Enterprise confidentiality policies and data protection regulations (such as GDPR and HIPAA) often strictly prohibit uploading company internal documents to random cloud converter websites. With AirPDF, you can convert contracts and internal correspondence with total confidence, knowing that not a single word ever departs your device.

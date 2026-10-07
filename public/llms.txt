@@ -1,4 +1,4 @@
-# PDFZero — 100% Client-Side Private PDF Tools
+# AirPDF — 100% Client-Side Private PDF Tools
 
 > Free, browser-based PDF utilities engineered for zero data leaks. Files are processed locally on your device using WebAssembly and client-side JavaScript. Files are never transmitted to any external server.
 

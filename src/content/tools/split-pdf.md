@@ -20,7 +20,7 @@ faqs:
   - question: "Can I extract non-consecutive page numbers?"
     answer: "Yes. Our flexible syntax parser accepts both comma-separated individual pages (e.g. 1, 4, 7) and hyphenated continuous page intervals (e.g. 2-5), allowing you to extract any custom combination."
   - question: "How does the 'Split Every Page' option work?"
-    answer: "When you select Split Every Page, PDFZero generates an individual single-page PDF for every page in your original document, bundles them with clean naming, and downloads them in an organized ZIP file."
+    answer: "When you select Split Every Page, AirPDF generates an individual single-page PDF for every page in your original document, bundles them with clean naming, and downloads them in an organized ZIP file."
   - question: "Does splitting compromise document formatting or vector graphics?"
     answer: "No. We utilize lossless binary page extraction. All typography, vector paths, clickable hyperlinks, and embedded color spaces remain completely unmodified."
   - question: "Is there any upload of my sensitive records?"
@@ -34,7 +34,7 @@ relatedTools: ["merge-pdf", "rotate-pdf", "compress-pdf"]
 
 Often, a multi-page PDF contains only a few relevant pages you actually need to share. Sending an entire 80-page manual, tax package, or legal filing when your recipient only requires an invoice or signed certificate wastes storage, creates privacy hazards, and clutters communication.
 
-With PDFZero's Split PDF tool, you can carve out exactly the pages you need with surgical precision. Whether you are isolating a single appendix or carving a hefty report into chapters, our client-side utility ensures lightning-fast execution without ever exposing your files to remote cloud storage.
+With AirPDF's Split PDF tool, you can carve out exactly the pages you need with surgical precision. Whether you are isolating a single appendix or carving a hefty report into chapters, our client-side utility ensures lightning-fast execution without ever exposing your files to remote cloud storage.
 
 ### Two Powerful Splitting Modes
 

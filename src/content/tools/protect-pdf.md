@@ -18,8 +18,8 @@ howToSteps:
     description: "Click Protect PDF to apply cryptographic AES security locally and download your locked document."
 faqs:
   - question: "What type of encryption is applied to my PDF?"
-    answer: "PDFZero applies industry-standard AES (Advanced Encryption Standard) encryption directly in your browser. The resulting file requires the correct password to decrypt and view across Adobe Acrobat, Apple Preview, and modern web browsers."
-  - question: "Can PDFZero or anyone else recover my password if I forget it?"
+    answer: "AirPDF applies industry-standard AES (Advanced Encryption Standard) encryption directly in your browser. The resulting file requires the correct password to decrypt and view across Adobe Acrobat, Apple Preview, and modern web browsers."
+  - question: "Can AirPDF or anyone else recover my password if I forget it?"
     answer: "No. Because encryption occurs entirely in your browser using cryptographic ciphers with zero server tracking, no backdoors exist. If you forget the password, the document cannot be decrypted."
   - question: "Are my passwords or files sent across the internet?"
     answer: "Never. Your password and document remain strictly in local memory. Neither your password string nor your document bytes are ever logged or sent to any server."
@@ -34,11 +34,11 @@ relatedTools: ["unlock-pdf", "merge-pdf", "split-pdf"]
 
 Securing confidential records before transmission over email, messaging apps, or public cloud storage is vital for personal privacy and professional compliance. Bank statements, payroll records, legal agreements, intellectual property disclosures, and medical files should never be shared over insecure channels without strong cryptographic safeguards.
 
-PDFZero brings military-grade PDF password protection directly to your web browser. Without uploading your sensitive documents to remote servers or trusting unknown third parties with your confidential data, you can lock any PDF with robust AES encryption in seconds.
+AirPDF brings military-grade PDF password protection directly to your web browser. Without uploading your sensitive documents to remote servers or trusting unknown third parties with your confidential data, you can lock any PDF with robust AES encryption in seconds.
 
 ### Complete Protection Against Unauthorized Access
 
-When you protect a document using PDFZero:
+When you protect a document using AirPDF:
 - **Strict Access Control:** The recipient must enter your designated password before viewing pages, printing text, or extracting information.
 - **Universal Standard Compatibility:** The resulting file complies fully with the official Adobe PDF security specification, ensuring seamless password verification across Adobe Reader, Google Chrome, Safari, Apple Preview, and mobile PDF viewers.
 - **Zero Cloud Transmission:** Unlike traditional online tools that require you to transmit private contracts to remote servers for encryption, our tool runs 100% inside your browser's isolated JavaScript sandbox.

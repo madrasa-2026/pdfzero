@@ -18,7 +18,7 @@ howToSteps:
     description: "Click Convert to PDF. The images are embedded into an organized, high-clarity PDF document ready to save."
 faqs:
   - question: "What image formats are supported?"
-    answer: "PDFZero supports standard JPG/JPEG, transparent PNG, and modern WebP formats. You can mix and match different formats in a single batch conversion."
+    answer: "AirPDF supports standard JPG/JPEG, transparent PNG, and modern WebP formats. You can mix and match different formats in a single batch conversion."
   - question: "Can I rearrange the order of pictures before creating the PDF?"
     answer: "Yes! Our queue interface allows you to reorder uploaded images using move controls so your final document pages appear in the exact chronological or logical order you desire."
   - question: "Will my photos be compressed or lose visual quality?"
@@ -34,7 +34,7 @@ relatedTools: ["pdf-to-jpg", "merge-pdf", "compress-pdf"]
 
 Converting photographic receipts, whiteboard brainstorm snapshots, identification cards, and portfolio samples into a standardized PDF is the easiest way to ensure universal compatibility across all operating systems. While individual images often display differently depending on the recipient's email client or photo viewer, a PDF preserves exact layout and aspect ratios on every device.
 
-PDFZero lets you bundle single photos or huge collections of pictures into professional, multi-page PDF documents within seconds. Everything happens directly inside your web browser without uploading sensitive personal imagery to unknown third-party cloud servers.
+AirPDF lets you bundle single photos or huge collections of pictures into professional, multi-page PDF documents within seconds. Everything happens directly inside your web browser without uploading sensitive personal imagery to unknown third-party cloud servers.
 
 ### Flexible Multi-Image Queue
 

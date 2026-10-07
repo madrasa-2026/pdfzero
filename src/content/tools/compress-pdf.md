@@ -1,7 +1,7 @@
 ---
 title: "Compress PDF Online"
 shortDescription: "Reduce PDF file size for easier sharing while keeping pages legible."
-description: "Compress large PDF documents directly in your browser without cloud uploads. Reduce file size quickly for email and web forms. Try free compression on PDFZero!"
+description: "Compress large PDF documents directly in your browser without cloud uploads. Reduce file size quickly for email and web forms. Try free compression on AirPDF!"
 category: "optimize"
 icon: "compress"
 order: 2
@@ -19,7 +19,7 @@ howToSteps:
     description: "Review the original versus compressed byte savings and download your lightweight PDF immediately."
 faqs:
   - question: "How does in-browser PDF compression work?"
-    answer: "PDFZero uses client-side canvas rasterization. It renders every page into an internal graphic buffer, recompresses the resulting image data at your selected resolution and quality, and rebuilds an ultra-lightweight PDF container."
+    answer: "AirPDF uses client-side canvas rasterization. It renders every page into an internal graphic buffer, recompresses the resulting image data at your selected resolution and quality, and rebuilds an ultra-lightweight PDF container."
   - question: "Will my compressed PDF retain selectable text?"
     answer: "No. Because this compression algorithm rasterizes PDF pages into visual images to strip out heavy fonts, vector metadata, and redundant streams, text becomes part of the image layer and is not directly selectable."
   - question: "Can I compress files under email attachment limits like 10MB or 2MB?"
@@ -35,7 +35,7 @@ relatedTools: ["merge-pdf", "split-pdf", "pdf-to-jpg"]
 
 Large PDF files are a frequent obstacle when sending email attachments, submitting online university applications, or filing official tax and legal forms. Many email providers restrict incoming attachments to 20MB or 25MB, while institutional portals often enforce strict limits as low as 2MB or 5MB. 
 
-PDFZero provides a fast, zero-install solution that shrinks bloated documents right inside your browser window. By converting dense, unoptimized scanned pages into highly tuned visual assets, you can achieve drastic reductions in total file weight within seconds.
+AirPDF provides a fast, zero-install solution that shrinks bloated documents right inside your browser window. By converting dense, unoptimized scanned pages into highly tuned visual assets, you can achieve drastic reductions in total file weight within seconds.
 
 ### Transparent Image-Based Optimization
 

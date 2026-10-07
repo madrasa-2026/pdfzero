@@ -34,7 +34,7 @@ relatedTools: ["merge-pdf", "split-pdf", "rotate-pdf"]
 
 Organized page numbering is essential for academic dissertations, legal court filings, financial audits, and enterprise manuals. When distributing multi-page documents to clients or review committees, referencing specific page numbers during conference calls or in formal citations requires clear, consistent pagination.
 
-PDFZero allows you to stamp elegant, uniform page numbers directly onto existing PDF files in seconds. You don't need complex desktop publishing software like Adobe InDesign or Acrobat Pro to achieve crisp, publication-grade results.
+AirPDF allows you to stamp elegant, uniform page numbers directly onto existing PDF files in seconds. You don't need complex desktop publishing software like Adobe InDesign or Acrobat Pro to achieve crisp, publication-grade results.
 
 ### Full Control Over Placement and Formatting
 

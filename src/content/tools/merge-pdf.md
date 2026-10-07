@@ -1,7 +1,7 @@
 ---
 title: "Merge PDF Online Free"
 shortDescription: "Combine multiple PDF documents into one single file in seconds."
-description: "Merge PDF files into a single organized document in seconds. 100% private, in-browser processing with zero file uploads. Combine your PDFs free on PDFZero now!"
+description: "Merge PDF files into a single organized document in seconds. 100% private, in-browser processing with zero file uploads. Combine your PDFs free on AirPDF now!"
 category: "organize"
 icon: "merge"
 order: 1
@@ -18,15 +18,15 @@ howToSteps:
     description: "Your unified document is assembled instantly in memory. Download the clean merged file with one simple click."
 faqs:
   - question: "Are my documents uploaded to a cloud server?"
-    answer: "No. PDFZero operates completely in your web browser. All PDF parsing, page extraction, and merging execute locally on your device via client-side JavaScript. Your confidential files never touch external servers."
+    answer: "No. AirPDF operates completely in your web browser. All PDF parsing, page extraction, and merging execute locally on your device via client-side JavaScript. Your confidential files never touch external servers."
   - question: "Is there a limit on the number of files I can combine?"
     answer: "There is no arbitrary restriction on the number of files you can merge. You can combine dozens of PDFs in a single session, provided the total combined memory footprint fits within your browser's available RAM."
   - question: "Will merging reduce the quality of text or embedded images?"
     answer: "Not at all. The merge engine performs lossless vector and binary page copying. Vector shapes, embedded fonts, high-resolution photographs, and form fields retain their original fidelity."
   - question: "Can I merge password-protected PDF files?"
     answer: "If a document is encrypted with an open password, you must first remove or unlock it using our Unlock PDF tool before combining it with other files."
-  - question: "Does PDFZero work on mobile browsers?"
-    answer: "Yes. PDFZero is built with a responsive mobile-first architecture that runs effortlessly across modern versions of iOS Safari, Android Chrome, and desktop browsers without installing apps."
+  - question: "Does AirPDF work on mobile browsers?"
+    answer: "Yes. AirPDF is built with a responsive mobile-first architecture that runs effortlessly across modern versions of iOS Safari, Android Chrome, and desktop browsers without installing apps."
 relatedTools: ["split-pdf", "compress-pdf", "rotate-pdf"]
 ---
 
@@ -34,7 +34,7 @@ relatedTools: ["split-pdf", "compress-pdf", "rotate-pdf"]
 
 Consolidating multiple PDF files is one of the most common document workflows for business professionals, students, and legal teams. Whether you are assembling financial statements, academic research papers, project reports, or multi-part contracts, having all related pages in a single well-structured file streamlines distribution and archiving.
 
-Unlike conventional online conversion services that transmit your confidential files across remote networks to third-party server farms, PDFZero performs the entire concatenation process within your local browser environment. By taking advantage of high-speed binary memory operations through modern JavaScript and WebAssembly, documents are read, rearranged, and stitched together in milliseconds.
+Unlike conventional online conversion services that transmit your confidential files across remote networks to third-party server farms, AirPDF performs the entire concatenation process within your local browser environment. By taking advantage of high-speed binary memory operations through modern JavaScript and WebAssembly, documents are read, rearranged, and stitched together in milliseconds.
 
 ### Complete Privacy & Zero Cloud Exposure
 
