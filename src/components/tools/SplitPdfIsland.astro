@@ -438,7 +438,7 @@
           progressBarFill.style.width = `${prog.percent}%`;
           progressPercent.textContent = `${prog.percent}%`;
         });
-        outputInfoEl.textContent = `${downloadedFilename} (${formatBytes(outputBytes.byteLength)}, ${targetPages.length} pages)`;
+        outputInfoEl.textContent = `${downloadedFilename} (${formatBytes(outputBytes.byteLength)}, ${targetPages.length} ${targetPages.length === 1 ? 'page' : 'pages'})`;
       } else {
         mimeType = 'application/zip';
         downloadedFilename = `${baseName}-pages.zip`;

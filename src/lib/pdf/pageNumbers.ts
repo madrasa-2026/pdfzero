@@ -77,7 +77,7 @@ export async function addPageNumbers(
   const totalPages = pages.length;
 
   if (options.startFromPage > totalPages) {
-    throw new Error(`Start page (${options.startFromPage}) exceeds document length (${totalPages} pages).`);
+    throw new Error(`Start page (${options.startFromPage}) exceeds document length (${totalPages} ${totalPages === 1 ? 'page' : 'pages'}).`);
   }
 
   const startPageIdx = Math.max(1, options.startFromPage) - 1;

@@ -337,7 +337,8 @@
         statusBadge.textContent = 'Password Protected';
         statusBadge.className = 'font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded border border-amber-200';
       } else {
-        statusBadge.textContent = `Unencrypted (${probe.pageCount || 1} pages)`;
+        const count = probe.pageCount || 1;
+        statusBadge.textContent = `Unencrypted (${count} ${count === 1 ? 'page' : 'pages'})`;
         statusBadge.className = 'font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200';
       }
     } catch {

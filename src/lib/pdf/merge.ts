@@ -58,7 +58,7 @@ export async function mergePdfFiles(
 
     const pageIndices = sourcePdf.getPageIndices();
     onProgress?.({
-      message: `Copying ${pageIndices.length} pages from "${file.name}"...`,
+      message: `Copying ${pageIndices.length} ${pageIndices.length === 1 ? 'page' : 'pages'} from "${file.name}"...`,
       percent: fileProgressBase + Math.floor((1 / totalFiles) * 35),
     });
 

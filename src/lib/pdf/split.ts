@@ -41,7 +41,7 @@ export function parsePageRanges(rangeStr: string, maxPages: number): number[] {
         throw new Error(`Invalid page number "${part}".`);
       }
       if (page > maxPages) {
-        throw new Error(`Page ${page} exceeds the document maximum of ${maxPages} pages.`);
+        throw new Error(`Page ${page} exceeds the document maximum of ${maxPages} ${maxPages === 1 ? 'page' : 'pages'}.`);
       }
       if (!pagesSet.has(page)) {
         pagesSet.add(page);
@@ -91,7 +91,7 @@ export async function extractPageRange(
     throw new Error('No valid pages selected for extraction.');
   }
 
-  onProgress?.({ message: `Extracting ${indicesToCopy.length} pages...`, percent: 45 });
+  onProgress?.({ message: `Extracting ${indicesToCopy.length} ${indicesToCopy.length === 1 ? 'page' : 'pages'}...`, percent: 45 });
   const newPdf = await PDFDocument.create();
   const copiedPages = await newPdf.copyPages(sourcePdf, indicesToCopy);
 

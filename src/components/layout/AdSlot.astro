@@ -5,30 +5,6 @@ interface Props {
   class?: string;
 }
 
-const {
-  slotId = '0000000000',
-  format = 'horizontal',
-  class: className = '',
-} = Astro.props;
-
-const formatStyles = {
-  horizontal: 'min-h-[90px] max-w-4xl',
-  rectangle: 'min-h-[250px] max-w-sm',
-  leaderboard: 'min-h-[90px] max-w-5xl',
-};
+// Advertisements currently disabled until Google AdSense approval with custom domain.
 ---
-
-<div class={`my-6 flex flex-col items-center justify-center ${className}`}>
-  <!-- Clear, non-deceptive advertisement labeling required by Google AdSense Policy -->
-  <span class="text-[9px] font-mono uppercase tracking-[0.15em] text-slate-400 mb-1.5 select-none">
-    Advertisement
-  </span>
-  <div
-    class={`w-full ${formatStyles[format]} bg-slate-50/70 border border-slate-200/80 rounded-xl flex flex-col items-center justify-center p-2 text-center text-slate-400 transition-colors overflow-hidden`}
-    data-ad-slot={slotId}
-  >
-    <!-- Adsterra Native Ad Container -->
-    <div id="container-46a6a4fa13bd192cbc58ba6205382b35" class="w-full"></div>
-    <script is:inline async="async" data-cfasync="false" src="https://bauval.org/21/46a6a4fa13bd192cbc58ba6205382b35"></script>
-  </div>
-</div>
+<!-- Ads currently disabled -->
