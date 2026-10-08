@@ -5,6 +5,7 @@ dist.zip
 *.log
 temp_sessions/
 *.png
+!public/*.png
 gsc_*.txt
 sitemap_*.txt
 adsense_page.txt
