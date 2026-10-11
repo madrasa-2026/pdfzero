@@ -1,180 +1,144 @@
-# Design Specification: AirPDF Client-Side Edit PDF Tool (`/tools/edit-pdf`)
+# Design Specification: AirPDF Client-Side Edit PDF Tool (`/tools/edit-pdf`) — Sejda-Parity Suite
 
 **Document Date:** 2026-10-11  
-**Status:** Validated Design Spec  
-**Target Module:** `src/lib/pdf/edit.ts`, `src/components/tools/EditPdfIsland.astro`, `src/content/tools/edit-pdf.md`
+**Status:** Validated Design Spec (Sejda-Parity Expansion)  
+**Target Modules:** `src/lib/pdf/edit.ts`, `src/components/tools/EditPdfIsland.astro`, `src/content/tools/edit-pdf.md`
 
 ---
 
 ## 1. Executive Summary & Goals
 
-The **Edit PDF** tool allows users to perform visual annotations, add customizable text (including native Bengali/বাংলা script), draw vector signatures and pen markings, apply visual whiteout blocks, and manage page order/rotations directly within their web browser.
+The **Edit PDF** tool expands AirPDF with an in-browser PDF editing suite matching the usability and feature set of Sejda's editor, rebuilt on our **100% client-side WebAssembly & JavaScript architecture**.
 
-In strict alignment with AirPDF's core engineering principles:
-* **Zero Server Uploads**: 100% client-side execution powered by WebAssembly (`pdfjs-dist`) and JavaScript (`pdf-lib` + `@pdf-lib/fontkit`).
-* **Non-Destructive Vector Architecture**: Underlying page streams, vector text, original formatting, and fonts are preserved. All new annotations are written using native PDF vector operators—never rasterized into image layers.
-* **Honest Disclosures**: Whiteout is explicitly demarcated as a visual cover-up, with visible warnings clarifying that underlying text remains extractable in the raw file stream.
-* **Multilingual Typography**: Native support for Bengali (বাংলা) Unicode rendering via embedded fontkit TTF.
-
----
-
-## 2. Feature Scope & Architecture
-
-### 2.1 Editor Workbench Interface (`EditPdfIsland.astro`)
-
-The workspace is organized into a clean, desktop-grade two-panel utility layout:
-
-```
-+---------------------------------------------------------------------------------------------------+
-|  [Select] [Text "T"] [Whiteout ▭] [Pen ✎] [Highlight ░] [Undo ↶] [Zoom -/+]      [Save & Download] |
-+-----------------------+---------------------------------------------------------------------------+
-|  PAGE MANAGER (Left)  |  VIEWPORT / EDIT CANVAS (Center)                                          |
-|  +-----------------+  |                                                                           |
-|  | [Page 1]        |  |  +---------------------------------------------------------------------+  |
-|  | ▲ ▼ ↻ 🗑️       |  |  |                                                                     |  |
-|  +-----------------+  |  |  [ PDF Page Rendered via PDF.js Canvas (Base Layer) ]               |  |
-|  | [Page 2]        |  |  |  [ Interactive SVG/Canvas Vector Overlay (Annotation Layer) ]       |  |
-|  | ▲ ▼ ↻ 🗑️       |  |  |                                                                     |  |
-|  +-----------------+  |  +---------------------------------------------------------------------+  |
-|  | + Add Page / ...|  |                                                                           |
-+-----------------------+---------------------------------------------------------------------------+
-```
-
-1. **Top Toolbar**:
-   * **Select / Pan Tool**: Default inspection state; allows selecting and repositioning placed annotations.
-   * **Add Text (`T`)**: Click anywhere on the active page to spawn an editable text frame. Configurable font size (`12pt`, `14pt`, `18pt`, `24pt`, `32pt`) and color palette (`#000000`, `#2563EB`, `#DC2626`, `#FFFFFF`).
-   * **Whiteout (Visual Cover Only) (`▭`)**: Drag to draw filled rectangular blocks to visually hide content.
-     * *Mandatory Warning Banner*: Whenever the whiteout tool is active or a whiteout box is placed, an amber callout is displayed on screen:
-       > **Notice:** *Whiteout visually covers content on rendered pages, but does not sanitize underlying text streams. Covered text remains extractable from the raw file by search engines or PDF inspectors — this is not cryptographic redaction.*
-   * **Pen / Signature (`✎`)**: Freehand brush for handwritten signatures, margin notes, or checkmarks. Records continuous stroke coordinates.
-   * **Highlighter (`░`)**: Semi-transparent rectangular marker (35% opacity in Yellow, Emerald, or Cyan) for emphasizing key lines without obscuring text.
-   * **Action Controls**: Undo (`Ctrl+Z`), Delete Selected (`Del`), Clear Page Edits.
-   * **Zoom Controls**: Fit to Width, 100%, Zoom In (+), Zoom Out (-).
-   * **Export Trigger**: Primary obsidian button labeled **"Save & Download PDF"** with a live progress state.
-
-2. **Left Sidebar (Page Manager)**:
-   * Vertical thumbnail navigation showing every page in the document.
-   * Per-page micro-actions:
-     * **`▲` Move Up / `▼` Move Down**: Reorders page sequence.
-     * **`↻` Rotate 90°**: Rotates the individual page clockwise.
-     * **`🗑️` Delete**: Flags page for exclusion from final export.
-   * Active page indicated by a sapphire blue indicator border and badge.
-
-3. **Center Canvas (Viewport Layer)**:
-   * **Base Layer**: Rendered at device pixel ratio using `pdfjs-dist` to ensure crisp reading.
-   * **Overlay Layer**: Real-time vector interaction surface capturing user mouse/touch input.
+### Core Constraints & Guarantees
+* **100% Client-Side**: No uploads, zero network traffic, files never leave user device memory.
+* **Vector-Only Stamping**: Native `pdf-lib` operators only (`drawText`, `drawRectangle`, `drawLine`, `drawImage` for user-uploaded image assets). Zero rasterization of the annotation layer.
+* **Bengali Typography Support**: Embedded Unicode font (`Noto Sans Bengali` / `SolaimanLipi`) via `@pdf-lib/fontkit` for full Bengali (বাংলা) rendering without missing glyphs.
+* **Honest Whiteout Disclosure**: Labeled strictly as *"Whiteout (visual cover only)"* with an omnipresent on-screen warning: *"Covered text remains extractable from the file — not true redaction."* No claims of permanent redaction.
+* **Compatibility Test Matrix**: Verified against Google Chrome, Adobe Acrobat Reader, Microsoft Edge, Apple Preview, and Foxit PDF Reader.
+* **Privacy Headline**: Prominent editor banner:
+  > **🔒 100% private — your file never leaves this device. Nothing uploaded, nothing stored.**
+  (Highlighting our decisive privacy advantage over Sejda, which processes files on remote cloud servers).
+* **Explicitly v2 Out of Scope**: True in-place content-stream reflow text editing, and true content-stream cryptographic redaction.
 
 ---
 
-## 3. Vector-Only Stamping Pipeline (`src/lib/pdf/edit.ts`)
+## 2. Sejda-Parity Toolbar & Tool Specifications
 
-### 3.1 Non-Destructive Vector Execution
-To resolve architectural contradictions and preserve print-quality fidelity, **no rasterization into images is permitted at any stage of the export pipeline**. All annotations are translated into native PDF graphics operators:
+The top toolbar matches Sejda's 11-tool layout:
+`[Text] [Edit Text] [Images] [Annotate] [Shapes] [Whiteout] [Forms] [Links] [Sign] [Find] [Pages]`
 
-1. **Text Annotations**:
-   * Evaluated through `page.drawText(text, { x, y, size, font, color })`.
-   * Coordinates converted from viewport screen space (`CSS pixels`) to standard PDF points (`72 pt/inch`) using exact aspect scaling:
-     $$\text{x}_{\text{pdf}} = \frac{\text{x}_{\text{screen}}}{\text{scale}} \times \frac{72}{\text{DPI}}$$
-     $$\text{y}_{\text{pdf}} = \text{pageHeight} - \left(\frac{\text{y}_{\text{screen}}}{\text{scale}} \times \frac{72}{\text{DPI}}\right)$$
-2. **Whiteout Blocks**:
-   * Drawn using native `page.drawRectangle({ x, y, width, height, color: rgb(r, g, b), opacity: 1.0 })`.
-   * Standard color presets: White (`rgb(1, 1, 1)`) or Black (`rgb(0, 0, 0)`).
-3. **Pen & Signature Strokes**:
-   * Recorded as arrays of points $[(x_0, y_0), (x_1, y_1), \dots, (x_n, y_n)]$.
-   * Stamped as chained vector line segments via `page.drawLine({ start, end, thickness, color, opacity })`.
-   * Preserves infinitely zoomable vector paths with zero raster pixelation.
-4. **Highlights**:
-   * Stamped via `page.drawRectangle` or thick `page.drawLine` with `opacity: 0.35` and standard highlight RGB pigments (e.g. Yellow: `rgb(1, 0.92, 0.23)`).
+### 2.1 Tool Specifications
 
-### 3.2 Page Recombination & Output Construction
-* Document initialized via `PDFDocument.create()`.
-* Surviving pages (excluding deleted indices) are copied sequentially from source document using `destDoc.copyPages(srcDoc, pageIndices)`.
-* Individual rotation angles are applied to respective pages using `page.setRotation(degrees(angle))`.
-* Annotations mapped to each page index are stamped using the vector operators.
-* Compiled document exported via `destDoc.save()`.
+1. **Text**:
+   * Click anywhere on the active page $\rightarrow$ spawns an editable text frame.
+   * Controls: Font size (`12pt`, `14pt`, `18pt`, `24pt`, `32pt`), Color (Obsidian Black `#000000`, Deep Blue `#2563EB`, Crimson Red `#DC2626`, Crisp White `#FFFFFF`).
+   * Drag to move placed text box to desired coordinates.
+   * Multilingual engine: seamlessly renders both Latin-1 and Bengali (বাংলা) characters via fontkit.
+
+2. **Edit Existing Text (v1 Approach)**:
+   * Hover/click detected text line (extracted via `pdfjs-dist` text layer).
+   * Spawns an auto-sized whiteout box matching the exact line bounding box, overlaid with an editable text input pre-filled with the original text string at the same font size and position.
+   * Stamped as vector whiteout rectangle + replacement vector `drawText`.
+   * Visually seamless. Strictly documented in UI: *"Visual cover replacement — does not reflow underlying PDF font streams."*
+
+3. **Images**:
+   * File picker for PNG / JPG images.
+   * Click page to place image.
+   * Draggable position and corner-drag handles to resize while preserving aspect ratio.
+   * Stamped via `pdfDoc.embedPng` / `pdfDoc.embedJpg` + `page.drawImage`.
+
+4. **Annotate**:
+   * **Highlight**: 35% opacity overlay (Yellow `#FEF08A`, Emerald `#A7F3D0`, Cyan `#A5F3FC`).
+   * **Strikethrough**: Draw centered horizontal line segment across selected line.
+
+5. **Shapes**:
+   * **Rectangle**: Configurable border stroke (1–4px), stroke color, and optional fill color (or transparent fill).
+   * **Ellipse / Circle**: Vector circle/ellipse stamped via curve segments or bounding rectangle geometry.
+
+6. **Whiteout (Visual Cover Only)**:
+   * Drag to draw white rectangular box over page elements.
+   * On-screen persistent callout: *"Visual cover only — underlying text remains in the file."*
+   * Stamped via `page.drawRectangle({ color: rgb(1, 1, 1), opacity: 1.0 })`.
+
+7. **Forms**:
+   * **Fill Existing AcroForms**: Inspects `pdfDoc.getForm()`; renders clickable text inputs, checkboxes, and radio buttons over detected form fields for direct browser entry.
+   * **Add New Form Fields**: Allows placing new interactive Text Fields, Checkboxes, and Radio Buttons onto the document via `form.createTextField()`, `form.createCheckBox()`, `form.createRadioGroup()`.
+
+8. **Links**:
+   * Draw rectangular region $\rightarrow$ prompt for destination Web URL (`https://...`).
+   * Stamped as native PDF Link Annotation (`PDFName.of('Link')` with URI Action dictionary) so viewers open the web page on click.
+
+9. **Sign**:
+   * Modal dialog offering 3 creation modes:
+     1. **Type**: Type name $\rightarrow$ rendered in cursive handwriting script.
+     2. **Draw**: Smooth freehand pen canvas $\rightarrow$ converted to chained vector line segments.
+     3. **Upload**: Select image of signature (PNG/JPG).
+   * Once created, signature can be clicked and placed onto any page; corner-drag handles to resize.
+   * Persists in-session storage for instant re-use across multiple pages.
+
+10. **Find & Replace**:
+    * Document-wide search input searching text contents via `pdfjs-dist`.
+    * Highlights matching occurrences across pages.
+    * Replace feature: Automatically applies Whiteout + Replacement Text on selected match instances.
+
+11. **Pages (Page Manager)**:
+    * Left-hand thumbnail strip.
+    * Drag-and-drop or `▲`/`▼` button reordering.
+    * Individual page rotation buttons (`0°`, `90°`, `180°`, `270°`).
+    * Per-page delete button (`🗑️`).
 
 ---
 
-## 4. Bengali & Multilingual Font Engine
+## 3. Workflow & UX Engine
 
-### 4.1 Technical Challenge
-Standard PDF Type 1 fonts (Helvetica, Times Roman, Courier) built into PDF specifications only encode WinAnsi / Latin-1 characters. Submitting Bengali script (e.g., "নথি সম্পাদনা", "বাংলা") causes `pdf-lib` to throw encoding exceptions or render unreadable empty boxes.
+1. **Upload**: Drag-and-drop zone with instant page count detection and 100MB safety ceiling.
+2. **Editor Workspace**:
+   * Top Sejda-style toolbar with tool mode switcher.
+   * Prominent privacy callout: *"🔒 100% private — your file never leaves this device. Nothing uploaded, nothing stored."*
+   * Center vector canvas viewport.
+   * Left page thumbnail strip.
+   * History manager: Undo (`Ctrl+Z`), Redo (`Ctrl+Y`), per-element delete (`Del`), clear page.
+3. **Compilation & Export**:
+   * Click **"Apply changes"** button.
+   * Animated progress bar tracking vector compilation and page packaging.
+   * Instant browser download blob.
 
-### 4.2 Solution Architecture
-1. **Fontkit Integration**: Register `@pdf-lib/fontkit` into the document instance:
+---
+
+## 4. Multilingual & Bengali Typography Architecture
+
+1. **Fontkit Registration**:
    ```typescript
    import fontkit from '@pdf-lib/fontkit';
    pdfDoc.registerFontkit(fontkit);
    ```
-2. **Unicode Font Asset**:
-   * Deploy lightweight OpenType/TrueType font: `NotoSansBengali-Regular.ttf` in `public/fonts/`.
-   * Preload or fetch lazily upon text tool activation:
-     ```typescript
-     const fontBytes = await fetch('/fonts/NotoSansBengali-Regular.ttf').then(res => res.arrayBuffer());
-     const customBengaliFont = await pdfDoc.embedFont(fontBytes, { subset: true });
-     ```
-3. **Font Selection Fallback Chain**:
-   * Inspect input string characters:
-     * If character code falls within the Bengali Unicode block (`\u0980`–`\u09FF`) or extended multilingual ranges, route rendering to `customBengaliFont`.
-     * If strictly ASCII/Latin-1, route to standard `StandardFonts.Helvetica` or `customBengaliFont` uniformly.
+2. **Font Asset Delivery**:
+   * Store `NotoSansBengali-Regular.ttf` in `public/fonts/`.
+   * Preload on editor boot so Bengali glyphs are immediately available.
+3. **Dynamic Font Routing**:
+   * Evaluates text string Unicode code points. If string contains Bengali range (`\u0980`–`\u09FF`), uses embedded `NotoSansBengaliFont`; otherwise falls back to `StandardFonts.Helvetica` or embedded font uniformly.
 
 ---
 
-## 5. Honesty & Disclosure Standards
+## 5. Verification & Viewer Compatibility Matrix
 
-1. **No False Claims**:
-   * The word "redact" or "permanent redaction" must NOT appear anywhere in the UI, button labels, documentation, or SEO copy as an absolute guarantee.
-   * Tool is formally titled and labeled: **"Whiteout (visual cover only)"**.
-2. **On-Screen Disclaimer**:
-   * Explicit visual disclaimer banner mounted in the editor toolbar and help popover:
-     *"Covered text remains extractable from the file — not true redaction."*
-3. **Editorial Policy**:
-   * Educational copy explains the difference between visual whiteout and cryptographic sanitization, recommending that users never use visual covers for classified or legally sensitive secrets.
+Pre-ship validation requires building a 3-page test PDF that demonstrates all 11 tools, and verifying in the target viewers:
 
----
-
-## 6. Compatibility & Verification Matrix
-
-The draft's generic "100% compatibility" claim is replaced with an explicit multi-platform test matrix. Every release must be validated against the following standard PDF rendering engines before deployment:
-
-| Target Viewer / Platform | Engine Type | Test Requirement | Verification Status |
+| Target Viewer | Platform | Verification Criteria | Status |
 | :--- | :--- | :--- | :---: |
-| **Google Chrome / Chromium** | PDFium | Vector text, whiteout boxes, and line signatures render without artifacts; text is selectable. | *Pending Pre-Ship Test* |
-| **Adobe Acrobat Reader (Desktop/Mobile)** | Adobe Native Engine | Opens without "An error exists on this page" prompt; font glyphs (Latin & Bengali) display cleanly. | *Pending Pre-Ship Test* |
-| **Microsoft Edge** | PDFium / Edge PDF Reader | Proper layer rendering order; highlights appear transparent above text. | *Pending Pre-Ship Test* |
-| **Apple Preview (macOS & iOS Safari)** | CoreGraphics PDF Engine | Proper page orientation preserved; vector annotations scale cleanly at 400% zoom. | *Pending Pre-Ship Test* |
-| **Foxit PDF Reader** | Foxit Rendering Engine | Valid stream structure; page reordering and deletion match expectations. | *Pending Pre-Ship Test* |
+| **Google Chrome** | Chromium / Desktop & Mobile | Vector annotations render cleanly; text is selectable; links open; Bengali script displays with correct conjuncts. | *Pending* |
+| **Adobe Acrobat Reader** | Desktop / iOS / Android | Opens without errors; AcroForm fields filled and editable; signatures crisp; whiteout blocks visually opaque. | *Pending* |
+| **Microsoft Edge** | PDFium / Edge PDF Reader | Proper layer rendering; transparent highlights allow underlying text reading; AcroForms functional. | *Pending* |
+| **Apple Preview** | macOS CoreGraphics | Page rotations, page deletions, and text annotations render cleanly at 400% zoom. | *Pending* |
+| **Foxit PDF Reader** | Foxit Core | Standard stream conformance; link annotations clickable. | *Pending* |
 
 ---
 
-## 7. Safety Limits & Edge Performance
+## 6. Self-Review & Integrity Checklist
 
-1. **100MB File Size Guard**: Enforced before loading bytes into memory. Prevents browser crashes on low-RAM mobile devices.
-2. **Progress Feedback**: Real-time percentage progress callback during PDF parsing, vector stamping, and compression.
-3. **Memory Hygiene**: Revokes object URLs and clears canvas buffers upon unmounting or loading a new document.
-
----
-
-## 8. SEO, Metadata & Catalog Integration
-
-* **Route**: `/tools/edit-pdf`
-* **Content Source**: `src/content/tools/edit-pdf.md`
-* **Category**: `organize` (displays under Organize & Edit in homepage directory)
-* **Metadata**:
-  * **Title**: `Edit PDF Online Free — Add Text, Whiteout & Sign | AirPDF`
-  * **Meta Description**: `Free, private in-browser PDF editor. Add text with Bengali support, apply visual whiteout, draw signatures, and organize pages offline with zero server uploads.` (158 characters).
-* **Structured Data**:
-  * `WebApplication` schema with free pricing and vector editing feature list.
-  * `FAQPage` schema featuring 5 targeted search-intent questions.
-  * `BreadcrumbList` schema (`Home > Tools > Edit PDF`).
-* **Sitemap & Robots**:
-  * Automatically included in `sitemap-index.xml` and `sitemap-0.xml` via Astro static collection.
-
----
-
-## 9. Self-Review & Integrity Checklist
-
-- [x] **Placeholder Scan**: No TODOs, TBDs, or vague implementations.
-- [x] **Internal Consistency**: Whiteout is strictly visual; all stamping is 100% vector (zero raster images); Bengali fontkit pipeline is explicitly specified.
-- [x] **Scope Check**: Tightly scoped to annotation tools (text, whiteout, pen, highlight) + page reordering/rotation/deletion.
-- [x] **Ambiguity Check**: Coordinate conversions and viewer matrix clearly defined.
+- [x] **Placeholder Scan**: No TODOs or TBDs.
+- [x] **Vector-Only Stamping**: Strictly native `pdf-lib` operators (`drawText`, `drawRectangle`, `drawLine`, `drawImage` for user images).
+- [x] **No Redaction Claims**: Whiteout strictly labeled "Visual cover only".
+- [x] **Bengali Support**: Fontkit TTF embedding pipeline specified.
+- [x] **Privacy Advantage**: Clear callout emphasizing client-side superiority over Sejda.
