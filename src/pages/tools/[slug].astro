@@ -12,6 +12,7 @@ import PdfToJpgIsland from '../../components/tools/PdfToJpgIsland.astro';
 import PdfToWordIsland from '../../components/tools/PdfToWordIsland.astro';
 import ProtectPdfIsland from '../../components/tools/ProtectPdfIsland.astro';
 import UnlockPdfIsland from '../../components/tools/UnlockPdfIsland.astro';
+import EditPdfIsland from '../../components/tools/EditPdfIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -156,6 +157,8 @@ const relatedToolCards = allTools
       <ProtectPdfIsland />
     ) : tool.slug === 'unlock-pdf' ? (
       <UnlockPdfIsland />
+    ) : tool.slug === 'edit-pdf' ? (
+      <EditPdfIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}
