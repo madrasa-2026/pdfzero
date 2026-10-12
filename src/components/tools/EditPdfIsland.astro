@@ -1,0 +1,1320 @@
+---
+// EditPdfIsland.astro - 100% Client-Side Sejda-Style PDF Editor Workbench
+---
+
+<div id="edit-island-app" class="w-full max-w-7xl mx-auto my-6 font-sans select-none">
+  <!-- 1. Top Privacy Headline Banner -->
+  <div class="mb-4 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm font-medium flex items-center justify-between shadow-sm">
+    <div class="flex items-center gap-2">
+      <span class="text-base">🔒</span>
+      <span><strong>100% private</strong> — your file never leaves this device. Nothing uploaded, nothing stored.</span>
+    </div>
+    <span class="hidden md:inline-block text-emerald-700 text-xs bg-emerald-100/70 px-2 py-0.5 rounded font-mono">Zero Server Uploads</span>
+  </div>
+
+  <!-- Error Alert Container -->
+  <div id="edit-error-banner" class="hidden mb-4 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm">
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Editor Error</h4>
+      <p id="edit-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-edit-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 2. Drop Zone (Active before file selection) -->
+  <div
+    id="edit-drop-zone"
+    class="relative rounded-2xl border-2 border-dashed border-slate-300 hover:border-slate-400 bg-white shadow-sm hover:shadow-md p-8 sm:p-14 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="edit-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-100 group-hover:bg-slate-900 flex items-center justify-center text-slate-700 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+      </svg>
+    </div>
+
+    <h3 class="text-2xl font-bold text-slate-900 mb-2">
+      Select PDF to Edit
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-md mx-auto">
+      Drag & drop your PDF here, or click to open. Add text, edit text, whiteout, shapes, signatures & organize pages client-side.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-6 py-3 text-sm font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition">
+      Choose PDF Document
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-4 text-xs text-slate-400">
+      <span>Cap: Max 100MB</span>
+      <span>•</span>
+      <span>Bengali (বাংলা) typography supported</span>
+      <span>•</span>
+      <span>100% Client-Side Vector Engine</span>
+    </div>
+  </div>
+
+  <!-- 3. Workbench Main Interface (Visible once PDF loaded) -->
+  <div id="edit-workbench" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-left">
+    <!-- Top Header: File info, Whiteout Warning, CTA -->
+    <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3 min-w-0">
+        <span class="p-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-bold uppercase">PDF</span>
+        <div class="min-w-0">
+          <p id="edit-file-name" class="text-sm font-semibold text-slate-800 truncate max-w-xs sm:max-w-md">document.pdf</p>
+          <p class="text-xs text-slate-500">
+            <span id="edit-file-size">0 KB</span> • <span id="edit-page-counter">Page 1 of 1</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          id="btn-undo"
+          title="Undo (Ctrl+Z)"
+          class="p-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+        >
+          ↩ Undo
+        </button>
+        <button
+          type="button"
+          id="btn-redo"
+          title="Redo (Ctrl+Y)"
+          class="p-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+        >
+          ↪ Redo
+        </button>
+        <button
+          type="button"
+          id="btn-delete-element"
+          title="Delete selected element (Delete key)"
+          class="p-2 rounded-lg border border-slate-300 text-red-600 hover:bg-red-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+        >
+          🗑️ Delete
+        </button>
+        <button
+          type="button"
+          id="btn-apply-changes"
+          class="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-button transition flex items-center gap-1.5"
+        >
+          <span>✓</span>
+          <span>Apply changes</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sejda 11-Tool Top Toolbar -->
+    <div class="bg-white border-b border-slate-200 px-3 py-2 flex flex-wrap items-center justify-between gap-2 overflow-x-auto">
+      <div class="flex items-center gap-1" id="toolbar-buttons">
+        <button type="button" data-tool="text" class="tool-btn active-tool px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+          <span>🔤</span><span>Text</span>
+        </button>
+        <button type="button" data-tool="editText" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+          <span>✏️</span><span>Edit Text</span>
+        </button>
+        <button type="button" data-tool="images" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+          <span>🖼️</span><span>Images</span>
+        </button>
+        <button type="button" data-tool="annotate" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+          <span>🖍️</span><span>Annotate</span>
+        </button>
+        <button type="button" data-tool="shapes" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+          <span>⬛</span><span>Shapes</span>
+        </button>
+        <button type="button" data-tool="whiteout" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+          <span>⬜</span><span>Whiteout</span>
+        </button>
+        <button type="button" data-tool="forms" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+          <span>📝</span><span>Forms</span>
+        </button>
+        <button type="button" data-tool="links" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+          <span>🔗</span><span>Links</span>
+        </button>
+        <button type="button" data-tool="sign" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+          <span>✒️</span><span>Sign</span>
+        </button>
+        <button type="button" data-tool="find" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+          <span>🔍</span><span>Find</span>
+        </button>
+        <button type="button" data-tool="pages" class="tool-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition">
+          <span>📄</span><span>Pages</span>
+        </button>
+      </div>
+
+      <!-- Zoom and Display Controls -->
+      <div class="flex items-center gap-2 text-xs">
+        <button type="button" id="zoom-out-btn" class="w-7 h-7 rounded border border-slate-200 hover:bg-slate-100 flex items-center justify-center font-bold">−</button>
+        <span id="zoom-level-text" class="font-mono text-slate-600">100%</span>
+        <button type="button" id="zoom-in-btn" class="w-7 h-7 rounded border border-slate-200 hover:bg-slate-100 flex items-center justify-center font-bold">+</button>
+      </div>
+    </div>
+
+    <!-- Tool Options Secondary Sub-bar (dynamic per selected tool) -->
+    <div id="sub-tool-bar" class="px-4 py-2 bg-slate-50/70 border-b border-slate-200 flex flex-wrap items-center gap-3 text-xs">
+      <!-- Options for Text tool -->
+      <div id="sub-opts-text" class="flex items-center gap-3">
+        <label class="flex items-center gap-1 font-medium text-slate-700">
+          <span>Size:</span>
+          <select id="text-size-select" class="rounded border border-slate-300 px-2 py-1 text-xs bg-white">
+            <option value="12">12pt</option>
+            <option value="14" selected>14pt</option>
+            <option value="18">18pt</option>
+            <option value="24">24pt</option>
+            <option value="32">32pt</option>
+          </select>
+        </label>
+        <label class="flex items-center gap-1 font-medium text-slate-700">
+          <span>Color:</span>
+          <select id="text-color-select" class="rounded border border-slate-300 px-2 py-1 text-xs bg-white">
+            <option value="#000000" selected>Obsidian Black</option>
+            <option value="#2563eb">Deep Blue</option>
+            <option value="#dc2626">Crimson Red</option>
+            <option value="#ffffff">Crisp White</option>
+          </select>
+        </label>
+        <span class="text-slate-400">|</span>
+        <span class="text-slate-500 italic">Click anywhere on the document to place text box. Bengali (বাংলা) supported.</span>
+      </div>
+
+      <!-- Options for Edit Text tool -->
+      <div id="sub-opts-editText" class="hidden flex items-center gap-3">
+        <span class="text-amber-800 bg-amber-100 px-2 py-0.5 rounded font-medium">Visual Cover Mode</span>
+        <span class="text-slate-600">Click any text line on the page to overlay an auto-whiteout box and edit replacement text in-place.</span>
+      </div>
+
+      <!-- Options for Images tool -->
+      <div id="sub-opts-images" class="hidden flex items-center gap-3">
+        <label class="inline-flex items-center gap-1.5 px-3 py-1 bg-white border border-slate-300 rounded hover:bg-slate-50 cursor-pointer font-medium text-slate-700">
+          <span>Upload Image</span>
+          <input type="file" id="image-upload-input" accept="image/png,image/jpeg" class="hidden" />
+        </label>
+        <span class="text-slate-500">PNG and JPG supported. Click to place after selecting.</span>
+      </div>
+
+      <!-- Options for Annotate tool -->
+      <div id="sub-opts-annotate" class="hidden flex items-center gap-3">
+        <button type="button" id="annot-highlight-btn" class="px-2.5 py-1 bg-yellow-100 text-yellow-900 border border-yellow-300 rounded font-medium">Highlight (35%)</button>
+        <button type="button" id="annot-strike-btn" class="px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700">Strikethrough</button>
+        <span class="text-slate-500">Drag to draw over text or regions.</span>
+      </div>
+
+      <!-- Options for Shapes tool -->
+      <div id="sub-opts-shapes" class="hidden flex items-center gap-3">
+        <label class="flex items-center gap-1 font-medium text-slate-700">
+          <span>Shape:</span>
+          <select id="shape-type-select" class="rounded border border-slate-300 px-2 py-1 text-xs bg-white">
+            <option value="rect" selected>Rectangle</option>
+            <option value="circle">Circle / Ellipse</option>
+          </select>
+        </label>
+        <label class="flex items-center gap-1 font-medium text-slate-700">
+          <span>Stroke:</span>
+          <input type="color" id="shape-stroke-color" value="#2563eb" class="w-6 h-6 p-0 border border-slate-300 rounded" />
+        </label>
+        <label class="flex items-center gap-1 font-medium text-slate-700">
+          <span>Width:</span>
+          <select id="shape-width-select" class="rounded border border-slate-300 px-2 py-1 text-xs bg-white">
+            <option value="1">1px</option>
+            <option value="2" selected>2px</option>
+            <option value="4">4px</option>
+          </select>
+        </label>
+        <span class="text-slate-500">Drag on page to draw shape.</span>
+      </div>
+
+      <!-- Options for Whiteout tool -->
+      <div id="sub-opts-whiteout" class="hidden flex items-center gap-3">
+        <span class="text-amber-800 font-semibold">⚠️ Visual Cover Only:</span>
+        <span class="text-amber-700">Covered text remains extractable from the file — not true redaction.</span>
+        <span class="text-slate-400">|</span>
+        <span class="text-slate-500">Drag to draw whiteout rectangle.</span>
+      </div>
+
+      <!-- Options for Forms tool -->
+      <div id="sub-opts-forms" class="hidden flex items-center gap-3">
+        <button type="button" id="add-form-text-btn" class="px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700">+ Text Field</button>
+        <button type="button" id="add-form-check-btn" class="px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700">+ Checkbox</button>
+        <span class="text-slate-500">Click button then click page to place interactive form field.</span>
+      </div>
+
+      <!-- Options for Links tool -->
+      <div id="sub-opts-links" class="hidden flex items-center gap-3">
+        <span class="text-slate-700 font-medium">Link Destination:</span>
+        <input type="url" id="link-url-input" placeholder="https://example.com" class="rounded border border-slate-300 px-2.5 py-1 text-xs bg-white w-56" />
+        <span class="text-slate-500">Drag region on page to create clickable hyperlink.</span>
+      </div>
+
+      <!-- Options for Sign tool -->
+      <div id="sub-opts-sign" class="hidden flex items-center gap-3">
+        <button type="button" id="open-sign-modal-btn" class="px-3 py-1 bg-slate-900 text-white rounded font-medium">+ Create Signature</button>
+        <span id="active-signature-status" class="text-slate-500 italic">No signature created yet. Click "+ Create Signature".</span>
+      </div>
+
+      <!-- Options for Find tool -->
+      <div id="sub-opts-find" class="hidden flex items-center gap-2">
+        <input type="text" id="find-query-input" placeholder="Find in document..." class="rounded border border-slate-300 px-2.5 py-1 text-xs bg-white w-48" />
+        <input type="text" id="replace-query-input" placeholder="Replace with..." class="rounded border border-slate-300 px-2.5 py-1 text-xs bg-white w-48" />
+        <button type="button" id="find-search-btn" class="px-2 py-1 bg-slate-100 border border-slate-300 rounded font-medium text-slate-700 hover:bg-slate-200">Search</button>
+        <span id="find-matches-count" class="font-mono text-slate-600">0 matches</span>
+        <button type="button" id="replace-current-btn" class="px-2 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded font-medium hover:bg-amber-200">Replace Match</button>
+      </div>
+
+      <!-- Options for Pages tool -->
+      <div id="sub-opts-pages" class="hidden flex items-center gap-3">
+        <span class="text-slate-700 font-medium">Page Management:</span>
+        <span class="text-slate-500">Use the left thumbnail sidebar to reorder (▲/▼), rotate (↻), or delete (🗑️) pages.</span>
+      </div>
+    </div>
+
+    <!-- Whiteout Warning Notice (Omnipresent callout) -->
+    <div id="persistent-whiteout-banner" class="hidden px-4 py-1.5 bg-amber-50 border-b border-amber-200 text-amber-800 text-xs flex items-center gap-2">
+      <span class="font-bold">⚠️ Notice:</span>
+      <span>Whiteout is visual cover only. Underlying PDF text remains extractable — not true cryptographic redaction.</span>
+    </div>
+
+    <!-- Main Workspace Split: Left Thumbnail Strip & Center Viewport Canvas -->
+    <div class="flex flex-col lg:flex-row h-[700px] bg-slate-100">
+      <!-- Left Thumbnail Strip -->
+      <div class="w-full lg:w-64 bg-slate-50 border-r border-slate-200 p-3 overflow-y-auto flex-shrink-0 flex lg:flex-col gap-3">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-200 text-xs font-semibold text-slate-700">
+          <span>Pages (<span id="total-pages-badge">1</span>)</span>
+          <span class="text-slate-400">Reorder / Rotate</span>
+        </div>
+        <div id="thumbnail-list" class="flex lg:flex-col gap-3">
+          <!-- Dynamically populated page cards -->
+        </div>
+      </div>
+
+      <!-- Center Viewport Area -->
+      <div id="viewport-container" class="flex-grow overflow-auto p-4 flex items-center justify-center relative bg-slate-200/60">
+        <!-- Document page paper container -->
+        <div id="page-paper" class="relative bg-white shadow-lg mx-auto transition-transform origin-top">
+          <!-- Base PDF.js Canvas -->
+          <canvas id="pdf-page-canvas" class="block"></canvas>
+
+          <!-- Interactive Annotation SVG / DOM Layer -->
+          <div id="annotation-layer" class="absolute inset-0 overflow-hidden cursor-crosshair"></div>
+
+          <!-- Text Layer extraction click targets (for Edit Text & Find) -->
+          <div id="text-click-layer" class="absolute inset-0 pointer-events-none"></div>
+
+          <!-- Freehand Drawing Canvas for Signatures / Annotations -->
+          <canvas id="freehand-canvas" class="absolute inset-0 pointer-events-none"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. Signature Creation Modal -->
+  <div id="signature-modal" class="hidden fixed inset-0 z-50 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 text-left">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
+        <h3 class="text-lg font-bold text-slate-900">Create Signature</h3>
+        <button type="button" id="close-sig-modal" class="text-slate-400 hover:text-slate-700 font-bold">✕</button>
+      </div>
+
+      <!-- Signature mode tabs -->
+      <div class="flex border-b border-slate-200 mb-4 text-xs font-semibold">
+        <button type="button" id="sig-tab-draw" class="px-4 py-2 border-b-2 border-slate-900 text-slate-900">Draw (Vector)</button>
+        <button type="button" id="sig-tab-type" class="px-4 py-2 text-slate-500 hover:text-slate-700">Type Name</button>
+        <button type="button" id="sig-tab-upload" class="px-4 py-2 text-slate-500 hover:text-slate-700">Upload Image</button>
+      </div>
+
+      <!-- Tab Content: Draw Mode -->
+      <div id="sig-content-draw" class="block">
+        <div class="border border-slate-300 rounded-xl bg-slate-50 overflow-hidden mb-3 relative">
+          <canvas id="sig-pad-canvas" width="450" height="160" class="w-full h-40 bg-white cursor-crosshair block"></canvas>
+          <span class="absolute bottom-2 right-2 text-[10px] text-slate-400">Sign above the line</span>
+        </div>
+        <div class="flex justify-between items-center text-xs">
+          <button type="button" id="clear-sig-pad" class="text-slate-500 hover:text-red-600 font-medium">Clear Canvas</button>
+          <span class="text-slate-400">Vector Line Segments</span>
+        </div>
+      </div>
+
+      <!-- Tab Content: Type Mode -->
+      <div id="sig-content-type" class="hidden">
+        <input type="text" id="sig-type-input" placeholder="Type your full name..." class="w-full px-3 py-2 border border-slate-300 rounded-xl mb-3 text-sm" />
+        <div id="sig-type-preview" class="h-28 border border-slate-200 rounded-xl flex items-center justify-center text-2xl font-serif italic text-slate-800 bg-slate-50">
+          Signature Preview
+        </div>
+      </div>
+
+      <!-- Tab Content: Upload Mode -->
+      <div id="sig-content-upload" class="hidden">
+        <input type="file" id="sig-upload-input" accept="image/png,image/jpeg" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-slate-900 file:text-white mb-3" />
+        <div id="sig-upload-preview" class="h-28 border border-dashed border-slate-300 rounded-xl flex items-center justify-center text-xs text-slate-400">
+          Image preview
+        </div>
+      </div>
+
+      <!-- Modal Footer -->
+      <div class="mt-6 flex justify-end gap-3 pt-3 border-t border-slate-200">
+        <button type="button" id="cancel-sig-btn" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Cancel</button>
+        <button type="button" id="save-sig-btn" class="px-5 py-2 text-xs font-semibold bg-slate-900 text-white rounded-xl shadow-button hover:bg-slate-800">Use Signature</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. Compilation & Progress Modal -->
+  <div id="compile-modal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 text-center shadow-2xl border border-slate-200">
+      <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-slate-100 flex items-center justify-center text-slate-900">
+        <svg class="animate-spin h-6 w-6 text-slate-900" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+      </div>
+      <h3 class="text-lg font-bold text-slate-900 mb-1">Applying Changes</h3>
+      <p id="compile-status-text" class="text-xs text-slate-500 mb-4">Compiling vector annotations...</p>
+      <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden mb-3">
+        <div id="compile-progress-bar" class="bg-slate-900 h-2.5 rounded-full transition-all duration-300" style="width: 10%"></div>
+      </div>
+      <p class="text-[11px] text-slate-400">100% Client-Side Processing • No file leaves your device</p>
+    </div>
+  </div>
+</div>
+
+<style>
+  .tool-btn {
+    color: #475569;
+    background-color: transparent;
+  }
+  .tool-btn:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+  }
+  .active-tool {
+    background-color: #0f172a !important;
+    color: #ffffff !important;
+  }
+  .selected-annot {
+    outline: 2px dashed #2563eb !important;
+    outline-offset: 2px;
+  }
+</style>
+
+<script>
+  import * as pdfjsLib from 'pdfjs-dist';
+  import { applyPdfEdits, type DocumentEditState, type Annotation, type PageConfig } from '../../lib/pdf/edit';
+  import { extractPageTextItems, findTextMatches, type ExtractedTextItem, type TextMatch } from '../../lib/pdf/textExtraction';
+  import { MAX_FILE_SIZE_BYTES } from '../../lib/pdf/merge';
+
+  if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+  }
+
+  // --- STATE ---
+  let originalFile: File | null = null;
+  let originalBytes: Uint8Array | null = null;
+  let pdfDocProxy: any = null;
+  let totalOriginalPages = 0;
+  let currentPageIndex = 0; // 0-based active visual page
+  let currentZoom = 1.0;
+  let activeTool: string = 'text';
+
+  // Page management state
+  let pageConfigs: PageConfig[] = []; // index -> { originalIndex, rotation, isDeleted }
+
+  // Annotations list
+  let annotations: Annotation[] = [];
+  let selectedAnnotationId: string | null = null;
+
+  // History stack for Undo / Redo
+  let undoStack: Annotation[][] = [];
+  let redoStack: Annotation[][] = [];
+
+  // Signature state
+  let currentSignatureType: 'draw' | 'type' | 'upload' = 'draw';
+  let capturedSignaturePoints: { x: number; y: number }[][] = [];
+  let currentDrawingStroke: { x: number; y: number }[] = [];
+  let activeSignatureData: { points?: { x: number; y: number }[][]; text?: string; imageBytes?: Uint8Array; format?: 'png' | 'jpeg' } | null = null;
+
+  // Text layer cache: pageNumber (1-based) -> ExtractedTextItem[]
+  const pageTextItemsCache = new Map<number, ExtractedTextItem[]>();
+  let currentFindMatches: TextMatch[] = [];
+  let activeMatchIndex = -1;
+
+  // DOM Elements
+  const dropZone = document.getElementById('edit-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('edit-file-input') as HTMLInputElement;
+  const workbench = document.getElementById('edit-workbench') as HTMLDivElement;
+  const fileNameEl = document.getElementById('edit-file-name') as HTMLParagraphElement;
+  const fileSizeEl = document.getElementById('edit-file-size') as HTMLSpanElement;
+  const pageCounterEl = document.getElementById('edit-page-counter') as HTMLSpanElement;
+  const totalPagesBadge = document.getElementById('total-pages-badge') as HTMLSpanElement;
+  const thumbnailList = document.getElementById('thumbnail-list') as HTMLDivElement;
+
+  const pdfCanvas = document.getElementById('pdf-page-canvas') as HTMLCanvasElement;
+  const annotationLayer = document.getElementById('annotation-layer') as HTMLDivElement;
+  const textClickLayer = document.getElementById('text-click-layer') as HTMLDivElement;
+  const freehandCanvas = document.getElementById('freehand-canvas') as HTMLCanvasElement;
+
+  const errorBanner = document.getElementById('edit-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('edit-error-message') as HTMLParagraphElement;
+  const dismissErrorBtn = document.getElementById('dismiss-edit-error') as HTMLButtonElement;
+
+  const btnUndo = document.getElementById('btn-undo') as HTMLButtonElement;
+  const btnRedo = document.getElementById('btn-redo') as HTMLButtonElement;
+  const btnDeleteElement = document.getElementById('btn-delete-element') as HTMLButtonElement;
+  const btnApplyChanges = document.getElementById('btn-apply-changes') as HTMLButtonElement;
+
+  const zoomInBtn = document.getElementById('zoom-in-btn') as HTMLButtonElement;
+  const zoomOutBtn = document.getElementById('zoom-out-btn') as HTMLButtonElement;
+  const zoomLevelText = document.getElementById('zoom-level-text') as HTMLSpanElement;
+
+  // Tool buttons
+  const toolBtns = document.querySelectorAll('.tool-btn');
+  const subOptsMap: Record<string, HTMLElement | null> = {
+    text: document.getElementById('sub-opts-text'),
+    editText: document.getElementById('sub-opts-editText'),
+    images: document.getElementById('sub-opts-images'),
+    annotate: document.getElementById('sub-opts-annotate'),
+    shapes: document.getElementById('sub-opts-shapes'),
+    whiteout: document.getElementById('sub-opts-whiteout'),
+    forms: document.getElementById('sub-opts-forms'),
+    links: document.getElementById('sub-opts-links'),
+    sign: document.getElementById('sub-opts-sign'),
+    find: document.getElementById('sub-opts-find'),
+    pages: document.getElementById('sub-opts-pages'),
+  };
+
+  const persistentWhiteoutBanner = document.getElementById('persistent-whiteout-banner') as HTMLDivElement;
+
+  // Signature modal elements
+  const sigModal = document.getElementById('signature-modal') as HTMLDivElement;
+  const openSigModalBtn = document.getElementById('open-sign-modal-btn') as HTMLButtonElement;
+  const closeSigModalBtn = document.getElementById('close-sig-modal') as HTMLButtonElement;
+  const cancelSigBtn = document.getElementById('cancel-sig-btn') as HTMLButtonElement;
+  const saveSigBtn = document.getElementById('save-sig-btn') as HTMLButtonElement;
+  const sigPadCanvas = document.getElementById('sig-pad-canvas') as HTMLCanvasElement;
+  const clearSigPadBtn = document.getElementById('clear-sig-pad') as HTMLButtonElement;
+  const sigTypeInput = document.getElementById('sig-type-input') as HTMLInputElement;
+  const sigTypePreview = document.getElementById('sig-type-preview') as HTMLDivElement;
+  const sigUploadInput = document.getElementById('sig-upload-input') as HTMLInputElement;
+  const activeSignatureStatus = document.getElementById('active-signature-status') as HTMLSpanElement;
+
+  // Compilation modal elements
+  const compileModal = document.getElementById('compile-modal') as HTMLDivElement;
+  const compileStatusText = document.getElementById('compile-status-text') as HTMLParagraphElement;
+  const compileProgressBar = document.getElementById('compile-progress-bar') as HTMLDivElement;
+
+  // Format bytes utility
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  function showError(msg: string) {
+    errorMessage.textContent = msg;
+    errorBanner.classList.remove('hidden');
+  }
+
+  function clearError() {
+    errorBanner.classList.add('hidden');
+    errorMessage.textContent = '';
+  }
+
+  dismissErrorBtn?.addEventListener('click', clearError);
+
+  // File Input handling
+  fileInput?.addEventListener('change', async (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      await loadPdfDocument(target.files[0]);
+    }
+  });
+
+  dropZone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-slate-800');
+  });
+
+  dropZone?.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-slate-800');
+  });
+
+  dropZone?.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-slate-800');
+    if (e.dataTransfer?.files && e.dataTransfer.files.length > 0) {
+      await loadPdfDocument(e.dataTransfer.files[0]);
+    }
+  });
+
+  async function loadPdfDocument(file: File) {
+    if (file.size > MAX_FILE_SIZE_BYTES) {
+      showError(`File exceeds the 100MB limit (${formatBytes(file.size)}). Please choose a file under 100MB.`);
+      return;
+    }
+
+    clearError();
+    originalFile = file;
+    fileNameEl.textContent = file.name;
+    fileSizeEl.textContent = formatBytes(file.size);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      originalBytes = new Uint8Array(buffer);
+
+      const loadingTask = pdfjsLib.getDocument({ data: originalBytes });
+      pdfDocProxy = await loadingTask.promise;
+      totalOriginalPages = pdfDocProxy.numPages;
+
+      // Initialize page configs
+      pageConfigs = [];
+      for (let i = 0; i < totalOriginalPages; i++) {
+        pageConfigs.push({ originalIndex: i, rotation: 0, isDeleted: false });
+      }
+
+      dropZone.classList.add('hidden');
+      workbench.classList.remove('hidden');
+
+      renderThumbnails();
+      await renderActivePage();
+    } catch (err: any) {
+      showError('Failed to parse PDF: ' + (err?.message || 'Invalid or encrypted file.'));
+    }
+  }
+
+  // --- PAGE RENDERING ---
+  async function renderActivePage() {
+    if (!pdfDocProxy) return;
+
+    const activeConfig = pageConfigs[currentPageIndex];
+    if (!activeConfig) return;
+
+    const originalPageNum = activeConfig.originalIndex + 1;
+    const page = await pdfDocProxy.getPage(originalPageNum);
+    const viewport = page.getViewport({ scale: currentZoom, rotation: activeConfig.rotation });
+
+    pdfCanvas.width = viewport.width;
+    pdfCanvas.height = viewport.height;
+    pdfCanvas.style.width = `${viewport.width}px`;
+    pdfCanvas.style.height = `${viewport.height}px`;
+
+    const canvasContext = pdfCanvas.getContext('2d');
+    if (canvasContext) {
+      await page.render({ canvasContext, viewport }).promise;
+    }
+
+    // Update dimensions on annotation layer & freehand canvas
+    annotationLayer.style.width = `${viewport.width}px`;
+    annotationLayer.style.height = `${viewport.height}px`;
+    textClickLayer.style.width = `${viewport.width}px`;
+    textClickLayer.style.height = `${viewport.height}px`;
+    freehandCanvas.width = viewport.width;
+    freehandCanvas.height = viewport.height;
+
+    pageCounterEl.textContent = `Page ${currentPageIndex + 1} of ${pageConfigs.filter(p => !p.isDeleted).length}`;
+
+    // Extract text items for text layer
+    if (!pageTextItemsCache.has(originalPageNum)) {
+      const items = await extractPageTextItems(pdfDocProxy, originalPageNum);
+      pageTextItemsCache.set(originalPageNum, items);
+    }
+
+    renderAnnotationsOverlay();
+    renderTextClickTargets();
+  }
+
+  // Render left thumbnail sidebar
+  function renderThumbnails() {
+    thumbnailList.innerHTML = '';
+    const activePages = pageConfigs.filter(p => !p.isDeleted);
+    totalPagesBadge.textContent = String(activePages.length);
+
+    activePages.forEach((pConfig, visualIdx) => {
+      const card = document.createElement('div');
+      card.className = `p-2 rounded-xl border transition cursor-pointer flex flex-col items-center gap-1.5 ${
+        visualIdx === currentPageIndex ? 'border-slate-900 bg-slate-100 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
+      }`;
+
+      card.innerHTML = `
+        <div class="w-full text-center py-4 bg-slate-100 rounded text-xs font-bold text-slate-700">
+          Page ${visualIdx + 1}
+          <div class="text-[10px] text-slate-400 font-normal">Orig #${pConfig.originalIndex + 1}${pConfig.rotation ? ` • ${pConfig.rotation}°` : ''}</div>
+        </div>
+        <div class="flex items-center justify-between w-full text-xs px-1">
+          <button type="button" class="btn-page-up p-1 text-slate-400 hover:text-slate-800" title="Move Up" ${visualIdx === 0 ? 'disabled' : ''}>▲</button>
+          <button type="button" class="btn-page-rotate p-1 text-slate-400 hover:text-slate-800" title="Rotate 90°">↻</button>
+          <button type="button" class="btn-page-down p-1 text-slate-400 hover:text-slate-800" title="Move Down" ${visualIdx === activePages.length - 1 ? 'disabled' : ''}>▼</button>
+          <button type="button" class="btn-page-delete p-1 text-red-400 hover:text-red-700" title="Delete Page" ${activePages.length <= 1 ? 'disabled' : ''}>🗑️</button>
+        </div>
+      `;
+
+      card.addEventListener('click', async (e) => {
+        const target = e.target as HTMLElement;
+        if (target.closest('.btn-page-up') || target.closest('.btn-page-down') || target.closest('.btn-page-rotate') || target.closest('.btn-page-delete')) {
+          return;
+        }
+        currentPageIndex = visualIdx;
+        renderThumbnails();
+        await renderActivePage();
+      });
+
+      // Actions
+      card.querySelector('.btn-page-up')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (visualIdx > 0) {
+          const temp = pageConfigs[visualIdx];
+          pageConfigs[visualIdx] = pageConfigs[visualIdx - 1];
+          pageConfigs[visualIdx - 1] = temp;
+          currentPageIndex = visualIdx - 1;
+          renderThumbnails();
+          await renderActivePage();
+        }
+      });
+
+      card.querySelector('.btn-page-down')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        if (visualIdx < activePages.length - 1) {
+          const temp = pageConfigs[visualIdx];
+          pageConfigs[visualIdx] = pageConfigs[visualIdx + 1];
+          pageConfigs[visualIdx + 1] = temp;
+          currentPageIndex = visualIdx + 1;
+          renderThumbnails();
+          await renderActivePage();
+        }
+      });
+
+      card.querySelector('.btn-page-rotate')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        pConfig.rotation = (pConfig.rotation + 90) % 360;
+        renderThumbnails();
+        await renderActivePage();
+      });
+
+      card.querySelector('.btn-page-delete')?.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        pConfig.isDeleted = true;
+        if (currentPageIndex >= pageConfigs.filter(p => !p.isDeleted).length) {
+          currentPageIndex = Math.max(0, pageConfigs.filter(p => !p.isDeleted).length - 1);
+        }
+        renderThumbnails();
+        await renderActivePage();
+      });
+
+      thumbnailList.appendChild(card);
+    });
+  }
+
+  // --- TOOLBAR SWITCHER ---
+  toolBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      toolBtns.forEach(b => b.classList.remove('active-tool'));
+      btn.classList.add('active-tool');
+      activeTool = (btn as HTMLElement).dataset.tool || 'text';
+
+      // Switch options sub-bar
+      Object.keys(subOptsMap).forEach((k) => {
+        if (subOptsMap[k]) {
+          if (k === activeTool) {
+            subOptsMap[k]!.classList.remove('hidden');
+          } else {
+            subOptsMap[k]!.classList.add('hidden');
+          }
+        }
+      });
+
+      // Show/hide persistent whiteout warning banner
+      if (activeTool === 'whiteout' || activeTool === 'editText') {
+        persistentWhiteoutBanner.classList.remove('hidden');
+      } else {
+        persistentWhiteoutBanner.classList.add('hidden');
+      }
+
+      renderTextClickTargets();
+    });
+  });
+
+  // Zoom controls
+  zoomInBtn?.addEventListener('click', async () => {
+    if (currentZoom < 2.5) {
+      currentZoom = Math.min(2.5, currentZoom + 0.25);
+      zoomLevelText.textContent = `${Math.round(currentZoom * 100)}%`;
+      await renderActivePage();
+    }
+  });
+
+  zoomOutBtn?.addEventListener('click', async () => {
+    if (currentZoom > 0.5) {
+      currentZoom = Math.max(0.5, currentZoom - 0.25);
+      zoomLevelText.textContent = `${Math.round(currentZoom * 100)}%`;
+      await renderActivePage();
+    }
+  });
+
+  // --- ANNOTATION CREATION & RENDERING ---
+  function saveHistory() {
+    undoStack.push(JSON.parse(JSON.stringify(annotations)));
+    redoStack = [];
+    updateUndoRedoButtons();
+  }
+
+  function updateUndoRedoButtons() {
+    btnUndo.disabled = undoStack.length === 0;
+    btnRedo.disabled = redoStack.length === 0;
+  }
+
+  btnUndo?.addEventListener('click', () => {
+    if (undoStack.length > 0) {
+      redoStack.push(JSON.parse(JSON.stringify(annotations)));
+      annotations = undoStack.pop() || [];
+      renderAnnotationsOverlay();
+      updateUndoRedoButtons();
+    }
+  });
+
+  btnRedo?.addEventListener('click', () => {
+    if (redoStack.length > 0) {
+      undoStack.push(JSON.parse(JSON.stringify(annotations)));
+      annotations = redoStack.pop() || [];
+      renderAnnotationsOverlay();
+      updateUndoRedoButtons();
+    }
+  });
+
+  btnDeleteElement?.addEventListener('click', () => {
+    if (selectedAnnotationId) {
+      saveHistory();
+      annotations = annotations.filter(a => a.id !== selectedAnnotationId);
+      selectedAnnotationId = null;
+      renderAnnotationsOverlay();
+    }
+  });
+
+  // Handle click on canvas surface to spawn annotations
+  annotationLayer?.addEventListener('click', (e) => {
+    const rect = annotationLayer.getBoundingClientRect();
+    const clickX = (e.clientX - rect.left) / currentZoom;
+    const clickY = (e.clientY - rect.top) / currentZoom;
+
+    if (activeTool === 'text') {
+      saveHistory();
+      const fontSize = parseInt((document.getElementById('text-size-select') as HTMLSelectElement).value, 10) || 14;
+      const color = (document.getElementById('text-color-select') as HTMLSelectElement).value || '#000000';
+
+      const newId = `text-${Date.now()}`;
+      annotations.push({
+        type: 'text',
+        id: newId,
+        pageIndex: currentPageIndex,
+        x: clickX,
+        y: clickY,
+        text: 'Type text here...',
+        fontSize,
+        color,
+      });
+      selectedAnnotationId = newId;
+      renderAnnotationsOverlay();
+    } else if (activeTool === 'sign' && activeSignatureData) {
+      saveHistory();
+      if (activeSignatureData.points) {
+        annotations.push({
+          type: 'signature',
+          id: `sig-${Date.now()}`,
+          pageIndex: currentPageIndex,
+          points: activeSignatureData.points.map(stroke =>
+            stroke.map(pt => ({ x: pt.x + clickX, y: pt.y + clickY }))
+          ),
+          strokeColor: '#000000',
+          strokeWidth: 2,
+        });
+      }
+      renderAnnotationsOverlay();
+    }
+  });
+
+  // Drag-to-draw for Whiteout, Shapes, Annotate (Highlight), Links
+  let isDragging = false;
+  let dragStartX = 0;
+  let dragStartY = 0;
+
+  annotationLayer?.addEventListener('mousedown', (e) => {
+    if (['whiteout', 'shapes', 'annotate', 'links'].includes(activeTool)) {
+      isDragging = true;
+      const rect = annotationLayer.getBoundingClientRect();
+      dragStartX = (e.clientX - rect.left) / currentZoom;
+      dragStartY = (e.clientY - rect.top) / currentZoom;
+    }
+  });
+
+  window.addEventListener('mouseup', (e) => {
+    if (isDragging) {
+      isDragging = false;
+      const rect = annotationLayer.getBoundingClientRect();
+      const endX = (e.clientX - rect.left) / currentZoom;
+      const endY = (e.clientY - rect.top) / currentZoom;
+
+      const x = Math.min(dragStartX, endX);
+      const y = Math.min(dragStartY, endY);
+      const width = Math.abs(endX - dragStartX);
+      const height = Math.abs(endY - dragStartY);
+
+      if (width > 5 && height > 5) {
+        saveHistory();
+        if (activeTool === 'whiteout') {
+          annotations.push({
+            type: 'whiteout',
+            id: `whiteout-${Date.now()}`,
+            pageIndex: currentPageIndex,
+            x,
+            y,
+            width,
+            height,
+          });
+        } else if (activeTool === 'shapes') {
+          const shapeType = (document.getElementById('shape-type-select') as HTMLSelectElement).value as 'rect' | 'circle';
+          const strokeColor = (document.getElementById('shape-stroke-color') as HTMLInputElement).value || '#2563eb';
+          const strokeWidth = parseInt((document.getElementById('shape-width-select') as HTMLSelectElement).value, 10) || 2;
+          annotations.push({
+            type: 'shape',
+            id: `shape-${Date.now()}`,
+            pageIndex: currentPageIndex,
+            shapeType,
+            x,
+            y,
+            width,
+            height,
+            strokeColor,
+            strokeWidth,
+          });
+        } else if (activeTool === 'annotate') {
+          annotations.push({
+            type: 'highlight',
+            id: `highlight-${Date.now()}`,
+            pageIndex: currentPageIndex,
+            x,
+            y,
+            width,
+            height,
+            color: '#facc15',
+          });
+        } else if (activeTool === 'links') {
+          const url = (document.getElementById('link-url-input') as HTMLInputElement).value || 'https://airpdf.pages.dev';
+          annotations.push({
+            type: 'link',
+            id: `link-${Date.now()}`,
+            pageIndex: currentPageIndex,
+            x,
+            y,
+            width,
+            height,
+            url,
+          });
+        }
+        renderAnnotationsOverlay();
+      }
+    }
+  });
+
+  // Render annotations onto DOM overlay
+  function renderAnnotationsOverlay() {
+    annotationLayer.innerHTML = '';
+    const pageAnnotations = annotations.filter(a => a.pageIndex === currentPageIndex);
+
+    pageAnnotations.forEach((annot) => {
+      const el = document.createElement('div');
+      el.className = 'absolute cursor-move';
+      el.style.left = `${annot.x * currentZoom}px`;
+      el.style.top = `${annot.y * currentZoom}px`;
+
+      if (annot.id === selectedAnnotationId) {
+        el.classList.add('selected-annot');
+      }
+
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedAnnotationId = annot.id;
+        renderAnnotationsOverlay();
+      });
+
+      switch (annot.type) {
+        case 'text': {
+          el.contentEditable = 'true';
+          el.style.fontSize = `${annot.fontSize * currentZoom}px`;
+          el.style.color = annot.color || '#000000';
+          el.style.padding = '2px 4px';
+          el.style.minWidth = '40px';
+          el.style.background = 'rgba(255, 255, 255, 0.4)';
+          el.style.borderRadius = '2px';
+          el.textContent = annot.text;
+
+          el.addEventListener('input', () => {
+            annot.text = el.textContent || '';
+          });
+          break;
+        }
+
+        case 'whiteout': {
+          el.style.width = `${annot.width * currentZoom}px`;
+          el.style.height = `${annot.height * currentZoom}px`;
+          el.style.backgroundColor = '#ffffff';
+          el.style.border = '1px dashed #cbd5e1';
+          break;
+        }
+
+        case 'shape': {
+          el.style.width = `${annot.width * currentZoom}px`;
+          el.style.height = `${annot.height * currentZoom}px`;
+          if (annot.shapeType === 'rect') {
+            el.style.border = `${annot.strokeWidth}px solid ${annot.strokeColor}`;
+            if (annot.fillColor) el.style.backgroundColor = annot.fillColor;
+          } else {
+            el.style.border = `${annot.strokeWidth}px solid ${annot.strokeColor}`;
+            el.style.borderRadius = '50%';
+            if (annot.fillColor) el.style.backgroundColor = annot.fillColor;
+          }
+          break;
+        }
+
+        case 'highlight': {
+          el.style.width = `${annot.width * currentZoom}px`;
+          el.style.height = `${annot.height * currentZoom}px`;
+          el.style.backgroundColor = annot.color || '#facc15';
+          el.style.opacity = '0.35';
+          break;
+        }
+
+        case 'link': {
+          el.style.width = `${annot.width * currentZoom}px`;
+          el.style.height = `${annot.height * currentZoom}px`;
+          el.style.backgroundColor = 'rgba(59, 130, 246, 0.15)';
+          el.style.border = '1px solid #3b82f6';
+          el.title = `Link to: ${annot.url}`;
+          break;
+        }
+
+        case 'signature': {
+          // Render SVG preview
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.style.width = '100%';
+          svg.style.height = '100%';
+          svg.style.overflow = 'visible';
+
+          annot.points.forEach((stroke) => {
+            if (stroke.length < 2) return;
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            let d = `M ${(stroke[0].x - annot.x) * currentZoom} ${(stroke[0].y - annot.y) * currentZoom}`;
+            for (let i = 1; i < stroke.length; i++) {
+              d += ` L ${(stroke[i].x - annot.x) * currentZoom} ${(stroke[i].y - annot.y) * currentZoom}`;
+            }
+            path.setAttribute('d', d);
+            path.setAttribute('stroke', annot.strokeColor || '#000000');
+            path.setAttribute('stroke-width', String((annot.strokeWidth || 2) * currentZoom));
+            path.setAttribute('fill', 'none');
+            svg.appendChild(path);
+          });
+          el.appendChild(svg);
+          break;
+        }
+      }
+
+      // Drag to move annotation
+      let isMoving = false;
+      let moveStartX = 0;
+      let moveStartY = 0;
+
+      el.addEventListener('mousedown', (e) => {
+        if (e.target === el && !el.isContentEditable) {
+          isMoving = true;
+          moveStartX = e.clientX;
+          moveStartY = e.clientY;
+
+          const onMouseMove = (moveEvt: MouseEvent) => {
+            if (!isMoving) return;
+            const dx = (moveEvt.clientX - moveStartX) / currentZoom;
+            const dy = (moveEvt.clientY - moveStartY) / currentZoom;
+            annot.x += dx;
+            annot.y += dy;
+            moveStartX = moveEvt.clientX;
+            moveStartY = moveEvt.clientY;
+            el.style.left = `${annot.x * currentZoom}px`;
+            el.style.top = `${annot.y * currentZoom}px`;
+          };
+
+          const onMouseUp = () => {
+            isMoving = false;
+            window.removeEventListener('mousemove', onMouseMove);
+            window.removeEventListener('mouseup', onMouseUp);
+          };
+
+          window.addEventListener('mousemove', onMouseMove);
+          window.addEventListener('mouseup', onMouseUp);
+        }
+      });
+
+      annotationLayer.appendChild(el);
+    });
+  }
+
+  // Render text click targets for Edit Text and Find & Replace
+  function renderTextClickTargets() {
+    textClickLayer.innerHTML = '';
+    const activeConfig = pageConfigs[currentPageIndex];
+    if (!activeConfig) return;
+
+    const items = pageTextItemsCache.get(activeConfig.originalIndex + 1) || [];
+
+    if (activeTool === 'editText') {
+      textClickLayer.style.pointerEvents = 'auto';
+      items.forEach((item) => {
+        const target = document.createElement('div');
+        target.className = 'absolute cursor-pointer border border-transparent hover:border-blue-400 hover:bg-blue-50/20';
+        target.style.left = `${item.x * currentZoom}px`;
+        target.style.top = `${item.y * currentZoom}px`;
+        target.style.width = `${item.width * currentZoom}px`;
+        target.style.height = `${item.height * currentZoom}px`;
+
+        target.addEventListener('click', () => {
+          saveHistory();
+          // 1. Create whiteout covering the original line
+          annotations.push({
+            type: 'whiteout',
+            id: `whiteout-${Date.now()}`,
+            pageIndex: currentPageIndex,
+            x: item.x,
+            y: item.y,
+            width: item.width + 4,
+            height: item.height + 2,
+          });
+
+          // 2. Overlay editable replacement text at same position and font size
+          const textId = `text-${Date.now()}`;
+          annotations.push({
+            type: 'text',
+            id: textId,
+            pageIndex: currentPageIndex,
+            x: item.x,
+            y: item.y,
+            text: item.str,
+            fontSize: item.fontSize,
+            color: '#000000',
+          });
+
+          selectedAnnotationId = textId;
+          renderAnnotationsOverlay();
+        });
+
+        textClickLayer.appendChild(target);
+      });
+    } else {
+      textClickLayer.style.pointerEvents = 'none';
+    }
+  }
+
+  // --- SIGNATURE MODAL ---
+  openSigModalBtn?.addEventListener('click', () => {
+    sigModal.classList.remove('hidden');
+    initSigPad();
+  });
+
+  closeSigModalBtn?.addEventListener('click', () => sigModal.classList.add('hidden'));
+  cancelSigBtn?.addEventListener('click', () => sigModal.classList.add('hidden'));
+
+  const tabDraw = document.getElementById('sig-tab-draw') as HTMLButtonElement;
+  const tabType = document.getElementById('sig-tab-type') as HTMLButtonElement;
+  const tabUpload = document.getElementById('sig-tab-upload') as HTMLButtonElement;
+
+  const contentDraw = document.getElementById('sig-content-draw') as HTMLDivElement;
+  const contentType = document.getElementById('sig-content-type') as HTMLDivElement;
+  const contentUpload = document.getElementById('sig-content-upload') as HTMLDivElement;
+
+  tabDraw?.addEventListener('click', () => {
+    currentSignatureType = 'draw';
+    tabDraw.className = 'px-4 py-2 border-b-2 border-slate-900 text-slate-900';
+    tabType.className = 'px-4 py-2 text-slate-500 hover:text-slate-700';
+    tabUpload.className = 'px-4 py-2 text-slate-500 hover:text-slate-700';
+    contentDraw.classList.remove('hidden');
+    contentType.classList.add('hidden');
+    contentUpload.classList.add('hidden');
+  });
+
+  tabType?.addEventListener('click', () => {
+    currentSignatureType = 'type';
+    tabType.className = 'px-4 py-2 border-b-2 border-slate-900 text-slate-900';
+    tabDraw.className = 'px-4 py-2 text-slate-500 hover:text-slate-700';
+    tabUpload.className = 'px-4 py-2 text-slate-500 hover:text-slate-700';
+    contentType.classList.remove('hidden');
+    contentDraw.classList.add('hidden');
+    contentUpload.classList.add('hidden');
+  });
+
+  tabUpload?.addEventListener('click', () => {
+    currentSignatureType = 'upload';
+    tabUpload.className = 'px-4 py-2 border-b-2 border-slate-900 text-slate-900';
+    tabDraw.className = 'px-4 py-2 text-slate-500 hover:text-slate-700';
+    tabType.className = 'px-4 py-2 text-slate-500 hover:text-slate-700';
+    contentUpload.classList.remove('hidden');
+    contentDraw.classList.add('hidden');
+    contentType.classList.add('hidden');
+  });
+
+  function initSigPad() {
+    const ctx = sigPadCanvas.getContext('2d');
+    if (!ctx) return;
+    ctx.clearRect(0, 0, sigPadCanvas.width, sigPadCanvas.height);
+    capturedSignaturePoints = [];
+
+    let isSigning = false;
+
+    sigPadCanvas.onmousedown = (e) => {
+      isSigning = true;
+      currentDrawingStroke = [];
+      const rect = sigPadCanvas.getBoundingClientRect();
+      const pt = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      currentDrawingStroke.push(pt);
+      ctx.beginPath();
+      ctx.moveTo(pt.x, pt.y);
+    };
+
+    sigPadCanvas.onmousemove = (e) => {
+      if (!isSigning) return;
+      const rect = sigPadCanvas.getBoundingClientRect();
+      const pt = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      currentDrawingStroke.push(pt);
+      ctx.lineTo(pt.x, pt.y);
+      ctx.lineWidth = 2;
+      ctx.strokeStyle = '#000000';
+      ctx.stroke();
+    };
+
+    window.onmouseup = () => {
+      if (isSigning) {
+        isSigning = false;
+        if (currentDrawingStroke.length > 0) {
+          capturedSignaturePoints.push([...currentDrawingStroke]);
+        }
+      }
+    };
+  }
+
+  clearSigPadBtn?.addEventListener('click', () => {
+    const ctx = sigPadCanvas.getContext('2d');
+    if (ctx) ctx.clearRect(0, 0, sigPadCanvas.width, sigPadCanvas.height);
+    capturedSignaturePoints = [];
+  });
+
+  saveSigBtn?.addEventListener('click', () => {
+    if (currentSignatureType === 'draw' && capturedSignaturePoints.length > 0) {
+      activeSignatureData = { points: capturedSignaturePoints };
+      activeSignatureStatus.textContent = 'Signature ready. Click page to place.';
+      sigModal.classList.add('hidden');
+    } else if (currentSignatureType === 'type') {
+      const text = sigTypeInput.value.trim() || 'Signature';
+      activeSignatureData = { text };
+      activeSignatureStatus.textContent = `Ready ("${text}"). Click page to place.`;
+      sigModal.classList.add('hidden');
+    }
+  });
+
+  // --- FIND & REPLACE ---
+  const findQueryInput = document.getElementById('find-query-input') as HTMLInputElement;
+  const replaceQueryInput = document.getElementById('replace-query-input') as HTMLInputElement;
+  const findSearchBtn = document.getElementById('find-search-btn') as HTMLButtonElement;
+  const findMatchesCount = document.getElementById('find-matches-count') as HTMLSpanElement;
+  const replaceCurrentBtn = document.getElementById('replace-current-btn') as HTMLButtonElement;
+
+  findSearchBtn?.addEventListener('click', () => {
+    const query = findQueryInput.value.trim();
+    if (!query) return;
+
+    const activeConfig = pageConfigs[currentPageIndex];
+    if (!activeConfig) return;
+
+    const items = pageTextItemsCache.get(activeConfig.originalIndex + 1) || [];
+    currentFindMatches = findTextMatches(items, query);
+    findMatchesCount.textContent = `${currentFindMatches.length} matches`;
+    activeMatchIndex = currentFindMatches.length > 0 ? 0 : -1;
+  });
+
+  replaceCurrentBtn?.addEventListener('click', () => {
+    if (activeMatchIndex >= 0 && activeMatchIndex < currentFindMatches.length) {
+      saveHistory();
+      const match = currentFindMatches[activeMatchIndex];
+      const replacementText = replaceQueryInput.value;
+
+      // 1. Whiteout match box
+      annotations.push({
+        type: 'whiteout',
+        id: `whiteout-${Date.now()}`,
+        pageIndex: currentPageIndex,
+        x: match.box.x,
+        y: match.box.y,
+        width: match.box.width + 2,
+        height: match.box.height + 2,
+      });
+
+      // 2. Place replacement text
+      annotations.push({
+        type: 'text',
+        id: `text-${Date.now()}`,
+        pageIndex: currentPageIndex,
+        x: match.box.x,
+        y: match.box.y,
+        text: replacementText,
+        fontSize: match.item.fontSize,
+        color: '#000000',
+      });
+
+      renderAnnotationsOverlay();
+    }
+  });
+
+  // --- APPLY CHANGES (COMPILATION & EXPORT) ---
+  btnApplyChanges?.addEventListener('click', async () => {
+    if (!originalBytes) return;
+
+    compileModal.classList.remove('hidden');
+    compileProgressBar.style.width = '10%';
+    compileStatusText.textContent = 'Initializing vector compiler...';
+
+    try {
+      const state: DocumentEditState = {
+        pages: pageConfigs,
+        annotations,
+      };
+
+      const editedBytes = await applyPdfEdits(originalBytes, state, (progress, statusText) => {
+        compileProgressBar.style.width = `${progress}%`;
+        compileStatusText.textContent = statusText;
+      });
+
+      compileStatusText.textContent = 'Preparing download...';
+      compileProgressBar.style.width = '100%';
+
+      // Instant download blob
+      const blob = new Blob([editedBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const originalBaseName = originalFile ? originalFile.name.replace(/\.[^/.]+$/, '') : 'document';
+      a.download = `${originalBaseName}_edited.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      setTimeout(() => {
+        compileModal.classList.add('hidden');
+        URL.revokeObjectURL(url);
+      }, 800);
+    } catch (err: any) {
+      compileModal.classList.add('hidden');
+      showError('Failed to apply edits: ' + (err?.message || 'Unknown error'));
+    }
+  });
+</script>
