@@ -9,3 +9,5 @@ temp_sessions/
 gsc_*.txt
 sitemap_*.txt
 adsense_page.txt
+test-results/
+tests/fixtures/*.pdf

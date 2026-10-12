@@ -25,6 +25,7 @@
     "tslib": "^2.8.1"
   },
   "devDependencies": {
+    "@playwright/test": "^1.64.0",
     "@types/jszip": "^3.4.0",
     "@types/node": "^22.13.1",
     "typescript": "^5.7.3",

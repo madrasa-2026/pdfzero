@@ -1,4 +1,4 @@
-import 'regenerator-runtime/runtime';
+import 'regenerator-runtime/runtime.js';
 import fontkit from '@pdf-lib/fontkit';
 import type { PDFDocument, PDFFont } from 'pdf-lib';
 

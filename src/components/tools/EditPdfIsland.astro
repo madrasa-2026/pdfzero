@@ -568,9 +568,11 @@
 
     try {
       const buffer = await file.arrayBuffer();
-      originalBytes = new Uint8Array(buffer);
+      originalBytes = new Uint8Array(buffer.slice(0));
 
-      const loadingTask = pdfjsLib.getDocument({ data: originalBytes });
+      // Clone bytes for worker to prevent buffer detachment
+      const workerBytes = new Uint8Array(buffer.slice(0));
+      const loadingTask = pdfjsLib.getDocument({ data: workerBytes });
       pdfDocProxy = await loadingTask.promise;
       totalOriginalPages = pdfDocProxy.numPages;
 
@@ -1289,7 +1291,7 @@
         annotations,
       };
 
-      const editedBytes = await applyPdfEdits(originalBytes, state, (progress, statusText) => {
+      const editedBytes = await applyPdfEdits(originalBytes.slice(0), state, (progress, statusText) => {
         compileProgressBar.style.width = `${progress}%`;
         compileStatusText.textContent = statusText;
       });
