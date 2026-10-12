@@ -440,6 +440,11 @@
   let currentDrawingStroke: { x: number; y: number }[] = [];
   let activeSignatureData: { points?: { x: number; y: number }[][]; text?: string; imageBytes?: Uint8Array; format?: 'png' | 'jpeg' } | null = null;
 
+  // Active Image & Form states
+  let activeImageData: { imageBytes: Uint8Array; format: 'png' | 'jpeg'; width: number; height: number } | null = null;
+  let activeFormType: 'text' | 'checkbox' = 'text';
+  let currentRenderTask: any = null;
+
   // Text layer cache: pageNumber (1-based) -> ExtractedTextItem[]
   const pageTextItemsCache = new Map<number, ExtractedTextItem[]>();
   let currentFindMatches: TextMatch[] = [];
@@ -502,7 +507,16 @@
   const sigTypeInput = document.getElementById('sig-type-input') as HTMLInputElement;
   const sigTypePreview = document.getElementById('sig-type-preview') as HTMLDivElement;
   const sigUploadInput = document.getElementById('sig-upload-input') as HTMLInputElement;
+  const sigUploadPreview = document.getElementById('sig-upload-preview') as HTMLDivElement;
   const activeSignatureStatus = document.getElementById('active-signature-status') as HTMLSpanElement;
+
+  // Additional Toolbar Controls
+  const imageUploadInput = document.getElementById('image-upload-input') as HTMLInputElement;
+  const annotHighlightBtn = document.getElementById('annot-highlight-btn') as HTMLButtonElement;
+  const annotStrikeBtn = document.getElementById('annot-strike-btn') as HTMLButtonElement;
+  const addFormTextBtn = document.getElementById('add-form-text-btn') as HTMLButtonElement;
+  const addFormCheckBtn = document.getElementById('add-form-check-btn') as HTMLButtonElement;
+  let activeAnnotMode: 'highlight' | 'strike' = 'highlight';
 
   // Compilation modal elements
   const compileModal = document.getElementById('compile-modal') as HTMLDivElement;
@@ -562,6 +576,11 @@
     }
 
     clearError();
+    if (pdfDocProxy) {
+      try {
+        await pdfDocProxy.destroy();
+      } catch {}
+    }
     originalFile = file;
     fileNameEl.textContent = file.name;
     fileSizeEl.textContent = formatBytes(file.size);
@@ -610,7 +629,17 @@
 
     const canvasContext = pdfCanvas.getContext('2d');
     if (canvasContext) {
-      await page.render({ canvasContext, viewport }).promise;
+      if (currentRenderTask) {
+        try {
+          currentRenderTask.cancel();
+        } catch {}
+      }
+      currentRenderTask = page.render({ canvasContext, viewport });
+      try {
+        await currentRenderTask.promise;
+      } catch (rErr: any) {
+        if (rErr?.name === 'RenderingCancelledException') return;
+      }
     }
 
     // Update dimensions on annotation layer & freehand canvas
@@ -675,6 +704,10 @@
           const temp = pageConfigs[visualIdx];
           pageConfigs[visualIdx] = pageConfigs[visualIdx - 1];
           pageConfigs[visualIdx - 1] = temp;
+          annotations.forEach(a => {
+            if (a.pageIndex === visualIdx) a.pageIndex = visualIdx - 1;
+            else if (a.pageIndex === visualIdx - 1) a.pageIndex = visualIdx;
+          });
           currentPageIndex = visualIdx - 1;
           renderThumbnails();
           await renderActivePage();
@@ -687,6 +720,10 @@
           const temp = pageConfigs[visualIdx];
           pageConfigs[visualIdx] = pageConfigs[visualIdx + 1];
           pageConfigs[visualIdx + 1] = temp;
+          annotations.forEach(a => {
+            if (a.pageIndex === visualIdx) a.pageIndex = visualIdx + 1;
+            else if (a.pageIndex === visualIdx + 1) a.pageIndex = visualIdx;
+          });
           currentPageIndex = visualIdx + 1;
           renderThumbnails();
           await renderActivePage();
@@ -703,6 +740,10 @@
       card.querySelector('.btn-page-delete')?.addEventListener('click', async (e) => {
         e.stopPropagation();
         pConfig.isDeleted = true;
+        annotations = annotations.filter(a => a.pageIndex !== visualIdx);
+        annotations.forEach(a => {
+          if (a.pageIndex > visualIdx) a.pageIndex -= 1;
+        });
         if (currentPageIndex >= pageConfigs.filter(p => !p.isDeleted).length) {
           currentPageIndex = Math.max(0, pageConfigs.filter(p => !p.isDeleted).length - 1);
         }
@@ -825,18 +866,96 @@
       renderAnnotationsOverlay();
     } else if (activeTool === 'sign' && activeSignatureData) {
       saveHistory();
-      if (activeSignatureData.points) {
+      if (activeSignatureData.points && activeSignatureData.points.length > 0) {
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        activeSignatureData.points.forEach(stroke => {
+          stroke.forEach(pt => {
+            if (pt.x < minX) minX = pt.x;
+            if (pt.x > maxX) maxX = pt.x;
+            if (pt.y < minY) minY = pt.y;
+            if (pt.y > maxY) maxY = pt.y;
+          });
+        });
+        const sigW = Math.max(40, maxX - minX);
+        const sigH = Math.max(20, maxY - minY);
+        const newPoints = activeSignatureData.points.map(stroke =>
+          stroke.map(pt => ({ x: clickX + (pt.x - minX), y: clickY + (pt.y - minY) }))
+        );
+        const newId = `sig-${Date.now()}`;
         annotations.push({
           type: 'signature',
-          id: `sig-${Date.now()}`,
+          id: newId,
           pageIndex: currentPageIndex,
-          points: activeSignatureData.points.map(stroke =>
-            stroke.map(pt => ({ x: pt.x + clickX, y: pt.y + clickY }))
-          ),
+          x: clickX,
+          y: clickY,
+          width: sigW,
+          height: sigH,
+          points: newPoints,
           strokeColor: '#000000',
           strokeWidth: 2,
         });
+        selectedAnnotationId = newId;
+      } else if (activeSignatureData.text) {
+        const newId = `sig-text-${Date.now()}`;
+        annotations.push({
+          type: 'text',
+          id: newId,
+          pageIndex: currentPageIndex,
+          x: clickX,
+          y: clickY,
+          text: activeSignatureData.text,
+          fontSize: 24,
+          color: '#000000',
+        });
+        selectedAnnotationId = newId;
+      } else if (activeSignatureData.imageBytes) {
+        const newId = `sig-img-${Date.now()}`;
+        annotations.push({
+          type: 'image',
+          id: newId,
+          pageIndex: currentPageIndex,
+          x: clickX,
+          y: clickY,
+          width: 140,
+          height: 60,
+          imageBytes: activeSignatureData.imageBytes,
+          format: activeSignatureData.format || 'png',
+        });
+        selectedAnnotationId = newId;
       }
+      renderAnnotationsOverlay();
+    } else if (activeTool === 'images' && activeImageData) {
+      saveHistory();
+      const newId = `img-${Date.now()}`;
+      annotations.push({
+        type: 'image',
+        id: newId,
+        pageIndex: currentPageIndex,
+        x: clickX,
+        y: clickY,
+        width: activeImageData.width || 120,
+        height: activeImageData.height || 80,
+        imageBytes: activeImageData.imageBytes,
+        format: activeImageData.format,
+      });
+      selectedAnnotationId = newId;
+      renderAnnotationsOverlay();
+    } else if (activeTool === 'forms') {
+      saveHistory();
+      const newId = `form-${Date.now()}`;
+      annotations.push({
+        type: 'formField',
+        id: newId,
+        pageIndex: currentPageIndex,
+        fieldType: activeFormType,
+        name: `field_${Date.now()}`,
+        x: clickX,
+        y: clickY,
+        width: activeFormType === 'checkbox' ? 20 : 120,
+        height: activeFormType === 'checkbox' ? 20 : 25,
+        defaultValue: activeFormType === 'checkbox' ? false : '',
+      });
+      selectedAnnotationId = newId;
       renderAnnotationsOverlay();
     }
   });
@@ -896,16 +1015,32 @@
             strokeWidth,
           });
         } else if (activeTool === 'annotate') {
-          annotations.push({
-            type: 'highlight',
-            id: `highlight-${Date.now()}`,
-            pageIndex: currentPageIndex,
-            x,
-            y,
-            width,
-            height,
-            color: '#facc15',
-          });
+          if (activeAnnotMode === 'strike') {
+            annotations.push({
+              type: 'shape',
+              id: `strike-${Date.now()}`,
+              pageIndex: currentPageIndex,
+              shapeType: 'rect',
+              x,
+              y: y + height / 2 - 1,
+              width,
+              height: 2,
+              strokeColor: '#dc2626',
+              strokeWidth: 1,
+              fillColor: '#dc2626',
+            });
+          } else {
+            annotations.push({
+              type: 'highlight',
+              id: `highlight-${Date.now()}`,
+              pageIndex: currentPageIndex,
+              x,
+              y,
+              width,
+              height,
+              color: '#facc15',
+            });
+          }
         } else if (activeTool === 'links') {
           const url = (document.getElementById('link-url-input') as HTMLInputElement).value || 'https://airpdf.pages.dev';
           annotations.push({
@@ -1002,18 +1137,22 @@
         }
 
         case 'signature': {
-          // Render SVG preview
+          el.style.width = `${(annot.width || 120) * currentZoom}px`;
+          el.style.height = `${(annot.height || 60) * currentZoom}px`;
           const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
           svg.style.width = '100%';
           svg.style.height = '100%';
           svg.style.overflow = 'visible';
 
+          const originX = annot.x || 0;
+          const originY = annot.y || 0;
+
           annot.points.forEach((stroke) => {
             if (stroke.length < 2) return;
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            let d = `M ${(stroke[0].x - annot.x) * currentZoom} ${(stroke[0].y - annot.y) * currentZoom}`;
+            let d = `M ${(stroke[0].x - originX) * currentZoom} ${(stroke[0].y - originY) * currentZoom}`;
             for (let i = 1; i < stroke.length; i++) {
-              d += ` L ${(stroke[i].x - annot.x) * currentZoom} ${(stroke[i].y - annot.y) * currentZoom}`;
+              d += ` L ${(stroke[i].x - originX) * currentZoom} ${(stroke[i].y - originY) * currentZoom}`;
             }
             path.setAttribute('d', d);
             path.setAttribute('stroke', annot.strokeColor || '#000000');
@@ -1022,6 +1161,46 @@
             svg.appendChild(path);
           });
           el.appendChild(svg);
+          break;
+        }
+
+        case 'image': {
+          el.style.width = `${annot.width * currentZoom}px`;
+          el.style.height = `${annot.height * currentZoom}px`;
+          const img = document.createElement('img');
+          const blob = new Blob([annot.imageBytes], { type: annot.format === 'jpeg' ? 'image/jpeg' : 'image/png' });
+          img.src = URL.createObjectURL(blob);
+          img.style.width = '100%';
+          img.style.height = '100%';
+          img.style.objectFit = 'contain';
+          img.style.pointerEvents = 'none';
+          el.appendChild(img);
+          break;
+        }
+
+        case 'formField': {
+          el.style.width = `${annot.width * currentZoom}px`;
+          el.style.height = `${annot.height * currentZoom}px`;
+          if (annot.fieldType === 'text') {
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.placeholder = annot.name;
+            input.className = 'w-full h-full border border-blue-400 bg-blue-50/40 px-1 text-xs rounded';
+            input.value = String(annot.defaultValue || '');
+            input.addEventListener('input', () => {
+              annot.defaultValue = input.value;
+            });
+            el.appendChild(input);
+          } else {
+            const cb = document.createElement('input');
+            cb.type = 'checkbox';
+            cb.className = 'w-4 h-4 text-blue-600 rounded';
+            cb.checked = Boolean(annot.defaultValue);
+            cb.addEventListener('change', () => {
+              annot.defaultValue = cb.checked;
+            });
+            el.appendChild(cb);
+          }
           break;
         }
       }
@@ -1188,6 +1367,11 @@
       if (!isSigning) return;
       const rect = sigPadCanvas.getBoundingClientRect();
       const pt = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+      const lastPt = currentDrawingStroke[currentDrawingStroke.length - 1];
+      if (lastPt) {
+        const dist = Math.hypot(pt.x - lastPt.x, pt.y - lastPt.y);
+        if (dist < 2) return; // 2px decimation to avoid overloading vector stream
+      }
       currentDrawingStroke.push(pt);
       ctx.lineTo(pt.x, pt.y);
       ctx.lineWidth = 2;
@@ -1211,6 +1395,26 @@
     capturedSignaturePoints = [];
   });
 
+  sigTypeInput?.addEventListener('input', () => {
+    if (sigTypePreview) {
+      sigTypePreview.textContent = sigTypeInput.value.trim() || 'Signature Preview';
+    }
+  });
+
+  sigUploadInput?.addEventListener('change', async (e) => {
+    const target = e.target as HTMLInputElement;
+    if (!target.files || target.files.length === 0) return;
+    const file = target.files[0];
+    const format: 'png' | 'jpeg' = file.type === 'image/jpeg' ? 'jpeg' : 'png';
+    const buf = await file.arrayBuffer();
+    const imageBytes = new Uint8Array(buf);
+    activeSignatureData = { imageBytes, format };
+    if (sigUploadPreview) {
+      const url = URL.createObjectURL(file);
+      sigUploadPreview.innerHTML = `<img src="${url}" class="max-h-24 max-w-full object-contain" />`;
+    }
+  });
+
   saveSigBtn?.addEventListener('click', () => {
     if (currentSignatureType === 'draw' && capturedSignaturePoints.length > 0) {
       activeSignatureData = { points: capturedSignaturePoints };
@@ -1221,7 +1425,56 @@
       activeSignatureData = { text };
       activeSignatureStatus.textContent = `Ready ("${text}"). Click page to place.`;
       sigModal.classList.add('hidden');
+    } else if (currentSignatureType === 'upload' && activeSignatureData?.imageBytes) {
+      activeSignatureStatus.textContent = 'Signature image ready. Click page to place.';
+      sigModal.classList.add('hidden');
     }
+  });
+
+  // --- SUB-TOOLBAR LISTENERS ---
+  imageUploadInput?.addEventListener('change', async (e) => {
+    const target = e.target as HTMLInputElement;
+    if (!target.files || target.files.length === 0) return;
+    const file = target.files[0];
+    const format: 'png' | 'jpeg' = file.type === 'image/jpeg' ? 'jpeg' : 'png';
+    const buffer = await file.arrayBuffer();
+    const imageBytes = new Uint8Array(buffer);
+
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      const maxWidth = 160;
+      const aspect = img.width / img.height;
+      const width = maxWidth;
+      const height = maxWidth / aspect;
+      activeImageData = { imageBytes, format, width, height };
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  });
+
+  annotHighlightBtn?.addEventListener('click', () => {
+    activeAnnotMode = 'highlight';
+    annotHighlightBtn.className = 'px-2.5 py-1 bg-yellow-100 text-yellow-900 border border-yellow-300 rounded font-medium';
+    annotStrikeBtn.className = 'px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700';
+  });
+
+  annotStrikeBtn?.addEventListener('click', () => {
+    activeAnnotMode = 'strike';
+    annotStrikeBtn.className = 'px-2.5 py-1 bg-red-100 text-red-900 border border-red-300 rounded font-medium';
+    annotHighlightBtn.className = 'px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700';
+  });
+
+  addFormTextBtn?.addEventListener('click', () => {
+    activeFormType = 'text';
+    addFormTextBtn.className = 'px-2.5 py-1 bg-slate-900 text-white rounded font-medium';
+    addFormCheckBtn.className = 'px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700';
+  });
+
+  addFormCheckBtn?.addEventListener('click', () => {
+    activeFormType = 'checkbox';
+    addFormCheckBtn.className = 'px-2.5 py-1 bg-slate-900 text-white rounded font-medium';
+    addFormTextBtn.className = 'px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700';
   });
 
   // --- FIND & REPLACE ---

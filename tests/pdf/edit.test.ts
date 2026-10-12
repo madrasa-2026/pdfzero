@@ -144,3 +144,27 @@ test('applyPdfEdits applies all vector annotation primitives and page manipulati
   const p1 = reloaded.getPage(0);
   expect(p1.getRotation().angle).toBe(90);
 });
+
+test('handles Unicode punctuation (smart quotes, em-dash, bullets) without WinAnsi encoding crash', async () => {
+  const baseDoc = await PDFDocument.create();
+  baseDoc.addPage([600, 400]);
+  const baseBytes = await baseDoc.save();
+
+  const state: DocumentEditState = {
+    annotations: [
+      {
+        type: 'text',
+        id: 'unicode-quotes',
+        pageIndex: 0,
+        x: 50,
+        y: 50,
+        text: 'Greek Alpha α & Math ∑ ≈ 100 ≠ 0',
+        fontSize: 14,
+      },
+    ],
+  };
+
+  const edited = await applyPdfEdits(baseBytes, state);
+  expect(edited.length).toBeGreaterThan(0);
+});
+

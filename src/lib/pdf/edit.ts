@@ -10,7 +10,7 @@ import {
   type RGB,
 } from 'pdf-lib';
 import fontkit from '@pdf-lib/fontkit';
-import { loadBengaliFont, isBengaliText } from './fontkit';
+import { loadBengaliFont, requiresUnicodeFont } from './fontkit';
 
 export interface BaseAnnotation {
   id: string;
@@ -50,6 +50,10 @@ export interface ShapeAnnotation extends BaseAnnotation {
 export interface SignatureAnnotation extends BaseAnnotation {
   type: 'signature';
   points: { x: number; y: number }[][];
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
   strokeColor?: string;
   strokeWidth?: number;
 }
@@ -139,6 +143,77 @@ export function hexToRgbColor(hex: string): RGB {
 }
 
 /**
+ * Maps screen coordinates (top-down) to native PDF coordinates (bottom-left)
+ * taking into account page dimensions and rotation angle.
+ */
+export function transformCoordinatesForPageRotation(
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  pageWidth: number,
+  pageHeight: number,
+  rotationAngle: number
+): { x: number; y: number; width: number; height: number } {
+  const normAngle = ((rotationAngle % 360) + 360) % 360;
+
+  if (normAngle === 90) {
+    return {
+      x: y,
+      y: x,
+      width: height,
+      height: width,
+    };
+  } else if (normAngle === 180) {
+    return {
+      x: pageWidth - x - width,
+      y: y,
+      width,
+      height,
+    };
+  } else if (normAngle === 270) {
+    return {
+      x: pageWidth - y - height,
+      y: pageHeight - x - width,
+      width: height,
+      height: width,
+    };
+  }
+
+  // 0 degrees default
+  return {
+    x,
+    y: pageHeight - y - height,
+    width,
+    height,
+  };
+}
+
+/**
+ * Maps an individual point (e.g. for signature strokes)
+ * taking into account page rotation.
+ */
+export function transformPointForPageRotation(
+  x: number,
+  y: number,
+  pageWidth: number,
+  pageHeight: number,
+  rotationAngle: number
+): { x: number; y: number } {
+  const normAngle = ((rotationAngle % 360) + 360) % 360;
+
+  if (normAngle === 90) {
+    return { x: y, y: x };
+  } else if (normAngle === 180) {
+    return { x: pageWidth - x, y };
+  } else if (normAngle === 270) {
+    return { x: pageWidth - y, y: pageHeight - x };
+  }
+
+  return { x, y: pageHeight - y };
+}
+
+/**
  * Applies all user annotations and page reconfigurations directly to the PDF file bytes
  * using native vector operators and fontkit TTF embedding. Zero rasterization.
  */
@@ -184,7 +259,7 @@ export async function applyPdfEdits(
   }
 
   onProgress?.(50, 'Loading typography assets...');
-  let bengaliFont: PDFFont | null = null;
+  let unicodeFont: PDFFont | null = null;
   let helveticaFont: PDFFont | null = null;
 
   // 2. Vector Stamping of Annotations
@@ -198,17 +273,18 @@ export async function applyPdfEdits(
     }
 
     const page = targetDoc.getPage(annot.pageIndex);
-    const { height: pageHeight } = page.getSize();
+    const { width: pageWidth, height: pageHeight } = page.getSize();
+    const pageRotation = page.getRotation().angle;
 
     switch (annot.type) {
       case 'text': {
-        const isBengali = isBengaliText(annot.text);
+        const isUnicode = requiresUnicodeFont(annot.text);
         let font: PDFFont;
-        if (isBengali) {
-          if (!bengaliFont) {
-            bengaliFont = await loadBengaliFont(targetDoc);
+        if (isUnicode) {
+          if (!unicodeFont) {
+            unicodeFont = await loadBengaliFont(targetDoc);
           }
-          font = bengaliFont;
+          font = unicodeFont;
         } else {
           if (!helveticaFont) {
             helveticaFont = await targetDoc.embedFont(StandardFonts.Helvetica);
@@ -217,28 +293,44 @@ export async function applyPdfEdits(
         }
 
         const textColor = annot.color ? hexToRgbColor(annot.color) : rgb(0, 0, 0);
-        // y is top-down coordinate; convert to bottom-left PDF coordinate
-        const yPdf = pageHeight - annot.y - annot.fontSize;
+        const coords = transformCoordinatesForPageRotation(
+          annot.x,
+          annot.y,
+          annot.fontSize * (annot.text.length * 0.6),
+          annot.fontSize,
+          pageWidth,
+          pageHeight,
+          pageRotation
+        );
 
         page.drawText(annot.text, {
-          x: annot.x,
-          y: yPdf,
+          x: coords.x,
+          y: coords.y,
           size: annot.fontSize,
           font,
           color: textColor,
+          rotate: degrees(pageRotation),
         });
         break;
       }
 
       case 'whiteout': {
-        const yPdf = pageHeight - annot.y - annot.height;
+        const coords = transformCoordinatesForPageRotation(
+          annot.x,
+          annot.y,
+          annot.width,
+          annot.height,
+          pageWidth,
+          pageHeight,
+          pageRotation
+        );
         const fillColor = annot.color ? hexToRgbColor(annot.color) : rgb(1, 1, 1);
 
         page.drawRectangle({
-          x: annot.x,
-          y: yPdf,
-          width: annot.width,
-          height: annot.height,
+          x: coords.x,
+          y: coords.y,
+          width: coords.width,
+          height: coords.height,
           color: fillColor,
           opacity: 1.0,
         });
@@ -246,26 +338,34 @@ export async function applyPdfEdits(
       }
 
       case 'shape': {
-        const yPdf = pageHeight - annot.y - annot.height;
+        const coords = transformCoordinatesForPageRotation(
+          annot.x,
+          annot.y,
+          annot.width,
+          annot.height,
+          pageWidth,
+          pageHeight,
+          pageRotation
+        );
         const strokeColor = hexToRgbColor(annot.strokeColor);
         const fillColor = annot.fillColor ? hexToRgbColor(annot.fillColor) : undefined;
 
         if (annot.shapeType === 'rect') {
           page.drawRectangle({
-            x: annot.x,
-            y: yPdf,
-            width: annot.width,
-            height: annot.height,
+            x: coords.x,
+            y: coords.y,
+            width: coords.width,
+            height: coords.height,
             borderColor: strokeColor,
             borderWidth: annot.strokeWidth,
             color: fillColor,
           });
         } else if (annot.shapeType === 'circle') {
           page.drawEllipse({
-            x: annot.x + annot.width / 2,
-            y: yPdf + annot.height / 2,
-            xScale: annot.width / 2,
-            yScale: annot.height / 2,
+            x: coords.x + coords.width / 2,
+            y: coords.y + coords.height / 2,
+            xScale: coords.width / 2,
+            yScale: coords.height / 2,
             borderColor: strokeColor,
             borderWidth: annot.strokeWidth,
             color: fillColor,
@@ -280,12 +380,12 @@ export async function applyPdfEdits(
 
         for (const stroke of annot.points) {
           for (let j = 0; j < stroke.length - 1; j++) {
-            const p1 = stroke[j];
-            const p2 = stroke[j + 1];
+            const p1 = transformPointForPageRotation(stroke[j].x, stroke[j].y, pageWidth, pageHeight, pageRotation);
+            const p2 = transformPointForPageRotation(stroke[j + 1].x, stroke[j + 1].y, pageWidth, pageHeight, pageRotation);
 
             page.drawLine({
-              start: { x: p1.x, y: pageHeight - p1.y },
-              end: { x: p2.x, y: pageHeight - p2.y },
+              start: p1,
+              end: p2,
               thickness,
               color: strokeColor,
             });
@@ -295,7 +395,15 @@ export async function applyPdfEdits(
       }
 
       case 'image': {
-        const yPdf = pageHeight - annot.y - annot.height;
+        const coords = transformCoordinatesForPageRotation(
+          annot.x,
+          annot.y,
+          annot.width,
+          annot.height,
+          pageWidth,
+          pageHeight,
+          pageRotation
+        );
         let embeddedImage;
         if (annot.format === 'png') {
           embeddedImage = await targetDoc.embedPng(annot.imageBytes);
@@ -304,23 +412,31 @@ export async function applyPdfEdits(
         }
 
         page.drawImage(embeddedImage, {
-          x: annot.x,
-          y: yPdf,
-          width: annot.width,
-          height: annot.height,
+          x: coords.x,
+          y: coords.y,
+          width: coords.width,
+          height: coords.height,
         });
         break;
       }
 
       case 'highlight': {
-        const yPdf = pageHeight - annot.y - annot.height;
+        const coords = transformCoordinatesForPageRotation(
+          annot.x,
+          annot.y,
+          annot.width,
+          annot.height,
+          pageWidth,
+          pageHeight,
+          pageRotation
+        );
         const color = hexToRgbColor(annot.color || '#facc15');
 
         page.drawRectangle({
-          x: annot.x,
-          y: yPdf,
-          width: annot.width,
-          height: annot.height,
+          x: coords.x,
+          y: coords.y,
+          width: coords.width,
+          height: coords.height,
           color,
           opacity: 0.35,
         });
@@ -328,11 +444,19 @@ export async function applyPdfEdits(
       }
 
       case 'link': {
-        const yPdf = pageHeight - annot.y - annot.height;
+        const coords = transformCoordinatesForPageRotation(
+          annot.x,
+          annot.y,
+          annot.width,
+          annot.height,
+          pageWidth,
+          pageHeight,
+          pageRotation
+        );
         const linkAnnot = targetDoc.context.obj({
           Type: 'Annot',
           Subtype: 'Link',
-          Rect: [annot.x, yPdf, annot.x + annot.width, yPdf + annot.height],
+          Rect: [coords.x, coords.y, coords.x + coords.width, coords.y + coords.height],
           Border: [0, 0, 0],
           A: {
             Type: 'Action',
@@ -352,16 +476,24 @@ export async function applyPdfEdits(
       }
 
       case 'formField': {
-        const yPdf = pageHeight - annot.y - annot.height;
+        const coords = transformCoordinatesForPageRotation(
+          annot.x,
+          annot.y,
+          annot.width,
+          annot.height,
+          pageWidth,
+          pageHeight,
+          pageRotation
+        );
         const form = targetDoc.getForm();
 
         if (annot.fieldType === 'text') {
           const tf = form.createTextField(annot.name);
           tf.addToPage(page, {
-            x: annot.x,
-            y: yPdf,
-            width: annot.width,
-            height: annot.height,
+            x: coords.x,
+            y: coords.y,
+            width: coords.width,
+            height: coords.height,
           });
           if (annot.defaultValue) {
             tf.setText(String(annot.defaultValue));
@@ -369,10 +501,10 @@ export async function applyPdfEdits(
         } else if (annot.fieldType === 'checkbox') {
           const cb = form.createCheckBox(annot.name);
           cb.addToPage(page, {
-            x: annot.x,
-            y: yPdf,
-            width: annot.width,
-            height: annot.height,
+            x: coords.x,
+            y: coords.y,
+            width: coords.width,
+            height: coords.height,
           });
           if (annot.defaultValue === true) {
             cb.check();

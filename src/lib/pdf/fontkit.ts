@@ -12,6 +12,19 @@ export function isBengaliText(text: string): boolean {
 }
 
 /**
+ * Checks if a string contains any non-WinAnsi characters that require
+ * embedding a TrueType Unicode font rather than StandardFonts.Helvetica.
+ */
+export function requiresUnicodeFont(text: string): boolean {
+  for (let i = 0; i < text.length; i++) {
+    if (text.charCodeAt(i) > 255) {
+      return true;
+    }
+  }
+  return isBengaliText(text);
+}
+
+/**
  * Retrieves the TrueType font bytes for Noto Sans Bengali.
  * Seamlessly resolves in both Node.js (test/build) and Browser (client) runtimes.
  */
