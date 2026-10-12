@@ -1,5 +1,5 @@
 ---
-title: "Edit PDF Online Free — 100% Client-Side Vector Editor"
+title: "Edit PDF Online Free"
 shortDescription: "Add text, edit text, whiteout, shapes, signatures & organize pages client-side."
 description: "Edit PDF documents directly in your browser with zero server uploads. Add text, edit existing lines, visual whiteout, draw shapes, insert images, sign, and organize pages privately."
 category: "organize"
