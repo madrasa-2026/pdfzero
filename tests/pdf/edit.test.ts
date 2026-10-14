@@ -255,3 +255,42 @@ test('handles bold, italic, and multi-line text vector stamping', async () => {
   expect(reloaded.getPageCount()).toBe(1);
 });
 
+test('handles Times Roman and Courier font families with typography styling', async () => {
+  const baseDoc = await PDFDocument.create();
+  baseDoc.addPage([600, 400]);
+  const baseBytes = await baseDoc.save();
+
+  const state: DocumentEditState = {
+    annotations: [
+      {
+        type: 'text',
+        id: 't-times',
+        pageIndex: 0,
+        x: 50,
+        y: 50,
+        text: 'Serif Times Roman Contract Clause',
+        fontSize: 16,
+        fontFamily: 'TimesRoman',
+        bold: true,
+      },
+      {
+        type: 'text',
+        id: 't-courier',
+        pageIndex: 0,
+        x: 50,
+        y: 80,
+        text: 'Monospace Courier Code Block: const x = 42;',
+        fontSize: 12,
+        fontFamily: 'Courier',
+        italic: true,
+      },
+    ],
+  };
+
+  const edited = await applyPdfEdits(baseBytes, state);
+  expect(edited.length).toBeGreaterThan(0);
+  const reloaded = await PDFDocument.load(edited);
+  expect(reloaded.getPageCount()).toBe(1);
+});
+
+

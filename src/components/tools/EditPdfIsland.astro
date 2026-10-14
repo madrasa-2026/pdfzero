@@ -154,7 +154,11 @@
       <!-- Zoom and Display Controls -->
       <div class="flex items-center gap-2 text-xs">
         <button type="button" id="prev-page-top-btn" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 font-semibold text-slate-700" title="Previous Page">◀</button>
-        <span id="page-indicator-top" class="text-slate-600 font-medium">1 / 1</span>
+        <div class="flex items-center gap-1 text-slate-600 font-medium">
+          <input type="number" id="page-jump-input" min="1" max="1" value="1" class="w-10 text-center py-0.5 px-1 border border-slate-200 rounded text-xs font-mono" title="Type page number and press Enter" />
+          <span>/ <span id="page-indicator-total">1</span></span>
+        </div>
+        <span id="page-indicator-top" class="hidden text-slate-600 font-medium">1 / 1</span>
         <button type="button" id="next-page-top-btn" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 font-semibold text-slate-700" title="Next Page">▶</button>
         <div class="h-4 w-[1px] bg-slate-200 mx-1"></div>
         <button type="button" id="zoom-out-btn" class="w-7 h-7 rounded border border-slate-200 hover:bg-slate-100 flex items-center justify-center font-bold" title="Zoom Out">−</button>
@@ -168,6 +172,14 @@
     <div id="sub-tool-bar" class="px-4 py-2 bg-slate-50/70 border-b border-slate-200 flex flex-wrap items-center gap-3 text-xs">
       <!-- Options for Text tool -->
       <div id="sub-opts-text" class="flex items-center gap-2">
+        <label class="flex items-center gap-1 font-medium text-slate-700">
+          <span>Font:</span>
+          <select id="text-font-select" class="rounded border border-slate-300 px-2 py-1 text-xs bg-white">
+            <option value="Helvetica" selected>Helvetica (Sans)</option>
+            <option value="TimesRoman">Times Roman (Serif)</option>
+            <option value="Courier">Courier (Mono)</option>
+          </select>
+        </label>
         <label class="flex items-center gap-1 font-medium text-slate-700">
           <span>Size:</span>
           <select id="text-size-select" class="rounded border border-slate-300 px-2 py-1 text-xs bg-white">
@@ -273,6 +285,10 @@
       <!-- Options for Sign tool -->
       <div id="sub-opts-sign" class="hidden flex items-center gap-3">
         <button type="button" id="open-sign-modal-btn" class="px-3 py-1 bg-slate-900 text-white rounded font-medium">+ Create Signature</button>
+        <div id="active-signature-chip" class="hidden flex items-center gap-2 bg-white px-2 py-1 rounded border border-slate-200 shadow-xs">
+          <canvas id="sub-sig-thumb" width="70" height="26" class="h-6 w-16 object-contain bg-slate-50 border border-slate-100 rounded"></canvas>
+          <span class="text-xs text-emerald-700 font-semibold">Ready to place</span>
+        </div>
         <span id="active-signature-status" class="text-slate-500 italic">No signature created yet. Click "+ Create Signature".</span>
       </div>
 
@@ -406,6 +422,12 @@
       </div>
       <p class="text-[11px] text-slate-400">100% Client-Side Processing • No file leaves your device</p>
     </div>
+  </div>
+
+  <!-- Floating Save Success Toast -->
+  <div id="edit-success-toast" class="hidden fixed bottom-6 right-6 z-50 bg-slate-900 text-white px-4 py-3 rounded-xl shadow-2xl flex items-center gap-2.5 text-xs font-semibold border border-slate-700 transition-all duration-300">
+    <span class="text-emerald-400 text-base">✓</span>
+    <span>Document saved! 100% processed client-side with zero data uploads.</span>
   </div>
 </div>
 
@@ -582,6 +604,11 @@
   const findPrevBtn = document.getElementById('find-prev-btn') as HTMLButtonElement;
   const findNextBtn = document.getElementById('find-next-btn') as HTMLButtonElement;
   const viewportContainer = document.getElementById('viewport-container') as HTMLDivElement;
+  const pageJumpInput = document.getElementById('page-jump-input') as HTMLInputElement;
+  const pageIndicatorTotal = document.getElementById('page-indicator-total') as HTMLSpanElement;
+  const activeSignatureChip = document.getElementById('active-signature-chip') as HTMLDivElement;
+  const subSigThumb = document.getElementById('sub-sig-thumb') as HTMLCanvasElement;
+  const editSuccessToast = document.getElementById('edit-success-toast') as HTMLDivElement;
   let activeAnnotMode: 'pen' | 'highlight' | 'strike' = 'highlight';
 
   // Compilation modal elements
@@ -672,6 +699,7 @@
 
       renderThumbnails();
       await renderActivePage();
+      updateToolCursor();
     } catch (err: any) {
       showError('Failed to parse PDF: ' + (err?.message || 'Invalid or encrypted file.'));
     }
@@ -723,6 +751,11 @@
     const totalActive = pageConfigs.filter(p => !p.isDeleted).length;
     pageCounterEl.textContent = `Page ${currentPageIndex + 1} of ${totalActive}`;
     if (pageIndicatorTop) pageIndicatorTop.textContent = `${currentPageIndex + 1} / ${totalActive}`;
+    if (pageJumpInput) {
+      pageJumpInput.value = String(currentPageIndex + 1);
+      pageJumpInput.max = String(totalActive);
+    }
+    if (pageIndicatorTotal) pageIndicatorTotal.textContent = String(totalActive);
     if (prevPageTopBtn) prevPageTopBtn.disabled = currentPageIndex === 0;
     if (nextPageTopBtn) nextPageTopBtn.disabled = currentPageIndex >= totalActive - 1;
 
@@ -887,8 +920,28 @@
       }
 
       renderTextClickTargets();
+      updateToolCursor();
     });
   });
+
+  function updateToolCursor() {
+    if (!annotationLayer) return;
+    if (activeTool === 'text') {
+      annotationLayer.style.cursor = 'text';
+    } else if (activeTool === 'editText') {
+      annotationLayer.style.cursor = 'default';
+    } else if (activeTool === 'sign') {
+      annotationLayer.style.cursor = 'crosshair';
+    } else if (activeTool === 'images') {
+      annotationLayer.style.cursor = 'pointer';
+    } else if (activeTool === 'forms') {
+      annotationLayer.style.cursor = 'crosshair';
+    } else if (['whiteout', 'shapes', 'annotate', 'links'].includes(activeTool)) {
+      annotationLayer.style.cursor = 'crosshair';
+    } else {
+      annotationLayer.style.cursor = 'default';
+    }
+  }
 
   // Zoom controls
   zoomInBtn?.addEventListener('click', async () => {
@@ -969,6 +1022,7 @@
       saveHistory();
       const fontSize = parseInt((document.getElementById('text-size-select') as HTMLSelectElement).value, 10) || 14;
       const color = (document.getElementById('text-color-select') as HTMLSelectElement).value || '#000000';
+      const fontFamily = ((document.getElementById('text-font-select') as HTMLSelectElement)?.value as 'Helvetica' | 'TimesRoman' | 'Courier') || 'Helvetica';
 
       const newId = `text-${Date.now()}`;
       annotations.push({
@@ -982,6 +1036,7 @@
         color,
         bold: isTextBold,
         italic: isTextItalic,
+        fontFamily,
       });
       selectedAnnotationId = newId;
       renderAnnotationsOverlay();
@@ -1165,6 +1220,29 @@
       dragPreviewBox.style.top = `${y * currentZoom}px`;
       dragPreviewBox.style.width = `${width * currentZoom}px`;
       dragPreviewBox.style.height = `${height * currentZoom}px`;
+
+      if (activeTool === 'whiteout') {
+        dragPreviewBox.className = 'absolute pointer-events-none bg-white border-2 border-dashed border-slate-400 opacity-90 shadow-sm z-20';
+      } else if (activeTool === 'shapes') {
+        const shapeType = (document.getElementById('shape-type-select') as HTMLSelectElement)?.value;
+        const strokeCol = (document.getElementById('shape-stroke-color') as HTMLInputElement)?.value || '#2563eb';
+        dragPreviewBox.style.borderColor = strokeCol;
+        if (shapeType === 'circle') {
+          dragPreviewBox.className = 'absolute pointer-events-none rounded-full border-2 border-dashed bg-blue-500/10 z-20';
+        } else {
+          dragPreviewBox.className = 'absolute pointer-events-none rounded-none border-2 border-dashed bg-blue-500/10 z-20';
+        }
+      } else if (activeTool === 'annotate') {
+        if (activeAnnotMode === 'strike') {
+          dragPreviewBox.className = 'absolute pointer-events-none border-b-2 border-red-500 z-20';
+        } else {
+          dragPreviewBox.className = 'absolute pointer-events-none bg-yellow-300/40 border border-yellow-400 z-20';
+        }
+      } else if (activeTool === 'links') {
+        dragPreviewBox.className = 'absolute pointer-events-none bg-blue-500/20 border-2 border-dashed border-blue-500 z-20';
+      } else {
+        dragPreviewBox.className = 'absolute pointer-events-none border-2 border-dashed border-blue-500 bg-blue-500/20 z-20';
+      }
     }
   });
 
@@ -1345,6 +1423,14 @@
           }
           if (annot.bold) textSpan.classList.add('font-bold');
           if (annot.italic) textSpan.classList.add('italic');
+          const fam = annot.fontFamily || 'Helvetica';
+          if (fam === 'TimesRoman') {
+            textSpan.style.fontFamily = "'Times New Roman', Times, 'Noto Serif Bengali', serif";
+          } else if (fam === 'Courier') {
+            textSpan.style.fontFamily = "'Courier New', Courier, monospace";
+          } else {
+            textSpan.style.fontFamily = "'Helvetica Neue', Helvetica, Arial, 'Noto Sans Bengali', sans-serif";
+          }
           textSpan.contentEditable = 'true';
           textSpan.style.fontSize = `${annot.fontSize * currentZoom}px`;
           textSpan.style.color = annot.color || '#000000';
@@ -1714,6 +1800,26 @@
       });
       floatingAnnotBar.appendChild(btnItalic);
 
+      const btnFont = document.createElement('button');
+      btnFont.type = 'button';
+      btnFont.className = 'px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-[11px] font-mono text-slate-200';
+      const famLabel = annot.fontFamily === 'TimesRoman' ? 'Times' : annot.fontFamily === 'Courier' ? 'Courier' : 'Helvetica';
+      btnFont.textContent = famLabel;
+      btnFont.title = 'Switch Font Family (Helvetica / Times / Courier)';
+      btnFont.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveHistory();
+        if (!annot.fontFamily || annot.fontFamily === 'Helvetica') {
+          annot.fontFamily = 'TimesRoman';
+        } else if (annot.fontFamily === 'TimesRoman') {
+          annot.fontFamily = 'Courier';
+        } else {
+          annot.fontFamily = 'Helvetica';
+        }
+        renderAnnotationsOverlay();
+      });
+      floatingAnnotBar.appendChild(btnFont);
+
       const colors = ['#000000', '#2563eb', '#dc2626', '#16a34a', '#ffffff'];
       colors.forEach(col => {
         const swatch = document.createElement('button');
@@ -2079,14 +2185,45 @@
       activeSignatureData = { points: capturedSignaturePoints };
       activeSignatureStatus.textContent = 'Signature ready. Click page to place.';
       sigModal.classList.add('hidden');
+      if (activeSignatureChip && subSigThumb) {
+        activeSignatureChip.classList.remove('hidden');
+        const sCtx = subSigThumb.getContext('2d');
+        if (sCtx) {
+          sCtx.clearRect(0, 0, subSigThumb.width, subSigThumb.height);
+          sCtx.drawImage(sigPadCanvas, 0, 0, subSigThumb.width, subSigThumb.height);
+        }
+      }
     } else if (currentSignatureType === 'type') {
       const text = sigTypeInput.value.trim() || 'Signature';
       activeSignatureData = { text };
       activeSignatureStatus.textContent = `Ready ("${text}"). Click page to place.`;
       sigModal.classList.add('hidden');
+      if (activeSignatureChip && subSigThumb) {
+        activeSignatureChip.classList.remove('hidden');
+        const sCtx = subSigThumb.getContext('2d');
+        if (sCtx) {
+          sCtx.clearRect(0, 0, subSigThumb.width, subSigThumb.height);
+          sCtx.font = '14px Caveat, cursive';
+          sCtx.fillStyle = '#000000';
+          sCtx.textAlign = 'center';
+          sCtx.textBaseline = 'middle';
+          sCtx.fillText(text.slice(0, 10), subSigThumb.width / 2, subSigThumb.height / 2);
+        }
+      }
     } else if (currentSignatureType === 'upload' && activeSignatureData?.imageBytes) {
       activeSignatureStatus.textContent = 'Signature image ready. Click page to place.';
       sigModal.classList.add('hidden');
+      if (activeSignatureChip && subSigThumb) {
+        activeSignatureChip.classList.remove('hidden');
+        const sCtx = subSigThumb.getContext('2d');
+        if (sCtx && sigUploadPreview) {
+          const img = sigUploadPreview.querySelector('img');
+          if (img) {
+            sCtx.clearRect(0, 0, subSigThumb.width, subSigThumb.height);
+            sCtx.drawImage(img, 0, 0, subSigThumb.width, subSigThumb.height);
+          }
+        }
+      }
     }
   });
 
@@ -2188,6 +2325,18 @@
       currentPageIndex++;
       renderThumbnails();
       await renderActivePage();
+    }
+  });
+
+  pageJumpInput?.addEventListener('change', async () => {
+    const val = parseInt(pageJumpInput.value, 10);
+    const totalActive = pageConfigs.filter(p => !p.isDeleted).length;
+    if (!isNaN(val) && val >= 1 && val <= totalActive) {
+      currentPageIndex = val - 1;
+      renderThumbnails();
+      await renderActivePage();
+    } else {
+      pageJumpInput.value = String(currentPageIndex + 1);
     }
   });
 
@@ -2351,6 +2500,32 @@
         renderAnnotationsOverlay();
       }
     }
+    // PageUp / PageDown / Home / End navigation
+    if ((e.key === 'PageDown' || (e.shiftKey && e.key === ' ')) && !isEditingText) {
+      e.preventDefault();
+      nextPageTopBtn?.click();
+    }
+    if (e.key === 'PageUp' && !isEditingText) {
+      e.preventDefault();
+      prevPageTopBtn?.click();
+    }
+    if (e.key === 'Home' && !isEditingText) {
+      e.preventDefault();
+      if (currentPageIndex !== 0) {
+        currentPageIndex = 0;
+        renderThumbnails();
+        renderActivePage();
+      }
+    }
+    if (e.key === 'End' && !isEditingText) {
+      e.preventDefault();
+      const totalActive = pageConfigs.filter(p => !p.isDeleted).length;
+      if (currentPageIndex !== totalActive - 1) {
+        currentPageIndex = totalActive - 1;
+        renderThumbnails();
+        renderActivePage();
+      }
+    }
   });
 
   // Ctrl + Mouse Wheel Zoom
@@ -2401,6 +2576,13 @@
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+
+      if (editSuccessToast) {
+        editSuccessToast.classList.remove('hidden');
+        setTimeout(() => {
+          editSuccessToast.classList.add('hidden');
+        }, 4000);
+      }
 
       setTimeout(() => {
         compileModal.classList.add('hidden');

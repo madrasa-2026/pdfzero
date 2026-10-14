@@ -26,6 +26,7 @@ export interface TextAnnotation extends BaseAnnotation {
   color?: string;
   bold?: boolean;
   italic?: boolean;
+  fontFamily?: 'Helvetica' | 'TimesRoman' | 'Courier';
 }
 
 export interface WhiteoutAnnotation extends BaseAnnotation {
@@ -262,10 +263,21 @@ export async function applyPdfEdits(
 
   onProgress?.(50, 'Loading typography assets...');
   let unicodeFont: PDFFont | null = null;
+  // Helvetica family
   let helveticaFont: PDFFont | null = null;
   let helveticaBoldFont: PDFFont | null = null;
   let helveticaItalicFont: PDFFont | null = null;
   let helveticaBoldItalicFont: PDFFont | null = null;
+  // Times Roman family
+  let timesFont: PDFFont | null = null;
+  let timesBoldFont: PDFFont | null = null;
+  let timesItalicFont: PDFFont | null = null;
+  let timesBoldItalicFont: PDFFont | null = null;
+  // Courier family
+  let courierFont: PDFFont | null = null;
+  let courierBoldFont: PDFFont | null = null;
+  let courierItalicFont: PDFFont | null = null;
+  let courierBoldItalicFont: PDFFont | null = null;
 
   // 2. Vector Stamping of Annotations
   const totalAnnotations = state.annotations.length;
@@ -291,26 +303,74 @@ export async function applyPdfEdits(
           }
           font = unicodeFont;
         } else {
-          if (annot.bold && annot.italic) {
-            if (!helveticaBoldItalicFont) {
-              helveticaBoldItalicFont = await targetDoc.embedFont(StandardFonts.HelveticaBoldOblique);
+          const family = annot.fontFamily || 'Helvetica';
+          if (family === 'TimesRoman') {
+            if (annot.bold && annot.italic) {
+              if (!timesBoldItalicFont) {
+                timesBoldItalicFont = await targetDoc.embedFont(StandardFonts.TimesRomanBoldItalic);
+              }
+              font = timesBoldItalicFont;
+            } else if (annot.bold) {
+              if (!timesBoldFont) {
+                timesBoldFont = await targetDoc.embedFont(StandardFonts.TimesRomanBold);
+              }
+              font = timesBoldFont;
+            } else if (annot.italic) {
+              if (!timesItalicFont) {
+                timesItalicFont = await targetDoc.embedFont(StandardFonts.TimesRomanItalic);
+              }
+              font = timesItalicFont;
+            } else {
+              if (!timesFont) {
+                timesFont = await targetDoc.embedFont(StandardFonts.TimesRoman);
+              }
+              font = timesFont;
             }
-            font = helveticaBoldItalicFont;
-          } else if (annot.bold) {
-            if (!helveticaBoldFont) {
-              helveticaBoldFont = await targetDoc.embedFont(StandardFonts.HelveticaBold);
+          } else if (family === 'Courier') {
+            if (annot.bold && annot.italic) {
+              if (!courierBoldItalicFont) {
+                courierBoldItalicFont = await targetDoc.embedFont(StandardFonts.CourierBoldOblique);
+              }
+              font = courierBoldItalicFont;
+            } else if (annot.bold) {
+              if (!courierBoldFont) {
+                courierBoldFont = await targetDoc.embedFont(StandardFonts.CourierBold);
+              }
+              font = courierBoldFont;
+            } else if (annot.italic) {
+              if (!courierItalicFont) {
+                courierItalicFont = await targetDoc.embedFont(StandardFonts.CourierOblique);
+              }
+              font = courierItalicFont;
+            } else {
+              if (!courierFont) {
+                courierFont = await targetDoc.embedFont(StandardFonts.Courier);
+              }
+              font = courierFont;
             }
-            font = helveticaBoldFont;
-          } else if (annot.italic) {
-            if (!helveticaItalicFont) {
-              helveticaItalicFont = await targetDoc.embedFont(StandardFonts.HelveticaOblique);
-            }
-            font = helveticaItalicFont;
           } else {
-            if (!helveticaFont) {
-              helveticaFont = await targetDoc.embedFont(StandardFonts.Helvetica);
+            // Default: Helvetica
+            if (annot.bold && annot.italic) {
+              if (!helveticaBoldItalicFont) {
+                helveticaBoldItalicFont = await targetDoc.embedFont(StandardFonts.HelveticaBoldOblique);
+              }
+              font = helveticaBoldItalicFont;
+            } else if (annot.bold) {
+              if (!helveticaBoldFont) {
+                helveticaBoldFont = await targetDoc.embedFont(StandardFonts.HelveticaBold);
+              }
+              font = helveticaBoldFont;
+            } else if (annot.italic) {
+              if (!helveticaItalicFont) {
+                helveticaItalicFont = await targetDoc.embedFont(StandardFonts.HelveticaOblique);
+              }
+              font = helveticaItalicFont;
+            } else {
+              if (!helveticaFont) {
+                helveticaFont = await targetDoc.embedFont(StandardFonts.Helvetica);
+              }
+              font = helveticaFont;
             }
-            font = helveticaFont;
           }
         }
 

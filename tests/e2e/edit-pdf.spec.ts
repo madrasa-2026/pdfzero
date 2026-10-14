@@ -247,8 +247,9 @@ test.describe('Sejda-Style PDF Editor E2E Suite', () => {
     const dragPreview = page.locator('#drag-preview-box');
     expect(await dragPreview.count()).toBe(1);
 
-    // 4. Test Text tool with Bold and Italic toggles
+    // 4. Test Text tool with Bold, Italic, and Font Family toggles
     await page.locator('[data-tool="text"]').click();
+    await expect(page.locator('#text-font-select')).toBeVisible();
     await expect(page.locator('#text-bold-btn')).toBeVisible();
     await expect(page.locator('#text-italic-btn')).toBeVisible();
 
@@ -269,11 +270,16 @@ test.describe('Sejda-Style PDF Editor E2E Suite', () => {
     // Type text into editable box
     await editable.fill('Interactive Sejda Quality Test');
 
-    // Verify floating toolbar appeared
+    // Verify floating toolbar appeared with font family switcher
     const floatingBar = page.locator('#floating-annot-bar');
     await expect(floatingBar).toBeVisible();
     await expect(floatingBar.locator('text=A+')).toBeVisible();
+    await expect(floatingBar.locator('text=Helvetica')).toBeVisible();
     await expect(floatingBar.locator('text=📋 Duplicate')).toBeVisible();
+
+    // Switch font to Times Roman via floating toolbar
+    await floatingBar.locator('text=Helvetica').click();
+    await expect(floatingBar.locator('text=Times')).toBeVisible();
 
     // 5. Test Annotate tool with Pen button
     await page.locator('[data-tool="annotate"]').click();
@@ -301,7 +307,29 @@ test.describe('Sejda-Style PDF Editor E2E Suite', () => {
       await expect(whiteoutEl.locator(`.handle-${pos}`)).toBeVisible();
     }
 
-    // 7. Verify Escape deselects
+    // 7. Test interactive Page Jump input
+    const pageJump = page.locator('#page-jump-input');
+    await expect(pageJump).toBeVisible();
+    await expect(pageJump).toHaveValue('1');
+    await pageJump.fill('2');
+    await pageJump.dispatchEvent('change');
+    await expect(page.locator('#edit-page-counter')).toContainText('Page 2 of 3');
+
+    // 8. Test Signature creation and saved chip
+    await page.locator('[data-tool="sign"]').click();
+    await page.locator('#open-sign-modal-btn').click();
+    await expect(page.locator('#signature-modal')).toBeVisible();
+
+    // Use Typed signature
+    await page.locator('#sig-tab-type').click();
+    await page.locator('#sig-type-input').fill('John Hancock');
+    await page.locator('#save-sig-btn').click();
+
+    // Verify active signature chip appears with preview
+    await expect(page.locator('#active-signature-chip')).toBeVisible();
+    await expect(page.locator('#active-signature-chip').getByText('Ready to place')).toBeVisible();
+
+    // 9. Verify Escape deselects
     await page.keyboard.press('Escape');
     await expect(page.locator('#annotation-layer .selected-annot')).toHaveCount(0);
   });
