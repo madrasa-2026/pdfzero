@@ -153,16 +153,21 @@
 
       <!-- Zoom and Display Controls -->
       <div class="flex items-center gap-2 text-xs">
-        <button type="button" id="zoom-out-btn" class="w-7 h-7 rounded border border-slate-200 hover:bg-slate-100 flex items-center justify-center font-bold">−</button>
-        <span id="zoom-level-text" class="font-mono text-slate-600">100%</span>
-        <button type="button" id="zoom-in-btn" class="w-7 h-7 rounded border border-slate-200 hover:bg-slate-100 flex items-center justify-center font-bold">+</button>
+        <button type="button" id="prev-page-top-btn" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 font-semibold text-slate-700" title="Previous Page">◀</button>
+        <span id="page-indicator-top" class="text-slate-600 font-medium">1 / 1</span>
+        <button type="button" id="next-page-top-btn" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 font-semibold text-slate-700" title="Next Page">▶</button>
+        <div class="h-4 w-[1px] bg-slate-200 mx-1"></div>
+        <button type="button" id="zoom-out-btn" class="w-7 h-7 rounded border border-slate-200 hover:bg-slate-100 flex items-center justify-center font-bold" title="Zoom Out">−</button>
+        <span id="zoom-level-text" class="font-mono text-slate-600 w-10 text-center">100%</span>
+        <button type="button" id="zoom-in-btn" class="w-7 h-7 rounded border border-slate-200 hover:bg-slate-100 flex items-center justify-center font-bold" title="Zoom In">+</button>
+        <button type="button" id="zoom-fit-width-btn" class="px-2 py-1 rounded border border-slate-200 hover:bg-slate-100 text-slate-700 font-medium" title="Fit to Width">Fit Width</button>
       </div>
     </div>
 
     <!-- Tool Options Secondary Sub-bar (dynamic per selected tool) -->
     <div id="sub-tool-bar" class="px-4 py-2 bg-slate-50/70 border-b border-slate-200 flex flex-wrap items-center gap-3 text-xs">
       <!-- Options for Text tool -->
-      <div id="sub-opts-text" class="flex items-center gap-3">
+      <div id="sub-opts-text" class="flex items-center gap-2">
         <label class="flex items-center gap-1 font-medium text-slate-700">
           <span>Size:</span>
           <select id="text-size-select" class="rounded border border-slate-300 px-2 py-1 text-xs bg-white">
@@ -173,17 +178,20 @@
             <option value="32">32pt</option>
           </select>
         </label>
+        <button type="button" id="text-bold-btn" class="w-6 h-6 rounded border border-slate-300 font-bold hover:bg-slate-100 flex items-center justify-center text-xs" title="Bold (B)">B</button>
+        <button type="button" id="text-italic-btn" class="w-6 h-6 rounded border border-slate-300 italic font-serif hover:bg-slate-100 flex items-center justify-center text-xs" title="Italic (I)">I</button>
         <label class="flex items-center gap-1 font-medium text-slate-700">
           <span>Color:</span>
           <select id="text-color-select" class="rounded border border-slate-300 px-2 py-1 text-xs bg-white">
             <option value="#000000" selected>Obsidian Black</option>
             <option value="#2563eb">Deep Blue</option>
             <option value="#dc2626">Crimson Red</option>
+            <option value="#16a34a">Forest Green</option>
             <option value="#ffffff">Crisp White</option>
           </select>
         </label>
         <span class="text-slate-400">|</span>
-        <span class="text-slate-500 italic">Click anywhere on the document to place text box. Bengali (বাংলা) supported.</span>
+        <span class="text-slate-500 italic hidden sm:inline">Click document to place text box. Bengali (বাংলা) supported.</span>
       </div>
 
       <!-- Options for Edit Text tool -->
@@ -202,10 +210,15 @@
       </div>
 
       <!-- Options for Annotate tool -->
-      <div id="sub-opts-annotate" class="hidden flex items-center gap-3">
+      <div id="sub-opts-annotate" class="hidden flex items-center gap-2">
+        <button type="button" id="annot-pen-btn" class="px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700 hover:bg-slate-100">🖊️ Freehand Pen</button>
         <button type="button" id="annot-highlight-btn" class="px-2.5 py-1 bg-yellow-100 text-yellow-900 border border-yellow-300 rounded font-medium">Highlight (35%)</button>
         <button type="button" id="annot-strike-btn" class="px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700">Strikethrough</button>
-        <span class="text-slate-500">Drag to draw over text or regions.</span>
+        <label class="flex items-center gap-1 font-medium text-slate-700 ml-1">
+          <span>Color:</span>
+          <input type="color" id="annot-pen-color" value="#dc2626" class="w-6 h-6 p-0 border border-slate-300 rounded cursor-pointer" title="Pen Color" />
+        </label>
+        <span class="text-slate-500 hidden sm:inline">Draw or highlight on document page.</span>
       </div>
 
       <!-- Options for Shapes tool -->
@@ -215,6 +228,8 @@
           <select id="shape-type-select" class="rounded border border-slate-300 px-2 py-1 text-xs bg-white">
             <option value="rect" selected>Rectangle</option>
             <option value="circle">Circle / Ellipse</option>
+            <option value="line">Straight Line</option>
+            <option value="arrow">Arrow</option>
           </select>
         </label>
         <label class="flex items-center gap-1 font-medium text-slate-700">
@@ -227,6 +242,7 @@
             <option value="1">1px</option>
             <option value="2" selected>2px</option>
             <option value="4">4px</option>
+            <option value="8">8px</option>
           </select>
         </label>
         <span class="text-slate-500">Drag on page to draw shape.</span>
@@ -262,11 +278,13 @@
 
       <!-- Options for Find tool -->
       <div id="sub-opts-find" class="hidden flex items-center gap-2">
-        <input type="text" id="find-query-input" placeholder="Find in document..." class="rounded border border-slate-300 px-2.5 py-1 text-xs bg-white w-48" />
-        <input type="text" id="replace-query-input" placeholder="Replace with..." class="rounded border border-slate-300 px-2.5 py-1 text-xs bg-white w-48" />
+        <input type="text" id="find-query-input" placeholder="Find in document..." class="rounded border border-slate-300 px-2.5 py-1 text-xs bg-white w-40" />
+        <input type="text" id="replace-query-input" placeholder="Replace with..." class="rounded border border-slate-300 px-2.5 py-1 text-xs bg-white w-40" />
         <button type="button" id="find-search-btn" class="px-2 py-1 bg-slate-100 border border-slate-300 rounded font-medium text-slate-700 hover:bg-slate-200">Search</button>
-        <span id="find-matches-count" class="font-mono text-slate-600">0 matches</span>
-        <button type="button" id="replace-current-btn" class="px-2 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded font-medium hover:bg-amber-200">Replace Match</button>
+        <button type="button" id="find-prev-btn" class="px-2 py-1 bg-slate-100 border border-slate-300 rounded font-medium text-slate-700 hover:bg-slate-200" title="Previous Match">◀</button>
+        <button type="button" id="find-next-btn" class="px-2 py-1 bg-slate-100 border border-slate-300 rounded font-medium text-slate-700 hover:bg-slate-200" title="Next Match">▶</button>
+        <span id="find-matches-count" class="font-mono text-slate-600 text-[11px]">0 matches</span>
+        <button type="button" id="replace-current-btn" class="px-2 py-1 bg-amber-100 text-amber-900 border border-amber-300 rounded font-medium hover:bg-amber-200">Replace</button>
       </div>
 
       <!-- Options for Pages tool -->
@@ -310,6 +328,12 @@
 
           <!-- Freehand Drawing Canvas for Signatures / Annotations -->
           <canvas id="freehand-canvas" class="absolute inset-0 pointer-events-none"></canvas>
+
+          <!-- Rubber-band Drag-to-Draw Preview Box -->
+          <div id="drag-preview-box" class="hidden absolute pointer-events-none border-2 border-dashed border-blue-500 bg-blue-500/20 z-20"></div>
+
+          <!-- Floating In-Place Formatting Toolbar on Selected Annotation -->
+          <div id="floating-annot-bar" class="hidden absolute z-30 bg-slate-900 text-white rounded-xl shadow-2xl px-2 py-1.5 flex items-center gap-1.5 text-xs -translate-x-1/2 pointer-events-auto"></div>
         </div>
       </div>
     </div>
@@ -385,7 +409,12 @@
   </div>
 </div>
 
-<style>
+<style is:global>
+  @import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600&display=swap');
+
+  .font-signature {
+    font-family: 'Caveat', 'Dancing Script', 'Brush Script MT', cursive;
+  }
   .tool-btn {
     color: #475569;
     background-color: transparent;
@@ -399,9 +428,30 @@
     color: #ffffff !important;
   }
   .selected-annot {
-    outline: 2px dashed #2563eb !important;
-    outline-offset: 2px;
+    outline: 2px solid #2563eb !important;
+    outline-offset: 1px;
   }
+  .hover-annot:hover:not(.selected-annot) {
+    outline: 1px dashed #60a5fa !important;
+    outline-offset: 1px;
+  }
+  .resize-handle {
+    position: absolute;
+    width: 8px;
+    height: 8px;
+    background-color: #ffffff;
+    border: 2px solid #2563eb;
+    border-radius: 2px;
+    z-index: 25;
+  }
+  .handle-nw { top: -4px; left: -4px; cursor: nwse-resize; }
+  .handle-ne { top: -4px; right: -4px; cursor: nesw-resize; }
+  .handle-se { bottom: -4px; right: -4px; cursor: nwse-resize; }
+  .handle-sw { bottom: -4px; left: -4px; cursor: nesw-resize; }
+  .handle-n  { top: -4px; left: calc(50% - 4px); cursor: ns-resize; }
+  .handle-s  { bottom: -4px; left: calc(50% - 4px); cursor: ns-resize; }
+  .handle-e  { top: calc(50% - 4px); right: -4px; cursor: ew-resize; }
+  .handle-w  { top: calc(50% - 4px); left: -4px; cursor: ew-resize; }
 </style>
 
 <script>
@@ -512,11 +562,27 @@
 
   // Additional Toolbar Controls
   const imageUploadInput = document.getElementById('image-upload-input') as HTMLInputElement;
+  const textBoldBtn = document.getElementById('text-bold-btn') as HTMLButtonElement;
+  const textItalicBtn = document.getElementById('text-italic-btn') as HTMLButtonElement;
+  let isTextBold = false;
+  let isTextItalic = false;
+
+  const annotPenBtn = document.getElementById('annot-pen-btn') as HTMLButtonElement;
   const annotHighlightBtn = document.getElementById('annot-highlight-btn') as HTMLButtonElement;
   const annotStrikeBtn = document.getElementById('annot-strike-btn') as HTMLButtonElement;
+  const annotPenColor = document.getElementById('annot-pen-color') as HTMLInputElement;
+  const dragPreviewBox = document.getElementById('drag-preview-box') as HTMLDivElement;
   const addFormTextBtn = document.getElementById('add-form-text-btn') as HTMLButtonElement;
   const addFormCheckBtn = document.getElementById('add-form-check-btn') as HTMLButtonElement;
-  let activeAnnotMode: 'highlight' | 'strike' = 'highlight';
+  const floatingAnnotBar = document.getElementById('floating-annot-bar') as HTMLDivElement;
+  const prevPageTopBtn = document.getElementById('prev-page-top-btn') as HTMLButtonElement;
+  const nextPageTopBtn = document.getElementById('next-page-top-btn') as HTMLButtonElement;
+  const pageIndicatorTop = document.getElementById('page-indicator-top') as HTMLSpanElement;
+  const zoomFitWidthBtn = document.getElementById('zoom-fit-width-btn') as HTMLButtonElement;
+  const findPrevBtn = document.getElementById('find-prev-btn') as HTMLButtonElement;
+  const findNextBtn = document.getElementById('find-next-btn') as HTMLButtonElement;
+  const viewportContainer = document.getElementById('viewport-container') as HTMLDivElement;
+  let activeAnnotMode: 'pen' | 'highlight' | 'strike' = 'highlight';
 
   // Compilation modal elements
   const compileModal = document.getElementById('compile-modal') as HTMLDivElement;
@@ -620,12 +686,14 @@
 
     const originalPageNum = activeConfig.originalIndex + 1;
     const page = await pdfDocProxy.getPage(originalPageNum);
-    const viewport = page.getViewport({ scale: currentZoom, rotation: activeConfig.rotation });
+    const dpr = window.devicePixelRatio || 1;
+    const displayViewport = page.getViewport({ scale: currentZoom, rotation: activeConfig.rotation });
+    const renderViewport = page.getViewport({ scale: currentZoom * dpr, rotation: activeConfig.rotation });
 
-    pdfCanvas.width = viewport.width;
-    pdfCanvas.height = viewport.height;
-    pdfCanvas.style.width = `${viewport.width}px`;
-    pdfCanvas.style.height = `${viewport.height}px`;
+    pdfCanvas.width = Math.floor(renderViewport.width);
+    pdfCanvas.height = Math.floor(renderViewport.height);
+    pdfCanvas.style.width = `${displayViewport.width}px`;
+    pdfCanvas.style.height = `${displayViewport.height}px`;
 
     const canvasContext = pdfCanvas.getContext('2d');
     if (canvasContext) {
@@ -634,7 +702,7 @@
           currentRenderTask.cancel();
         } catch {}
       }
-      currentRenderTask = page.render({ canvasContext, viewport });
+      currentRenderTask = page.render({ canvasContext, viewport: renderViewport });
       try {
         await currentRenderTask.promise;
       } catch (rErr: any) {
@@ -643,14 +711,20 @@
     }
 
     // Update dimensions on annotation layer & freehand canvas
-    annotationLayer.style.width = `${viewport.width}px`;
-    annotationLayer.style.height = `${viewport.height}px`;
-    textClickLayer.style.width = `${viewport.width}px`;
-    textClickLayer.style.height = `${viewport.height}px`;
-    freehandCanvas.width = viewport.width;
-    freehandCanvas.height = viewport.height;
+    annotationLayer.style.width = `${displayViewport.width}px`;
+    annotationLayer.style.height = `${displayViewport.height}px`;
+    textClickLayer.style.width = `${displayViewport.width}px`;
+    textClickLayer.style.height = `${displayViewport.height}px`;
+    freehandCanvas.width = Math.floor(renderViewport.width);
+    freehandCanvas.height = Math.floor(renderViewport.height);
+    freehandCanvas.style.width = `${displayViewport.width}px`;
+    freehandCanvas.style.height = `${displayViewport.height}px`;
 
-    pageCounterEl.textContent = `Page ${currentPageIndex + 1} of ${pageConfigs.filter(p => !p.isDeleted).length}`;
+    const totalActive = pageConfigs.filter(p => !p.isDeleted).length;
+    pageCounterEl.textContent = `Page ${currentPageIndex + 1} of ${totalActive}`;
+    if (pageIndicatorTop) pageIndicatorTop.textContent = `${currentPageIndex + 1} / ${totalActive}`;
+    if (prevPageTopBtn) prevPageTopBtn.disabled = currentPageIndex === 0;
+    if (nextPageTopBtn) nextPageTopBtn.disabled = currentPageIndex >= totalActive - 1;
 
     // Extract text items for text layer
     if (!pageTextItemsCache.has(originalPageNum)) {
@@ -668,24 +742,45 @@
     const activePages = pageConfigs.filter(p => !p.isDeleted);
     totalPagesBadge.textContent = String(activePages.length);
 
-    activePages.forEach((pConfig, visualIdx) => {
+    activePages.forEach(async (pConfig, visualIdx) => {
       const card = document.createElement('div');
       card.className = `p-2 rounded-xl border transition cursor-pointer flex flex-col items-center gap-1.5 ${
         visualIdx === currentPageIndex ? 'border-slate-900 bg-slate-100 shadow-sm' : 'border-slate-200 bg-white hover:border-slate-300'
       }`;
 
-      card.innerHTML = `
-        <div class="w-full text-center py-4 bg-slate-100 rounded text-xs font-bold text-slate-700">
-          Page ${visualIdx + 1}
-          <div class="text-[10px] text-slate-400 font-normal">Orig #${pConfig.originalIndex + 1}${pConfig.rotation ? ` • ${pConfig.rotation}°` : ''}</div>
-        </div>
-        <div class="flex items-center justify-between w-full text-xs px-1">
-          <button type="button" class="btn-page-up p-1 text-slate-400 hover:text-slate-800" title="Move Up" ${visualIdx === 0 ? 'disabled' : ''}>▲</button>
-          <button type="button" class="btn-page-rotate p-1 text-slate-400 hover:text-slate-800" title="Rotate 90°">↻</button>
-          <button type="button" class="btn-page-down p-1 text-slate-400 hover:text-slate-800" title="Move Down" ${visualIdx === activePages.length - 1 ? 'disabled' : ''}>▼</button>
-          <button type="button" class="btn-page-delete p-1 text-red-400 hover:text-red-700" title="Delete Page" ${activePages.length <= 1 ? 'disabled' : ''}>🗑️</button>
-        </div>
+      // Miniature visual canvas preview
+      const thumbCanvas = document.createElement('canvas');
+      thumbCanvas.className = 'w-full h-24 object-contain bg-white rounded border border-slate-200 shadow-xs block';
+      card.appendChild(thumbCanvas);
+
+      const infoDiv = document.createElement('div');
+      infoDiv.className = 'text-center text-xs font-bold text-slate-700';
+      infoDiv.innerHTML = `Page ${visualIdx + 1}<span class="text-[10px] text-slate-400 font-normal block">Orig #${pConfig.originalIndex + 1}${pConfig.rotation ? ` • ${pConfig.rotation}°` : ''}</span>`;
+      card.appendChild(infoDiv);
+
+      const actionsDiv = document.createElement('div');
+      actionsDiv.className = 'flex items-center justify-between w-full text-xs px-1';
+      actionsDiv.innerHTML = `
+        <button type="button" class="btn-page-up p-1 text-slate-400 hover:text-slate-800" title="Move Up" ${visualIdx === 0 ? 'disabled' : ''}>▲</button>
+        <button type="button" class="btn-page-rotate p-1 text-slate-400 hover:text-slate-800" title="Rotate 90°">↻</button>
+        <button type="button" class="btn-page-down p-1 text-slate-400 hover:text-slate-800" title="Move Down" ${visualIdx === activePages.length - 1 ? 'disabled' : ''}>▼</button>
+        <button type="button" class="btn-page-delete p-1 text-red-400 hover:text-red-700" title="Delete Page" ${activePages.length <= 1 ? 'disabled' : ''}>🗑️</button>
       `;
+      card.appendChild(actionsDiv);
+
+      // Asynchronously render the miniature preview
+      if (pdfDocProxy) {
+        try {
+          const origPage = await pdfDocProxy.getPage(pConfig.originalIndex + 1);
+          const tViewport = origPage.getViewport({ scale: 0.22, rotation: pConfig.rotation });
+          thumbCanvas.width = Math.floor(tViewport.width);
+          thumbCanvas.height = Math.floor(tViewport.height);
+          const tCtx = thumbCanvas.getContext('2d');
+          if (tCtx) {
+            origPage.render({ canvasContext: tCtx, viewport: tViewport });
+          }
+        } catch {}
+      }
 
       card.addEventListener('click', async (e) => {
         const target = e.target as HTMLElement;
@@ -701,9 +796,14 @@
       card.querySelector('.btn-page-up')?.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (visualIdx > 0) {
-          const temp = pageConfigs[visualIdx];
-          pageConfigs[visualIdx] = pageConfigs[visualIdx - 1];
-          pageConfigs[visualIdx - 1] = temp;
+          const prevConfig = activePages[visualIdx - 1];
+          const currRealIdx = pageConfigs.indexOf(pConfig);
+          const prevRealIdx = pageConfigs.indexOf(prevConfig);
+          if (currRealIdx !== -1 && prevRealIdx !== -1) {
+            const temp = pageConfigs[currRealIdx];
+            pageConfigs[currRealIdx] = pageConfigs[prevRealIdx];
+            pageConfigs[prevRealIdx] = temp;
+          }
           annotations.forEach(a => {
             if (a.pageIndex === visualIdx) a.pageIndex = visualIdx - 1;
             else if (a.pageIndex === visualIdx - 1) a.pageIndex = visualIdx;
@@ -717,9 +817,14 @@
       card.querySelector('.btn-page-down')?.addEventListener('click', async (e) => {
         e.stopPropagation();
         if (visualIdx < activePages.length - 1) {
-          const temp = pageConfigs[visualIdx];
-          pageConfigs[visualIdx] = pageConfigs[visualIdx + 1];
-          pageConfigs[visualIdx + 1] = temp;
+          const nextConfig = activePages[visualIdx + 1];
+          const currRealIdx = pageConfigs.indexOf(pConfig);
+          const nextRealIdx = pageConfigs.indexOf(nextConfig);
+          if (currRealIdx !== -1 && nextRealIdx !== -1) {
+            const temp = pageConfigs[currRealIdx];
+            pageConfigs[currRealIdx] = pageConfigs[nextRealIdx];
+            pageConfigs[nextRealIdx] = temp;
+          }
           annotations.forEach(a => {
             if (a.pageIndex === visualIdx) a.pageIndex = visualIdx + 1;
             else if (a.pageIndex === visualIdx + 1) a.pageIndex = visualIdx;
@@ -744,8 +849,9 @@
         annotations.forEach(a => {
           if (a.pageIndex > visualIdx) a.pageIndex -= 1;
         });
-        if (currentPageIndex >= pageConfigs.filter(p => !p.isDeleted).length) {
-          currentPageIndex = Math.max(0, pageConfigs.filter(p => !p.isDeleted).length - 1);
+        const remaining = pageConfigs.filter(p => !p.isDeleted).length;
+        if (currentPageIndex >= remaining) {
+          currentPageIndex = Math.max(0, remaining - 1);
         }
         renderThumbnails();
         await renderActivePage();
@@ -840,13 +946,26 @@
     }
   });
 
+  function cleanupEmptyTextAnnotations() {
+    const initialLen = annotations.length;
+    annotations = annotations.filter(a => !(a.type === 'text' && a.text.trim() === ''));
+    if (annotations.length !== initialLen && selectedAnnotationId) {
+      if (!annotations.some(a => a.id === selectedAnnotationId)) {
+        selectedAnnotationId = null;
+      }
+    }
+  }
+
   // Handle click on canvas surface to spawn annotations
   annotationLayer?.addEventListener('click', (e) => {
+    if (e.target !== annotationLayer) return;
+
     const rect = annotationLayer.getBoundingClientRect();
     const clickX = (e.clientX - rect.left) / currentZoom;
     const clickY = (e.clientY - rect.top) / currentZoom;
 
     if (activeTool === 'text') {
+      cleanupEmptyTextAnnotations();
       saveHistory();
       const fontSize = parseInt((document.getElementById('text-size-select') as HTMLSelectElement).value, 10) || 14;
       const color = (document.getElementById('text-color-select') as HTMLSelectElement).value || '#000000';
@@ -858,12 +977,19 @@
         pageIndex: currentPageIndex,
         x: clickX,
         y: clickY,
-        text: 'Type text here...',
+        text: '',
         fontSize,
         color,
+        bold: isTextBold,
+        italic: isTextItalic,
       });
       selectedAnnotationId = newId;
       renderAnnotationsOverlay();
+
+      setTimeout(() => {
+        const textEl = annotationLayer.querySelector(`[data-annot-id="${newId}"] .editable-text`) as HTMLElement;
+        if (textEl) textEl.focus();
+      }, 50);
     } else if (activeTool === 'sign' && activeSignatureData) {
       saveHistory();
       if (activeSignatureData.points && activeSignatureData.points.length > 0) {
@@ -904,7 +1030,7 @@
           x: clickX,
           y: clickY,
           text: activeSignatureData.text,
-          fontSize: 24,
+          fontSize: 28,
           color: '#000000',
         });
         selectedAnnotationId = newId;
@@ -957,24 +1083,129 @@
       });
       selectedAnnotationId = newId;
       renderAnnotationsOverlay();
+    } else {
+      if (selectedAnnotationId) {
+        selectedAnnotationId = null;
+        renderAnnotationsOverlay();
+      }
     }
   });
 
-  // Drag-to-draw for Whiteout, Shapes, Annotate (Highlight), Links
+  // Drag-to-draw for Whiteout, Shapes, Annotate, Links, plus Freehand Pen
   let isDragging = false;
+  let isDrawingPen = false;
   let dragStartX = 0;
   let dragStartY = 0;
+  let penPoints: { x: number; y: number }[] = [];
 
   annotationLayer?.addEventListener('mousedown', (e) => {
+    if (e.target !== annotationLayer) return;
+
+    if (activeTool === 'annotate' && activeAnnotMode === 'pen') {
+      isDrawingPen = true;
+      const rect = annotationLayer.getBoundingClientRect();
+      const pt = {
+        x: (e.clientX - rect.left) / currentZoom,
+        y: (e.clientY - rect.top) / currentZoom,
+      };
+      penPoints = [pt];
+      return;
+    }
+
     if (['whiteout', 'shapes', 'annotate', 'links'].includes(activeTool)) {
       isDragging = true;
       const rect = annotationLayer.getBoundingClientRect();
       dragStartX = (e.clientX - rect.left) / currentZoom;
       dragStartY = (e.clientY - rect.top) / currentZoom;
+      if (dragPreviewBox) {
+        dragPreviewBox.classList.remove('hidden');
+        dragPreviewBox.style.left = `${dragStartX * currentZoom}px`;
+        dragPreviewBox.style.top = `${dragStartY * currentZoom}px`;
+        dragPreviewBox.style.width = '0px';
+        dragPreviewBox.style.height = '0px';
+      }
+    }
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    const rect = annotationLayer.getBoundingClientRect();
+
+    if (isDrawingPen && freehandCanvas) {
+      const pt = {
+        x: (e.clientX - rect.left) / currentZoom,
+        y: (e.clientY - rect.top) / currentZoom,
+      };
+      const fCtx = freehandCanvas.getContext('2d');
+      if (fCtx && penPoints.length > 0) {
+        const dpr = window.devicePixelRatio || 1;
+        const lastPt = penPoints[penPoints.length - 1];
+        fCtx.beginPath();
+        fCtx.strokeStyle = annotPenColor?.value || '#dc2626';
+        fCtx.lineWidth = 2 * currentZoom * dpr;
+        fCtx.lineCap = 'round';
+        fCtx.lineJoin = 'round';
+        fCtx.moveTo(lastPt.x * currentZoom * dpr, lastPt.y * currentZoom * dpr);
+        fCtx.lineTo(pt.x * currentZoom * dpr, pt.y * currentZoom * dpr);
+        fCtx.stroke();
+      }
+      penPoints.push(pt);
+      return;
+    }
+
+    if (isDragging && dragPreviewBox) {
+      const currX = (e.clientX - rect.left) / currentZoom;
+      const currY = (e.clientY - rect.top) / currentZoom;
+
+      const x = Math.min(dragStartX, currX);
+      const y = Math.min(dragStartY, currY);
+      const width = Math.abs(currX - dragStartX);
+      const height = Math.abs(currY - dragStartY);
+
+      dragPreviewBox.style.left = `${x * currentZoom}px`;
+      dragPreviewBox.style.top = `${y * currentZoom}px`;
+      dragPreviewBox.style.width = `${width * currentZoom}px`;
+      dragPreviewBox.style.height = `${height * currentZoom}px`;
     }
   });
 
   window.addEventListener('mouseup', (e) => {
+    if (dragPreviewBox) {
+      dragPreviewBox.classList.add('hidden');
+    }
+
+    if (isDrawingPen) {
+      isDrawingPen = false;
+      const fCtx = freehandCanvas.getContext('2d');
+      if (fCtx) {
+        fCtx.clearRect(0, 0, freehandCanvas.width, freehandCanvas.height);
+      }
+
+      if (penPoints.length >= 2) {
+        saveHistory();
+        const minX = Math.min(...penPoints.map(p => p.x));
+        const maxX = Math.max(...penPoints.map(p => p.x));
+        const minY = Math.min(...penPoints.map(p => p.y));
+        const maxY = Math.max(...penPoints.map(p => p.y));
+        const newId = `pen-${Date.now()}`;
+        annotations.push({
+          type: 'signature',
+          id: newId,
+          pageIndex: currentPageIndex,
+          x: minX,
+          y: minY,
+          width: Math.max(15, maxX - minX),
+          height: Math.max(10, maxY - minY),
+          points: [penPoints],
+          strokeColor: annotPenColor?.value || '#dc2626',
+          strokeWidth: 2,
+        });
+        selectedAnnotationId = newId;
+        renderAnnotationsOverlay();
+      }
+      penPoints = [];
+      return;
+    }
+
     if (isDragging) {
       isDragging = false;
       const rect = annotationLayer.getBoundingClientRect();
@@ -999,7 +1230,7 @@
             height,
           });
         } else if (activeTool === 'shapes') {
-          const shapeType = (document.getElementById('shape-type-select') as HTMLSelectElement).value as 'rect' | 'circle';
+          const shapeType = (document.getElementById('shape-type-select') as HTMLSelectElement).value as 'rect' | 'circle' | 'line' | 'arrow';
           const strokeColor = (document.getElementById('shape-stroke-color') as HTMLInputElement).value || '#2563eb';
           const strokeWidth = parseInt((document.getElementById('shape-width-select') as HTMLSelectElement).value, 10) || 2;
           annotations.push({
@@ -1066,34 +1297,79 @@
 
     pageAnnotations.forEach((annot) => {
       const el = document.createElement('div');
-      el.className = 'absolute cursor-move';
+      el.className = 'absolute cursor-move group hover-annot';
+      el.dataset.annotId = annot.id;
       el.style.left = `${annot.x * currentZoom}px`;
       el.style.top = `${annot.y * currentZoom}px`;
 
       if (annot.id === selectedAnnotationId) {
         el.classList.add('selected-annot');
+        if (annot.type === 'text') {
+          if (textBoldBtn) {
+            textBoldBtn.className = `w-6 h-6 rounded border font-bold flex items-center justify-center text-xs ${
+              annot.bold ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+            }`;
+          }
+          if (textItalicBtn) {
+            textItalicBtn.className = `w-6 h-6 rounded border italic font-serif flex items-center justify-center text-xs ${
+              annot.italic ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+            }`;
+          }
+        }
       }
 
       el.addEventListener('click', (e) => {
         e.stopPropagation();
-        selectedAnnotationId = annot.id;
-        renderAnnotationsOverlay();
+        if (selectedAnnotationId !== annot.id) {
+          selectedAnnotationId = annot.id;
+          renderAnnotationsOverlay();
+        }
       });
 
       switch (annot.type) {
         case 'text': {
-          el.contentEditable = 'true';
-          el.style.fontSize = `${annot.fontSize * currentZoom}px`;
-          el.style.color = annot.color || '#000000';
-          el.style.padding = '2px 4px';
-          el.style.minWidth = '40px';
-          el.style.background = 'rgba(255, 255, 255, 0.4)';
-          el.style.borderRadius = '2px';
-          el.textContent = annot.text;
+          el.style.minWidth = '50px';
+          el.style.backgroundColor = 'rgba(255, 255, 255, 0.7)';
+          el.style.border = '1px solid rgba(59, 130, 246, 0.4)';
+          el.style.borderRadius = '3px';
 
-          el.addEventListener('input', () => {
-            annot.text = el.textContent || '';
+          // Move handle on top
+          const moveBar = document.createElement('div');
+          moveBar.className = 'move-handle w-full h-3 bg-blue-500/20 hover:bg-blue-500/40 cursor-move rounded-t flex items-center justify-center';
+          moveBar.innerHTML = '<span class="w-4 h-0.5 bg-blue-500/60 rounded block"></span>';
+
+          const textSpan = document.createElement('div');
+          textSpan.className = 'editable-text outline-none px-1.5 py-0.5 cursor-text whitespace-pre-wrap min-w-[30px]';
+          if (annot.id.startsWith('sig-text')) {
+            textSpan.className += ' font-signature text-2xl';
+          }
+          if (annot.bold) textSpan.classList.add('font-bold');
+          if (annot.italic) textSpan.classList.add('italic');
+          textSpan.contentEditable = 'true';
+          textSpan.style.fontSize = `${annot.fontSize * currentZoom}px`;
+          textSpan.style.color = annot.color || '#000000';
+          textSpan.innerText = annot.text;
+
+          textSpan.addEventListener('input', () => {
+            annot.text = textSpan.innerText || textSpan.textContent || '';
           });
+
+          textSpan.addEventListener('blur', () => {
+            if (annot.text.trim() === '') {
+              cleanupEmptyTextAnnotations();
+              renderAnnotationsOverlay();
+            }
+          });
+
+          textSpan.addEventListener('focus', () => {
+            if (selectedAnnotationId !== annot.id) {
+              selectedAnnotationId = annot.id;
+              updateFloatingToolbar();
+            }
+          });
+
+          el.appendChild(moveBar);
+          el.appendChild(textSpan);
           break;
         }
 
@@ -1111,10 +1387,41 @@
           if (annot.shapeType === 'rect') {
             el.style.border = `${annot.strokeWidth}px solid ${annot.strokeColor}`;
             if (annot.fillColor) el.style.backgroundColor = annot.fillColor;
-          } else {
+          } else if (annot.shapeType === 'circle') {
             el.style.border = `${annot.strokeWidth}px solid ${annot.strokeColor}`;
             el.style.borderRadius = '50%';
             if (annot.fillColor) el.style.backgroundColor = annot.fillColor;
+          } else if (annot.shapeType === 'line' || annot.shapeType === 'arrow') {
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.style.width = '100%';
+            svg.style.height = '100%';
+            svg.style.overflow = 'visible';
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', '0');
+            line.setAttribute('y1', '0');
+            line.setAttribute('x2', String(annot.width * currentZoom));
+            line.setAttribute('y2', String(annot.height * currentZoom));
+            line.setAttribute('stroke', annot.strokeColor);
+            line.setAttribute('stroke-width', String((annot.strokeWidth || 2) * currentZoom));
+            svg.appendChild(line);
+
+            if (annot.shapeType === 'arrow') {
+              const w = annot.width * currentZoom;
+              const h = annot.height * currentZoom;
+              const angle = Math.atan2(h, w);
+              const hl = Math.max(10, (annot.strokeWidth || 2) * 4);
+              const p1x = w - hl * Math.cos(angle - Math.PI / 6);
+              const p1y = h - hl * Math.sin(angle - Math.PI / 6);
+              const p2x = w - hl * Math.cos(angle + Math.PI / 6);
+              const p2y = h - hl * Math.sin(angle + Math.PI / 6);
+
+              const head = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+              head.setAttribute('points', `${w},${h} ${p1x},${p1y} ${p2x},${p2y}`);
+              head.setAttribute('fill', annot.strokeColor);
+              svg.appendChild(head);
+            }
+            el.appendChild(svg);
           }
           break;
         }
@@ -1211,36 +1518,369 @@
       let moveStartY = 0;
 
       el.addEventListener('mousedown', (e) => {
-        if (e.target === el && !el.isContentEditable) {
-          isMoving = true;
-          moveStartX = e.clientX;
-          moveStartY = e.clientY;
-
-          const onMouseMove = (moveEvt: MouseEvent) => {
-            if (!isMoving) return;
-            const dx = (moveEvt.clientX - moveStartX) / currentZoom;
-            const dy = (moveEvt.clientY - moveStartY) / currentZoom;
-            annot.x += dx;
-            annot.y += dy;
-            moveStartX = moveEvt.clientX;
-            moveStartY = moveEvt.clientY;
-            el.style.left = `${annot.x * currentZoom}px`;
-            el.style.top = `${annot.y * currentZoom}px`;
-          };
-
-          const onMouseUp = () => {
-            isMoving = false;
-            window.removeEventListener('mousemove', onMouseMove);
-            window.removeEventListener('mouseup', onMouseUp);
-          };
-
-          window.addEventListener('mousemove', onMouseMove);
-          window.addEventListener('mouseup', onMouseUp);
+        const target = e.target as HTMLElement;
+        if (target.classList.contains('resize-handle') || target.classList.contains('editable-text')) {
+          return;
         }
+        isMoving = true;
+        moveStartX = e.clientX;
+        moveStartY = e.clientY;
+
+        const onMouseMove = (moveEvt: MouseEvent) => {
+          if (!isMoving) return;
+          const dx = (moveEvt.clientX - moveStartX) / currentZoom;
+          const dy = (moveEvt.clientY - moveStartY) / currentZoom;
+          annot.x += dx;
+          annot.y += dy;
+          moveStartX = moveEvt.clientX;
+          moveStartY = moveEvt.clientY;
+          el.style.left = `${annot.x * currentZoom}px`;
+          el.style.top = `${annot.y * currentZoom}px`;
+          updateFloatingToolbar();
+        };
+
+        const onMouseUp = () => {
+          if (isMoving) {
+            isMoving = false;
+            saveHistory();
+          }
+          window.removeEventListener('mousemove', onMouseMove);
+          window.removeEventListener('mouseup', onMouseUp);
+        };
+
+        window.addEventListener('mousemove', onMouseMove);
+        window.addEventListener('mouseup', onMouseUp);
       });
+
+      // 8-Point Resize Handles when selected (for shapes, whiteout, images, signatures, links, form fields)
+      if (annot.id === selectedAnnotationId && annot.type !== 'text') {
+        const handles = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+        handles.forEach((pos) => {
+          const hEl = document.createElement('div');
+          hEl.className = `resize-handle handle-${pos}`;
+          hEl.addEventListener('mousedown', (hEvt) => {
+            hEvt.stopPropagation();
+            hEvt.preventDefault();
+            let startClientX = hEvt.clientX;
+            let startClientY = hEvt.clientY;
+            const origX = annot.x;
+            const origY = annot.y;
+            const origW = (annot as any).width || 80;
+            const origH = (annot as any).height || 40;
+
+            const onHandleMove = (mEvt: MouseEvent) => {
+              const dx = (mEvt.clientX - startClientX) / currentZoom;
+              const dy = (mEvt.clientY - startClientY) / currentZoom;
+
+              if (pos === 'se') {
+                (annot as any).width = Math.max(15, origW + dx);
+                (annot as any).height = Math.max(10, origH + dy);
+              } else if (pos === 'sw') {
+                const newW = Math.max(15, origW - dx);
+                annot.x = origX + (origW - newW);
+                (annot as any).width = newW;
+                (annot as any).height = Math.max(10, origH + dy);
+              } else if (pos === 'ne') {
+                const newH = Math.max(10, origH - dy);
+                annot.y = origY + (origH - newH);
+                (annot as any).width = Math.max(15, origW + dx);
+                (annot as any).height = newH;
+              } else if (pos === 'nw') {
+                const newW = Math.max(15, origW - dx);
+                const newH = Math.max(10, origH - dy);
+                annot.x = origX + (origW - newW);
+                annot.y = origY + (origH - newH);
+                (annot as any).width = newW;
+                (annot as any).height = newH;
+              } else if (pos === 'e') {
+                (annot as any).width = Math.max(15, origW + dx);
+              } else if (pos === 'w') {
+                const newW = Math.max(15, origW - dx);
+                annot.x = origX + (origW - newW);
+                (annot as any).width = newW;
+              } else if (pos === 's') {
+                (annot as any).height = Math.max(10, origH + dy);
+              } else if (pos === 'n') {
+                const newH = Math.max(10, origH - dy);
+                annot.y = origY + (origH - newH);
+                (annot as any).height = newH;
+              }
+
+              el.style.left = `${annot.x * currentZoom}px`;
+              el.style.top = `${annot.y * currentZoom}px`;
+              el.style.width = `${((annot as any).width || 10) * currentZoom}px`;
+              el.style.height = `${((annot as any).height || 10) * currentZoom}px`;
+              updateFloatingToolbar();
+            };
+
+            const onHandleUp = () => {
+              saveHistory();
+              window.removeEventListener('mousemove', onHandleMove);
+              window.removeEventListener('mouseup', onHandleUp);
+              renderAnnotationsOverlay();
+            };
+
+            window.addEventListener('mousemove', onHandleMove);
+            window.addEventListener('mouseup', onHandleUp);
+          });
+          el.appendChild(hEl);
+        });
+      }
 
       annotationLayer.appendChild(el);
     });
+
+    updateFloatingToolbar();
+  }
+
+  // --- FLOATING CONTEXTUAL TOOLBAR ---
+  function updateFloatingToolbar() {
+    if (!floatingAnnotBar) return;
+    if (!selectedAnnotationId) {
+      floatingAnnotBar.classList.add('hidden');
+      return;
+    }
+
+    const annot = annotations.find(a => a.id === selectedAnnotationId);
+    if (!annot || annot.pageIndex !== currentPageIndex) {
+      floatingAnnotBar.classList.add('hidden');
+      return;
+    }
+
+    floatingAnnotBar.innerHTML = '';
+    floatingAnnotBar.classList.remove('hidden');
+
+    const annotX = annot.x * currentZoom;
+    const annotY = annot.y * currentZoom;
+    const annotW = ((annot as any).width || 80) * currentZoom;
+    floatingAnnotBar.style.left = `${annotX + annotW / 2}px`;
+    floatingAnnotBar.style.top = `${Math.max(8, annotY - 42)}px`;
+
+    if (annot.type === 'text') {
+      const btnMinus = document.createElement('button');
+      btnMinus.type = 'button';
+      btnMinus.className = 'px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded font-bold';
+      btnMinus.textContent = 'A−';
+      btnMinus.title = 'Decrease Font Size';
+      btnMinus.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveHistory();
+        annot.fontSize = Math.max(8, annot.fontSize - 2);
+        renderAnnotationsOverlay();
+      });
+      floatingAnnotBar.appendChild(btnMinus);
+
+      const sizeBadge = document.createElement('span');
+      sizeBadge.className = 'font-mono text-[11px] px-1 text-slate-300';
+      sizeBadge.textContent = `${annot.fontSize}pt`;
+      floatingAnnotBar.appendChild(sizeBadge);
+
+      const btnPlus = document.createElement('button');
+      btnPlus.type = 'button';
+      btnPlus.className = 'px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded font-bold';
+      btnPlus.textContent = 'A+';
+      btnPlus.title = 'Increase Font Size';
+      btnPlus.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveHistory();
+        annot.fontSize = Math.min(72, annot.fontSize + 2);
+        renderAnnotationsOverlay();
+      });
+      floatingAnnotBar.appendChild(btnPlus);
+
+      const btnBold = document.createElement('button');
+      btnBold.type = 'button';
+      btnBold.className = `px-2 py-0.5 rounded font-bold ${annot.bold ? 'bg-blue-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`;
+      btnBold.textContent = 'B';
+      btnBold.title = 'Toggle Bold';
+      btnBold.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveHistory();
+        annot.bold = !annot.bold;
+        renderAnnotationsOverlay();
+      });
+      floatingAnnotBar.appendChild(btnBold);
+
+      const btnItalic = document.createElement('button');
+      btnItalic.type = 'button';
+      btnItalic.className = `px-2 py-0.5 rounded italic font-serif ${annot.italic ? 'bg-blue-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-200'}`;
+      btnItalic.textContent = 'I';
+      btnItalic.title = 'Toggle Italic';
+      btnItalic.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveHistory();
+        annot.italic = !annot.italic;
+        renderAnnotationsOverlay();
+      });
+      floatingAnnotBar.appendChild(btnItalic);
+
+      const colors = ['#000000', '#2563eb', '#dc2626', '#16a34a', '#ffffff'];
+      colors.forEach(col => {
+        const swatch = document.createElement('button');
+        swatch.type = 'button';
+        swatch.className = 'w-4 h-4 rounded-full border border-slate-500 hover:scale-110 transition';
+        swatch.style.backgroundColor = col;
+        swatch.title = `Color: ${col}`;
+        swatch.addEventListener('click', (e) => {
+          e.stopPropagation();
+          saveHistory();
+          annot.color = col;
+          renderAnnotationsOverlay();
+        });
+        floatingAnnotBar.appendChild(swatch);
+      });
+    } else if (annot.type === 'shape') {
+      const wBadge = document.createElement('span');
+      wBadge.className = 'font-mono text-[11px] px-1 text-slate-300';
+      wBadge.textContent = `${annot.strokeWidth}px`;
+
+      const btnWPlus = document.createElement('button');
+      btnWPlus.type = 'button';
+      btnWPlus.className = 'px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 rounded font-bold';
+      btnWPlus.textContent = '+w';
+      btnWPlus.title = 'Increase Stroke Width';
+      btnWPlus.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveHistory();
+        annot.strokeWidth = Math.min(16, annot.strokeWidth + 1);
+        renderAnnotationsOverlay();
+      });
+
+      floatingAnnotBar.appendChild(btnWPlus);
+      floatingAnnotBar.appendChild(wBadge);
+
+      const btnFill = document.createElement('button');
+      btnFill.type = 'button';
+      btnFill.className = `px-2 py-0.5 rounded text-[11px] ${annot.fillColor ? 'bg-blue-600 text-white' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`;
+      btnFill.textContent = annot.fillColor ? 'Fill: Solid' : 'Fill: None';
+      btnFill.title = 'Toggle Shape Fill';
+      btnFill.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveHistory();
+        annot.fillColor = annot.fillColor ? undefined : '#eff6ff';
+        renderAnnotationsOverlay();
+      });
+      floatingAnnotBar.appendChild(btnFill);
+
+      const colors = ['#2563eb', '#dc2626', '#16a34a', '#000000'];
+      colors.forEach(col => {
+        const swatch = document.createElement('button');
+        swatch.type = 'button';
+        swatch.className = 'w-4 h-4 rounded-full border border-slate-500 hover:scale-110 transition';
+        swatch.style.backgroundColor = col;
+        swatch.addEventListener('click', (e) => {
+          e.stopPropagation();
+          saveHistory();
+          annot.strokeColor = col;
+          renderAnnotationsOverlay();
+        });
+        floatingAnnotBar.appendChild(swatch);
+      });
+    } else if (annot.type === 'image' || annot.type === 'signature') {
+      const btnShrink = document.createElement('button');
+      btnShrink.type = 'button';
+      btnShrink.className = 'px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded';
+      btnShrink.textContent = '− Scale';
+      btnShrink.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveHistory();
+        annot.width = Math.max(20, ((annot as any).width || 100) * 0.9);
+        annot.height = Math.max(10, ((annot as any).height || 50) * 0.9);
+        renderAnnotationsOverlay();
+      });
+
+      const btnEnlarge = document.createElement('button');
+      btnEnlarge.type = 'button';
+      btnEnlarge.className = 'px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded';
+      btnEnlarge.textContent = '+ Scale';
+      btnEnlarge.addEventListener('click', (e) => {
+        e.stopPropagation();
+        saveHistory();
+        annot.width = ((annot as any).width || 100) * 1.1;
+        annot.height = ((annot as any).height || 50) * 1.1;
+        renderAnnotationsOverlay();
+      });
+
+      floatingAnnotBar.appendChild(btnShrink);
+      floatingAnnotBar.appendChild(btnEnlarge);
+    } else if (annot.type === 'highlight') {
+      const hlColors = ['#facc15', '#86efac', '#93c5fd', '#f472b6', '#fdba74'];
+      hlColors.forEach(col => {
+        const swatch = document.createElement('button');
+        swatch.type = 'button';
+        swatch.className = 'w-4 h-4 rounded-full border border-slate-500 hover:scale-110 transition';
+        swatch.style.backgroundColor = col;
+        swatch.title = `Highlight Color: ${col}`;
+        swatch.addEventListener('click', (e) => {
+          e.stopPropagation();
+          saveHistory();
+          annot.color = col;
+          renderAnnotationsOverlay();
+        });
+        floatingAnnotBar.appendChild(swatch);
+      });
+    } else if (annot.type === 'link') {
+      const urlInput = document.createElement('input');
+      urlInput.type = 'url';
+      urlInput.value = annot.url;
+      urlInput.className = 'px-1.5 py-0.5 text-[11px] bg-slate-800 border border-slate-700 rounded text-slate-200 w-36 outline-none';
+      urlInput.title = 'Edit Link URL';
+      urlInput.addEventListener('change', (e) => {
+        e.stopPropagation();
+        saveHistory();
+        annot.url = urlInput.value;
+      });
+      urlInput.addEventListener('click', (e) => e.stopPropagation());
+      floatingAnnotBar.appendChild(urlInput);
+
+      const testBtn = document.createElement('a');
+      testBtn.href = annot.url;
+      testBtn.target = '_blank';
+      testBtn.rel = 'noopener noreferrer';
+      testBtn.className = 'px-1.5 py-0.5 bg-blue-600 hover:bg-blue-500 text-white rounded text-[11px]';
+      testBtn.textContent = '↗ Open';
+      testBtn.addEventListener('click', (e) => e.stopPropagation());
+      floatingAnnotBar.appendChild(testBtn);
+    } else if (annot.type === 'whiteout') {
+      const label = document.createElement('span');
+      label.className = 'text-[11px] text-amber-300 font-medium px-1';
+      label.textContent = 'Whiteout (Visual Cover)';
+      floatingAnnotBar.appendChild(label);
+    }
+
+    // Duplicate button
+    const btnDup = document.createElement('button');
+    btnDup.type = 'button';
+    btnDup.className = 'px-2 py-0.5 bg-slate-800 hover:bg-slate-700 rounded text-slate-200 text-xs';
+    btnDup.textContent = '📋 Duplicate';
+    btnDup.title = 'Duplicate Element';
+    btnDup.addEventListener('click', (e) => {
+      e.stopPropagation();
+      saveHistory();
+      const clone = JSON.parse(JSON.stringify(annot));
+      clone.id = `${annot.type}-${Date.now()}`;
+      clone.x += 15;
+      clone.y += 15;
+      annotations.push(clone);
+      selectedAnnotationId = clone.id;
+      renderAnnotationsOverlay();
+    });
+    floatingAnnotBar.appendChild(btnDup);
+
+    // Delete button
+    const btnDel = document.createElement('button');
+    btnDel.type = 'button';
+    btnDel.className = 'px-2 py-0.5 bg-red-900/80 hover:bg-red-700 text-red-200 rounded font-semibold text-xs';
+    btnDel.textContent = '🗑️ Delete';
+    btnDel.title = 'Delete Element';
+    btnDel.addEventListener('click', (e) => {
+      e.stopPropagation();
+      saveHistory();
+      annotations = annotations.filter(a => a.id !== annot.id);
+      selectedAnnotationId = null;
+      renderAnnotationsOverlay();
+    });
+    floatingAnnotBar.appendChild(btnDel);
   }
 
   // Render text click targets for Edit Text and Find & Replace
@@ -1263,15 +1903,15 @@
 
         target.addEventListener('click', () => {
           saveHistory();
-          // 1. Create whiteout covering the original line
+          // 1. Create whiteout covering the original line with 2px margin
           annotations.push({
             type: 'whiteout',
             id: `whiteout-${Date.now()}`,
             pageIndex: currentPageIndex,
-            x: item.x,
-            y: item.y,
+            x: Math.max(0, item.x - 2),
+            y: Math.max(0, item.y - 1),
             width: item.width + 4,
-            height: item.height + 2,
+            height: item.height + 3,
           });
 
           // 2. Overlay editable replacement text at same position and font size
@@ -1285,10 +1925,27 @@
             text: item.str,
             fontSize: item.fontSize,
             color: '#000000',
+            bold: isTextBold,
+            italic: isTextItalic,
           });
 
           selectedAnnotationId = textId;
           renderAnnotationsOverlay();
+
+          // 3. Auto-focus and select all text immediately
+          setTimeout(() => {
+            const textEl = annotationLayer.querySelector(`[data-annot-id="${textId}"] .editable-text`) as HTMLElement;
+            if (textEl) {
+              textEl.focus();
+              const range = document.createRange();
+              range.selectNodeContents(textEl);
+              const sel = window.getSelection();
+              if (sel) {
+                sel.removeAllRanges();
+                sel.addRange(range);
+              }
+            }
+          }, 50);
         });
 
         textClickLayer.appendChild(target);
@@ -1371,12 +2028,14 @@
       if (lastPt) {
         const dist = Math.hypot(pt.x - lastPt.x, pt.y - lastPt.y);
         if (dist < 2) return; // 2px decimation to avoid overloading vector stream
+        const midX = (lastPt.x + pt.x) / 2;
+        const midY = (lastPt.y + pt.y) / 2;
+        ctx.quadraticCurveTo(lastPt.x, lastPt.y, midX, midY);
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = '#000000';
+        ctx.stroke();
       }
       currentDrawingStroke.push(pt);
-      ctx.lineTo(pt.x, pt.y);
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#000000';
-      ctx.stroke();
     };
 
     window.onmouseup = () => {
@@ -1453,15 +2112,52 @@
     img.src = url;
   });
 
+  textBoldBtn?.addEventListener('click', () => {
+    isTextBold = !isTextBold;
+    textBoldBtn.className = `w-6 h-6 rounded border font-bold flex items-center justify-center text-xs ${
+      isTextBold ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+    }`;
+    if (selectedAnnotationId) {
+      const annot = annotations.find(a => a.id === selectedAnnotationId);
+      if (annot && annot.type === 'text') {
+        annot.bold = isTextBold;
+        renderAnnotationsOverlay();
+      }
+    }
+  });
+
+  textItalicBtn?.addEventListener('click', () => {
+    isTextItalic = !isTextItalic;
+    textItalicBtn.className = `w-6 h-6 rounded border italic font-serif flex items-center justify-center text-xs ${
+      isTextItalic ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+    }`;
+    if (selectedAnnotationId) {
+      const annot = annotations.find(a => a.id === selectedAnnotationId);
+      if (annot && annot.type === 'text') {
+        annot.italic = isTextItalic;
+        renderAnnotationsOverlay();
+      }
+    }
+  });
+
+  annotPenBtn?.addEventListener('click', () => {
+    activeAnnotMode = 'pen';
+    annotPenBtn.className = 'px-2.5 py-1 bg-slate-900 text-white rounded font-medium';
+    annotHighlightBtn.className = 'px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700';
+    annotStrikeBtn.className = 'px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700';
+  });
+
   annotHighlightBtn?.addEventListener('click', () => {
     activeAnnotMode = 'highlight';
     annotHighlightBtn.className = 'px-2.5 py-1 bg-yellow-100 text-yellow-900 border border-yellow-300 rounded font-medium';
+    annotPenBtn.className = 'px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700';
     annotStrikeBtn.className = 'px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700';
   });
 
   annotStrikeBtn?.addEventListener('click', () => {
     activeAnnotMode = 'strike';
     annotStrikeBtn.className = 'px-2.5 py-1 bg-red-100 text-red-900 border border-red-300 rounded font-medium';
+    annotPenBtn.className = 'px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700';
     annotHighlightBtn.className = 'px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700';
   });
 
@@ -1477,6 +2173,38 @@
     addFormTextBtn.className = 'px-2.5 py-1 bg-white border border-slate-300 rounded font-medium text-slate-700';
   });
 
+  // Top Page Navigation & Fit Width
+  prevPageTopBtn?.addEventListener('click', async () => {
+    if (currentPageIndex > 0) {
+      currentPageIndex--;
+      renderThumbnails();
+      await renderActivePage();
+    }
+  });
+
+  nextPageTopBtn?.addEventListener('click', async () => {
+    const totalActive = pageConfigs.filter(p => !p.isDeleted).length;
+    if (currentPageIndex < totalActive - 1) {
+      currentPageIndex++;
+      renderThumbnails();
+      await renderActivePage();
+    }
+  });
+
+  zoomFitWidthBtn?.addEventListener('click', async () => {
+    if (!pdfDocProxy) return;
+    const activeConfig = pageConfigs[currentPageIndex];
+    if (!activeConfig) return;
+    const page = await pdfDocProxy.getPage(activeConfig.originalIndex + 1);
+    const unscaledViewport = page.getViewport({ scale: 1, rotation: activeConfig.rotation });
+    const availableWidth = (viewportContainer?.clientWidth || 800) - 48;
+    if (availableWidth > 100 && unscaledViewport.width > 0) {
+      currentZoom = Math.min(2.5, Math.max(0.5, Math.round((availableWidth / unscaledViewport.width) * 100) / 100));
+      zoomLevelText.textContent = `${Math.round(currentZoom * 100)}%`;
+      await renderActivePage();
+    }
+  });
+
   // --- FIND & REPLACE ---
   const findQueryInput = document.getElementById('find-query-input') as HTMLInputElement;
   const replaceQueryInput = document.getElementById('replace-query-input') as HTMLInputElement;
@@ -1484,9 +2212,35 @@
   const findMatchesCount = document.getElementById('find-matches-count') as HTMLSpanElement;
   const replaceCurrentBtn = document.getElementById('replace-current-btn') as HTMLButtonElement;
 
+  function renderFindMatches() {
+    textClickLayer.innerHTML = '';
+    currentFindMatches.forEach((match, idx) => {
+      const el = document.createElement('div');
+      el.className = `absolute rounded pointer-events-none transition-all ${
+        idx === activeMatchIndex
+          ? 'bg-amber-400/60 border-2 border-amber-600 shadow-sm z-10'
+          : 'bg-yellow-300/40 border border-yellow-400'
+      }`;
+      el.style.left = `${match.box.x * currentZoom}px`;
+      el.style.top = `${match.box.y * currentZoom}px`;
+      el.style.width = `${match.box.width * currentZoom}px`;
+      el.style.height = `${match.box.height * currentZoom}px`;
+      textClickLayer.appendChild(el);
+
+      if (idx === activeMatchIndex) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  }
+
   findSearchBtn?.addEventListener('click', () => {
     const query = findQueryInput.value.trim();
-    if (!query) return;
+    if (!query) {
+      currentFindMatches = [];
+      findMatchesCount.textContent = '0 matches';
+      renderFindMatches();
+      return;
+    }
 
     const activeConfig = pageConfigs[currentPageIndex];
     if (!activeConfig) return;
@@ -1495,6 +2249,19 @@
     currentFindMatches = findTextMatches(items, query);
     findMatchesCount.textContent = `${currentFindMatches.length} matches`;
     activeMatchIndex = currentFindMatches.length > 0 ? 0 : -1;
+    renderFindMatches();
+  });
+
+  findPrevBtn?.addEventListener('click', () => {
+    if (currentFindMatches.length === 0) return;
+    activeMatchIndex = (activeMatchIndex - 1 + currentFindMatches.length) % currentFindMatches.length;
+    renderFindMatches();
+  });
+
+  findNextBtn?.addEventListener('click', () => {
+    if (currentFindMatches.length === 0) return;
+    activeMatchIndex = (activeMatchIndex + 1) % currentFindMatches.length;
+    renderFindMatches();
   });
 
   replaceCurrentBtn?.addEventListener('click', () => {
@@ -1529,6 +2296,78 @@
       renderAnnotationsOverlay();
     }
   });
+
+  // --- GLOBAL KEYBOARD SHORTCUTS ---
+  window.addEventListener('keydown', (e: KeyboardEvent) => {
+    const activeEl = document.activeElement;
+    const isEditingText = activeEl && (
+      activeEl.tagName === 'INPUT' ||
+      activeEl.tagName === 'TEXTAREA' ||
+      (activeEl as HTMLElement).isContentEditable
+    );
+
+    // Delete / Backspace
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !isEditingText && selectedAnnotationId) {
+      e.preventDefault();
+      btnDeleteElement?.click();
+    }
+
+    // Ctrl+Z / Cmd+Z (Undo)
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && !e.shiftKey && !isEditingText) {
+      e.preventDefault();
+      btnUndo?.click();
+    }
+
+    // Ctrl+Y / Cmd+Shift+Z (Redo)
+    if (
+      (((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'y') ||
+       ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'z')) &&
+      !isEditingText
+    ) {
+      e.preventDefault();
+      btnRedo?.click();
+    }
+
+    // Escape (Deselect / Close Modals)
+    if (e.key === 'Escape') {
+      if (selectedAnnotationId) {
+        cleanupEmptyTextAnnotations();
+        selectedAnnotationId = null;
+        renderAnnotationsOverlay();
+      }
+      sigModal.classList.add('hidden');
+    }
+
+    // Arrow keys nudge
+    if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && !isEditingText && selectedAnnotationId) {
+      e.preventDefault();
+      const annot = annotations.find(a => a.id === selectedAnnotationId);
+      if (annot) {
+        const step = e.shiftKey ? 10 : 1;
+        if (e.key === 'ArrowUp') annot.y -= step;
+        if (e.key === 'ArrowDown') annot.y += step;
+        if (e.key === 'ArrowLeft') annot.x -= step;
+        if (e.key === 'ArrowRight') annot.x += step;
+        renderAnnotationsOverlay();
+      }
+    }
+  });
+
+  // Ctrl + Mouse Wheel Zoom
+  viewportContainer?.addEventListener('wheel', async (e: WheelEvent) => {
+    if (e.ctrlKey) {
+      e.preventDefault();
+      if (e.deltaY < 0 && currentZoom < 2.5) {
+        currentZoom = Math.min(2.5, currentZoom + 0.15);
+        zoomLevelText.textContent = `${Math.round(currentZoom * 100)}%`;
+        await renderActivePage();
+      } else if (e.deltaY > 0 && currentZoom > 0.5) {
+        currentZoom = Math.max(0.5, currentZoom - 0.15);
+        zoomLevelText.textContent = `${Math.round(currentZoom * 100)}%`;
+        await renderActivePage();
+      }
+    }
+  }, { passive: false });
 
   // --- APPLY CHANGES (COMPILATION & EXPORT) ---
   btnApplyChanges?.addEventListener('click', async () => {

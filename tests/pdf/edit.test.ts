@@ -168,3 +168,90 @@ test('handles Unicode punctuation (smart quotes, em-dash, bullets) without WinAn
   expect(edited.length).toBeGreaterThan(0);
 });
 
+test('handles line and arrow vector shapes with rotation mapping', async () => {
+  const baseDoc = await PDFDocument.create();
+  baseDoc.addPage([600, 400]);
+  const baseBytes = await baseDoc.save();
+
+  const state: DocumentEditState = {
+    annotations: [
+      {
+        type: 'shape',
+        id: 'shape-line',
+        pageIndex: 0,
+        shapeType: 'line',
+        x: 30,
+        y: 30,
+        width: 100,
+        height: 50,
+        strokeColor: '#2563eb',
+        strokeWidth: 2,
+      },
+      {
+        type: 'shape',
+        id: 'shape-arrow',
+        pageIndex: 0,
+        shapeType: 'arrow',
+        x: 100,
+        y: 100,
+        width: 120,
+        height: 80,
+        strokeColor: '#dc2626',
+        strokeWidth: 3,
+      },
+    ],
+  };
+
+  const edited = await applyPdfEdits(baseBytes, state);
+  expect(edited.length).toBeGreaterThan(0);
+  const reloaded = await PDFDocument.load(edited);
+  expect(reloaded.getPageCount()).toBe(1);
+});
+
+test('handles bold, italic, and multi-line text vector stamping', async () => {
+  const baseDoc = await PDFDocument.create();
+  baseDoc.addPage([600, 400]);
+  const baseBytes = await baseDoc.save();
+
+  const state: DocumentEditState = {
+    annotations: [
+      {
+        type: 'text',
+        id: 't-bold',
+        pageIndex: 0,
+        x: 50,
+        y: 50,
+        text: 'Bold Helvetica Heading',
+        fontSize: 18,
+        bold: true,
+      },
+      {
+        type: 'text',
+        id: 't-italic',
+        pageIndex: 0,
+        x: 50,
+        y: 80,
+        text: 'Italic Helvetica Subtitle',
+        fontSize: 14,
+        italic: true,
+      },
+      {
+        type: 'text',
+        id: 't-bold-italic-multiline',
+        pageIndex: 0,
+        x: 50,
+        y: 110,
+        text: 'Multi-line Text Line 1\nMulti-line Text Line 2\nMulti-line Text Line 3',
+        fontSize: 12,
+        bold: true,
+        italic: true,
+      },
+    ],
+  };
+
+  const edited = await applyPdfEdits(baseBytes, state);
+  expect(edited.length).toBeGreaterThan(0);
+  const reloaded = await PDFDocument.load(edited);
+  expect(reloaded.getPageCount()).toBe(1);
+});
+

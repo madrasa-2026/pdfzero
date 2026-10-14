@@ -228,4 +228,82 @@ test.describe('Sejda-Style PDF Editor E2E Suite', () => {
     fs.writeFileSync(outPath, outputBytes);
     expect(fs.existsSync(outPath)).toBe(true);
   });
+
+  test('interactively tests Sejda-level workbench: live preview, bold/italic, 8-point handles, and pen tool', async ({ page }) => {
+    await page.goto('/tools/edit-pdf');
+
+    // 1. Upload test PDF
+    const fileChooserPromise = page.waitForEvent('filechooser');
+    await page.locator('#edit-drop-zone').click();
+    const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles(FIXTURE_PATH);
+
+    await expect(page.locator('#edit-workbench')).toBeVisible();
+
+    // 2. Verify thumbnail canvases rendered in sidebar
+    await expect(page.locator('#thumbnail-list canvas').first()).toBeVisible();
+
+    // 3. Verify drag preview box exists
+    const dragPreview = page.locator('#drag-preview-box');
+    expect(await dragPreview.count()).toBe(1);
+
+    // 4. Test Text tool with Bold and Italic toggles
+    await page.locator('[data-tool="text"]').click();
+    await expect(page.locator('#text-bold-btn')).toBeVisible();
+    await expect(page.locator('#text-italic-btn')).toBeVisible();
+
+    // Toggle bold on
+    await page.locator('#text-bold-btn').click();
+
+    // Click canvas to place text box
+    const annotLayer = page.locator('#annotation-layer');
+    await annotLayer.click({ position: { x: 100, y: 100 } });
+
+    // Verify text box placed with move handle and editable text
+    const placedText = page.locator('#annotation-layer [data-annot-id^="text-"]');
+    await expect(placedText).toBeVisible();
+    await expect(placedText.locator('.move-handle')).toBeVisible();
+    const editable = placedText.locator('.editable-text');
+    await expect(editable).toBeVisible();
+
+    // Type text into editable box
+    await editable.fill('Interactive Sejda Quality Test');
+
+    // Verify floating toolbar appeared
+    const floatingBar = page.locator('#floating-annot-bar');
+    await expect(floatingBar).toBeVisible();
+    await expect(floatingBar.locator('text=A+')).toBeVisible();
+    await expect(floatingBar.locator('text=📋 Duplicate')).toBeVisible();
+
+    // 5. Test Annotate tool with Pen button
+    await page.locator('[data-tool="annotate"]').click();
+    await expect(page.locator('#annot-pen-btn')).toBeVisible();
+    await expect(page.locator('#annot-highlight-btn')).toBeVisible();
+
+    // 6. Test Whiteout drag-to-draw and 8-point resize handles
+    await page.locator('[data-tool="whiteout"]').click();
+    // Simulate drag to draw whiteout box using annotLayer relative positions
+    await annotLayer.hover({ position: { x: 200, y: 150 } });
+    await page.mouse.down();
+    await annotLayer.hover({ position: { x: 350, y: 200 } });
+    await page.mouse.up();
+
+    // Verify whiteout element placed
+    const whiteoutEl = page.locator('#annotation-layer [data-annot-id^="whiteout-"]');
+    await expect(whiteoutEl).toBeVisible();
+
+    // Select the whiteout element to trigger handles
+    await whiteoutEl.click();
+
+    // Verify 8-point handles exist
+    const handlePositions = ['nw', 'n', 'ne', 'e', 'se', 's', 'sw', 'w'];
+    for (const pos of handlePositions) {
+      await expect(whiteoutEl.locator(`.handle-${pos}`)).toBeVisible();
+    }
+
+    // 7. Verify Escape deselects
+    await page.keyboard.press('Escape');
+    await expect(page.locator('#annotation-layer .selected-annot')).toHaveCount(0);
+  });
 });
+

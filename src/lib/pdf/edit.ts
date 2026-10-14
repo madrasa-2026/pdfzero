@@ -24,6 +24,8 @@ export interface TextAnnotation extends BaseAnnotation {
   text: string;
   fontSize: number;
   color?: string;
+  bold?: boolean;
+  italic?: boolean;
 }
 
 export interface WhiteoutAnnotation extends BaseAnnotation {
@@ -37,7 +39,7 @@ export interface WhiteoutAnnotation extends BaseAnnotation {
 
 export interface ShapeAnnotation extends BaseAnnotation {
   type: 'shape';
-  shapeType: 'rect' | 'circle';
+  shapeType: 'rect' | 'circle' | 'line' | 'arrow';
   x: number;
   y: number;
   width: number;
@@ -261,6 +263,9 @@ export async function applyPdfEdits(
   onProgress?.(50, 'Loading typography assets...');
   let unicodeFont: PDFFont | null = null;
   let helveticaFont: PDFFont | null = null;
+  let helveticaBoldFont: PDFFont | null = null;
+  let helveticaItalicFont: PDFFont | null = null;
+  let helveticaBoldItalicFont: PDFFont | null = null;
 
   // 2. Vector Stamping of Annotations
   const totalAnnotations = state.annotations.length;
@@ -286,18 +291,36 @@ export async function applyPdfEdits(
           }
           font = unicodeFont;
         } else {
-          if (!helveticaFont) {
-            helveticaFont = await targetDoc.embedFont(StandardFonts.Helvetica);
+          if (annot.bold && annot.italic) {
+            if (!helveticaBoldItalicFont) {
+              helveticaBoldItalicFont = await targetDoc.embedFont(StandardFonts.HelveticaBoldOblique);
+            }
+            font = helveticaBoldItalicFont;
+          } else if (annot.bold) {
+            if (!helveticaBoldFont) {
+              helveticaBoldFont = await targetDoc.embedFont(StandardFonts.HelveticaBold);
+            }
+            font = helveticaBoldFont;
+          } else if (annot.italic) {
+            if (!helveticaItalicFont) {
+              helveticaItalicFont = await targetDoc.embedFont(StandardFonts.HelveticaOblique);
+            }
+            font = helveticaItalicFont;
+          } else {
+            if (!helveticaFont) {
+              helveticaFont = await targetDoc.embedFont(StandardFonts.Helvetica);
+            }
+            font = helveticaFont;
           }
-          font = helveticaFont;
         }
 
         const textColor = annot.color ? hexToRgbColor(annot.color) : rgb(0, 0, 0);
+        const lineCount = Math.max(1, annot.text.split('\n').length);
         const coords = transformCoordinatesForPageRotation(
           annot.x,
           annot.y,
           annot.fontSize * (annot.text.length * 0.6),
-          annot.fontSize,
+          annot.fontSize * lineCount * 1.2,
           pageWidth,
           pageHeight,
           pageRotation
@@ -307,6 +330,7 @@ export async function applyPdfEdits(
           x: coords.x,
           y: coords.y,
           size: annot.fontSize,
+          lineHeight: annot.fontSize * 1.2,
           font,
           color: textColor,
           rotate: degrees(pageRotation),
@@ -370,6 +394,42 @@ export async function applyPdfEdits(
             borderWidth: annot.strokeWidth,
             color: fillColor,
           });
+        } else if (annot.shapeType === 'line' || annot.shapeType === 'arrow') {
+          const p1 = transformPointForPageRotation(annot.x, annot.y, pageWidth, pageHeight, pageRotation);
+          const p2 = transformPointForPageRotation(annot.x + annot.width, annot.y + annot.height, pageWidth, pageHeight, pageRotation);
+          const thickness = annot.strokeWidth || 2;
+
+          page.drawLine({
+            start: p1,
+            end: p2,
+            thickness,
+            color: strokeColor,
+          });
+
+          if (annot.shapeType === 'arrow') {
+            const angle = Math.atan2(p2.y - p1.y, p2.x - p1.x);
+            const headLength = Math.max(10, thickness * 4);
+            const arrowP1 = {
+              x: p2.x - headLength * Math.cos(angle - Math.PI / 6),
+              y: p2.y - headLength * Math.sin(angle - Math.PI / 6),
+            };
+            const arrowP2 = {
+              x: p2.x - headLength * Math.cos(angle + Math.PI / 6),
+              y: p2.y - headLength * Math.sin(angle + Math.PI / 6),
+            };
+            page.drawLine({
+              start: p2,
+              end: arrowP1,
+              thickness,
+              color: strokeColor,
+            });
+            page.drawLine({
+              start: p2,
+              end: arrowP2,
+              thickness,
+              color: strokeColor,
+            });
+          }
         }
         break;
       }
