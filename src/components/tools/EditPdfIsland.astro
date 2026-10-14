@@ -63,9 +63,11 @@
   </div>
 
   <!-- 3. Workbench Main Interface (Visible once PDF loaded) -->
-  <div id="edit-workbench" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-left">
-    <!-- Top Header: File info, Whiteout Warning, CTA -->
-    <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
+  <div id="edit-workbench" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-left flex flex-col scroll-mt-24">
+    <!-- Top Header & Toolbars Container -->
+    <div class="bg-white border-b border-slate-200 shadow-xs">
+      <!-- Top Header: File info, Whiteout Warning, CTA -->
+      <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3">
       <div class="flex items-center gap-3 min-w-0">
         <span class="p-1.5 rounded-lg bg-red-100 text-red-700 text-xs font-bold uppercase">PDF</span>
         <div class="min-w-0">
@@ -315,9 +317,10 @@
       <span class="font-bold">⚠️ Notice:</span>
       <span>Whiteout is visual cover only. Underlying PDF text remains extractable — not true cryptographic redaction.</span>
     </div>
+    </div>
 
     <!-- Main Workspace Split: Left Thumbnail Strip & Center Viewport Canvas -->
-    <div class="flex flex-col lg:flex-row h-[700px] bg-slate-100">
+    <div class="flex flex-col lg:flex-row h-[calc(100vh-140px)] min-h-[620px] max-h-[920px] bg-slate-100 flex-grow">
       <!-- Left Thumbnail Strip -->
       <div class="w-full lg:w-64 bg-slate-50 border-r border-slate-200 p-3 overflow-y-auto flex-shrink-0 flex lg:flex-col gap-3">
         <div class="flex items-center justify-between pb-2 border-b border-slate-200 text-xs font-semibold text-slate-700">
@@ -374,7 +377,10 @@
       <div id="sig-content-draw" class="block">
         <div class="border border-slate-300 rounded-xl bg-slate-50 overflow-hidden mb-3 relative">
           <canvas id="sig-pad-canvas" width="450" height="160" class="w-full h-40 bg-white cursor-crosshair block"></canvas>
-          <span class="absolute bottom-2 right-2 text-[10px] text-slate-400">Sign above the line</span>
+          <div class="absolute bottom-9 left-6 right-6 border-b border-dashed border-slate-300 pointer-events-none flex items-center justify-between">
+            <span class="text-slate-300 text-xs font-mono select-none">✕</span>
+            <span class="text-[10px] text-slate-400 font-medium select-none bg-white/90 px-1 rounded">Sign above line</span>
+          </div>
         </div>
         <div class="flex justify-between items-center text-xs">
           <button type="button" id="clear-sig-pad" class="text-slate-500 hover:text-red-600 font-medium">Clear Canvas</button>
@@ -449,7 +455,7 @@
     background-color: #0f172a !important;
     color: #ffffff !important;
   }
-  .selected-annot {
+  .selected-annot:not([data-type="text"]) {
     outline: 2px solid #2563eb !important;
     outline-offset: 1px;
   }
@@ -700,6 +706,15 @@
       renderThumbnails();
       await renderActivePage();
       updateToolCursor();
+      updateUndoRedoButtons();
+      setTimeout(() => {
+        const rect = workbench.getBoundingClientRect();
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        window.scrollTo({
+          top: Math.max(0, scrollTop + rect.top - 80),
+          behavior: 'smooth',
+        });
+      }, 50);
     } catch (err: any) {
       showError('Failed to parse PDF: ' + (err?.message || 'Invalid or encrypted file.'));
     }
@@ -1009,8 +1024,11 @@
     }
   }
 
+  let justDragged = false;
+
   // Handle click on canvas surface to spawn annotations
   annotationLayer?.addEventListener('click', (e) => {
+    if (justDragged) return;
     if (e.target !== annotationLayer) return;
 
     const rect = annotationLayer.getBoundingClientRect();
@@ -1286,6 +1304,8 @@
 
     if (isDragging) {
       isDragging = false;
+      justDragged = true;
+      setTimeout(() => { justDragged = false; }, 200);
       const rect = annotationLayer.getBoundingClientRect();
       const endX = (e.clientX - rect.left) / currentZoom;
       const endY = (e.clientY - rect.top) / currentZoom;
@@ -1297,10 +1317,12 @@
 
       if (width > 5 && height > 5) {
         saveHistory();
+        let createdId: string | null = null;
         if (activeTool === 'whiteout') {
+          createdId = `whiteout-${Date.now()}`;
           annotations.push({
             type: 'whiteout',
-            id: `whiteout-${Date.now()}`,
+            id: createdId,
             pageIndex: currentPageIndex,
             x,
             y,
@@ -1311,9 +1333,10 @@
           const shapeType = (document.getElementById('shape-type-select') as HTMLSelectElement).value as 'rect' | 'circle' | 'line' | 'arrow';
           const strokeColor = (document.getElementById('shape-stroke-color') as HTMLInputElement).value || '#2563eb';
           const strokeWidth = parseInt((document.getElementById('shape-width-select') as HTMLSelectElement).value, 10) || 2;
+          createdId = `shape-${Date.now()}`;
           annotations.push({
             type: 'shape',
-            id: `shape-${Date.now()}`,
+            id: createdId,
             pageIndex: currentPageIndex,
             shapeType,
             x,
@@ -1325,9 +1348,10 @@
           });
         } else if (activeTool === 'annotate') {
           if (activeAnnotMode === 'strike') {
+            createdId = `strike-${Date.now()}`;
             annotations.push({
               type: 'shape',
-              id: `strike-${Date.now()}`,
+              id: createdId,
               pageIndex: currentPageIndex,
               shapeType: 'rect',
               x,
@@ -1339,9 +1363,10 @@
               fillColor: '#dc2626',
             });
           } else {
+            createdId = `highlight-${Date.now()}`;
             annotations.push({
               type: 'highlight',
-              id: `highlight-${Date.now()}`,
+              id: createdId,
               pageIndex: currentPageIndex,
               x,
               y,
@@ -1352,9 +1377,10 @@
           }
         } else if (activeTool === 'links') {
           const url = (document.getElementById('link-url-input') as HTMLInputElement).value || 'https://airpdf.pages.dev';
+          createdId = `link-${Date.now()}`;
           annotations.push({
             type: 'link',
-            id: `link-${Date.now()}`,
+            id: createdId,
             pageIndex: currentPageIndex,
             x,
             y,
@@ -1362,6 +1388,9 @@
             height,
             url,
           });
+        }
+        if (createdId) {
+          selectedAnnotationId = createdId;
         }
         renderAnnotationsOverlay();
       }
@@ -1372,11 +1401,15 @@
   function renderAnnotationsOverlay() {
     annotationLayer.innerHTML = '';
     const pageAnnotations = annotations.filter(a => a.pageIndex === currentPageIndex);
+    if (btnDeleteElement) {
+      btnDeleteElement.disabled = !selectedAnnotationId;
+    }
 
     pageAnnotations.forEach((annot) => {
       const el = document.createElement('div');
       el.className = 'absolute cursor-move group hover-annot';
       el.dataset.annotId = annot.id;
+      el.dataset.type = annot.type;
       el.style.left = `${annot.x * currentZoom}px`;
       el.style.top = `${annot.y * currentZoom}px`;
 
@@ -1406,15 +1439,28 @@
 
       switch (annot.type) {
         case 'text': {
-          el.style.minWidth = '50px';
-          el.style.backgroundColor = 'rgba(255, 255, 255, 0.7)';
-          el.style.border = '1px solid rgba(59, 130, 246, 0.4)';
-          el.style.borderRadius = '3px';
+          el.style.minWidth = '40px';
+          if (annot.id === selectedAnnotationId) {
+            el.style.backgroundColor = 'rgba(255, 255, 255, 0.85)';
+            el.style.border = '1.5px dashed #2563eb';
+            el.style.borderRadius = '4px';
 
-          // Move handle on top
-          const moveBar = document.createElement('div');
-          moveBar.className = 'move-handle w-full h-3 bg-blue-500/20 hover:bg-blue-500/40 cursor-move rounded-t flex items-center justify-center';
-          moveBar.innerHTML = '<span class="w-4 h-0.5 bg-blue-500/60 rounded block"></span>';
+            // Sleek move handle pill attached above the text box
+            const moveHandle = document.createElement('div');
+            moveHandle.className = 'move-handle absolute -top-4 -left-1 px-1.5 py-0.5 bg-blue-600 hover:bg-blue-700 text-white rounded text-[10px] font-sans font-semibold cursor-move flex items-center gap-1 shadow-xs select-none z-30';
+            moveHandle.title = 'Drag to move text';
+            moveHandle.innerHTML = `
+              <svg class="w-2.5 h-2.5 pointer-events-none" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M10 9h4V6h3l-5-5-5 5h3v3zm-1 1H6V7l-5 5 5 5v-3h3v-4zm14 2l-5-5v3h-3v4h3v3l5-5zm-9 3h-4v3H7l5 5 5-5h-3v-3z"/>
+              </svg>
+              <span class="pointer-events-none">Move</span>
+            `;
+            el.appendChild(moveHandle);
+          } else {
+            el.style.backgroundColor = 'transparent';
+            el.style.border = '1.5px solid transparent';
+            el.style.borderRadius = '4px';
+          }
 
           const textSpan = document.createElement('div');
           textSpan.className = 'editable-text outline-none px-1.5 py-0.5 cursor-text whitespace-pre-wrap min-w-[30px]';
@@ -1454,7 +1500,6 @@
             }
           });
 
-          el.appendChild(moveBar);
           el.appendChild(textSpan);
           break;
         }
@@ -1738,9 +1783,23 @@
 
     const annotX = annot.x * currentZoom;
     const annotY = annot.y * currentZoom;
-    const annotW = ((annot as any).width || 80) * currentZoom;
-    floatingAnnotBar.style.left = `${annotX + annotW / 2}px`;
-    floatingAnnotBar.style.top = `${Math.max(8, annotY - 42)}px`;
+    const domEl = annotationLayer.querySelector(`[data-annot-id="${annot.id}"]`) as HTMLElement;
+    const annotW = domEl ? domEl.offsetWidth : (((annot as any).width || 80) * currentZoom);
+    const annotH = domEl ? domEl.offsetHeight : (((annot as any).height || 30) * currentZoom);
+
+    // Dynamic vertical placement: if element is near the top of page, place toolbar below it
+    let topPos = annotY - 46;
+    if (topPos < 10) {
+      topPos = annotY + annotH + 10;
+    }
+    floatingAnnotBar.style.top = `${topPos}px`;
+
+    // Clamp horizontal placement so it never clips off left or right edge of canvas
+    const canvasWidth = annotationLayer.clientWidth || 800;
+    const estimatedBarHalfWidth = 140;
+    const centerX = annotX + annotW / 2;
+    const clampedX = Math.max(estimatedBarHalfWidth + 10, Math.min(canvasWidth - estimatedBarHalfWidth - 10, centerX));
+    floatingAnnotBar.style.left = `${clampedX}px`;
 
     if (annot.type === 'text') {
       const btnMinus = document.createElement('button');
@@ -2001,7 +2060,8 @@
       textClickLayer.style.pointerEvents = 'auto';
       items.forEach((item) => {
         const target = document.createElement('div');
-        target.className = 'absolute cursor-pointer border border-transparent hover:border-blue-400 hover:bg-blue-50/20';
+        target.className = 'absolute cursor-pointer border border-transparent hover:border-blue-500 hover:border-dashed hover:bg-blue-50/30 rounded transition-all';
+        target.title = 'Click to edit this text in-place';
         target.style.left = `${item.x * currentZoom}px`;
         target.style.top = `${item.y * currentZoom}px`;
         target.style.width = `${item.width * currentZoom}px`;
