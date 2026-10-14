@@ -7,7 +7,6 @@ icon: "edit"
 order: 2
 isFlagship: true
 popular: true
-disclaimer: "Whiteout is visual cover only — underlying text remains extractable from the file, not true cryptographic redaction."
 keywords: ["edit pdf", "online pdf editor", "free pdf editor", "edit pdf without uploading", "client side pdf editor", "edit bengali pdf"]
 howToSteps:
   - title: "Open PDF in private editor"
