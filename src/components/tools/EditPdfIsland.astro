@@ -594,6 +594,13 @@
   const textItalicBtn = document.getElementById('text-italic-btn') as HTMLButtonElement;
   let isTextBold = false;
   let isTextItalic = false;
+  const textFontSelect = document.getElementById('text-font-select') as HTMLSelectElement;
+  const textSizeSelect = document.getElementById('text-size-select') as HTMLSelectElement;
+  const textColorSelect = document.getElementById('text-color-select') as HTMLSelectElement;
+  const shapeTypeSelect = document.getElementById('shape-type-select') as HTMLSelectElement;
+  const shapeStrokeColor = document.getElementById('shape-stroke-color') as HTMLInputElement;
+  const shapeWidthSelect = document.getElementById('shape-width-select') as HTMLSelectElement;
+  let clipboardAnnotation: any = null;
 
   const annotPenBtn = document.getElementById('annot-pen-btn') as HTMLButtonElement;
   const annotHighlightBtn = document.getElementById('annot-highlight-btn') as HTMLButtonElement;
@@ -835,6 +842,8 @@
         if (target.closest('.btn-page-up') || target.closest('.btn-page-down') || target.closest('.btn-page-rotate') || target.closest('.btn-page-delete')) {
           return;
         }
+        cleanupEmptyTextAnnotations();
+        selectedAnnotationId = null;
         currentPageIndex = visualIdx;
         renderThumbnails();
         await renderActivePage();
@@ -1416,6 +1425,11 @@
       if (annot.id === selectedAnnotationId) {
         el.classList.add('selected-annot');
         if (annot.type === 'text') {
+          if (textFontSelect) textFontSelect.value = annot.fontFamily || 'Helvetica';
+          if (textSizeSelect) textSizeSelect.value = String(annot.fontSize || 14);
+          if (textColorSelect && annot.color) textColorSelect.value = annot.color;
+          isTextBold = Boolean(annot.bold);
+          isTextItalic = Boolean(annot.italic);
           if (textBoldBtn) {
             textBoldBtn.className = `w-6 h-6 rounded border font-bold flex items-center justify-center text-xs ${
               annot.bold ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
@@ -1426,6 +1440,10 @@
               annot.italic ? 'bg-slate-900 text-white border-slate-900' : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
             }`;
           }
+        } else if (annot.type === 'shape') {
+          if (shapeTypeSelect) shapeTypeSelect.value = annot.shapeType || 'rect';
+          if (shapeStrokeColor && annot.strokeColor) shapeStrokeColor.value = annot.strokeColor;
+          if (shapeWidthSelect) shapeWidthSelect.value = String(annot.strokeWidth || 2);
         }
       }
 
@@ -2337,6 +2355,60 @@
     }
   });
 
+  textFontSelect?.addEventListener('change', () => {
+    if (selectedAnnotationId) {
+      const annot = annotations.find(a => a.id === selectedAnnotationId);
+      if (annot && annot.type === 'text') {
+        saveHistory();
+        annot.fontFamily = textFontSelect.value as any;
+        renderAnnotationsOverlay();
+      }
+    }
+  });
+
+  textSizeSelect?.addEventListener('change', () => {
+    if (selectedAnnotationId) {
+      const annot = annotations.find(a => a.id === selectedAnnotationId);
+      if (annot && annot.type === 'text') {
+        saveHistory();
+        annot.fontSize = parseInt(textSizeSelect.value, 10) || 14;
+        renderAnnotationsOverlay();
+      }
+    }
+  });
+
+  textColorSelect?.addEventListener('change', () => {
+    if (selectedAnnotationId) {
+      const annot = annotations.find(a => a.id === selectedAnnotationId);
+      if (annot && annot.type === 'text') {
+        saveHistory();
+        annot.color = textColorSelect.value;
+        renderAnnotationsOverlay();
+      }
+    }
+  });
+
+  shapeStrokeColor?.addEventListener('input', () => {
+    if (selectedAnnotationId) {
+      const annot = annotations.find(a => a.id === selectedAnnotationId);
+      if (annot && annot.type === 'shape') {
+        annot.strokeColor = shapeStrokeColor.value;
+        renderAnnotationsOverlay();
+      }
+    }
+  });
+
+  shapeWidthSelect?.addEventListener('change', () => {
+    if (selectedAnnotationId) {
+      const annot = annotations.find(a => a.id === selectedAnnotationId);
+      if (annot && annot.type === 'shape') {
+        saveHistory();
+        annot.strokeWidth = parseInt(shapeWidthSelect.value, 10) || 2;
+        renderAnnotationsOverlay();
+      }
+    }
+  });
+
   annotPenBtn?.addEventListener('click', () => {
     activeAnnotMode = 'pen';
     annotPenBtn.className = 'px-2.5 py-1 bg-slate-900 text-white rounded font-medium';
@@ -2535,6 +2607,28 @@
     ) {
       e.preventDefault();
       btnRedo?.click();
+    }
+
+    // Ctrl+C / Cmd+C (Copy)
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'c' && !isEditingText && selectedAnnotationId) {
+      const annot = annotations.find(a => a.id === selectedAnnotationId);
+      if (annot) {
+        clipboardAnnotation = JSON.parse(JSON.stringify(annot));
+      }
+    }
+
+    // Ctrl+V / Cmd+V (Paste)
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'v' && !isEditingText && clipboardAnnotation) {
+      e.preventDefault();
+      saveHistory();
+      const clone = JSON.parse(JSON.stringify(clipboardAnnotation));
+      clone.id = `${clone.type}-${Date.now()}`;
+      clone.pageIndex = currentPageIndex;
+      clone.x += 15;
+      clone.y += 15;
+      annotations.push(clone);
+      selectedAnnotationId = clone.id;
+      renderAnnotationsOverlay();
     }
 
     // Escape (Deselect / Close Modals)

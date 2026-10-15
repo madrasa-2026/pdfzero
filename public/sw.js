@@ -1,23 +1,25 @@
-const CACHE_NAME = 'airpdf-v1';
+const CACHE_NAME = 'airpdf-v3';
 const CORE_ASSETS = [
   '/',
   '/manifest.webmanifest',
   '/favicon.svg',
   '/icon-192.png',
   '/icon-512.png',
-  '/pdf.worker.min.mjs'
+  '/pdf.worker.min.mjs',
+  '/fonts/NotoSansBengali-Regular.ttf'
 ];
 
-// Install: Cache essential shell
+// Install: Cache essential shell and activate immediately
 self.addEventListener('install', (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(CORE_ASSETS);
-    }).then(() => self.skipWaiting())
+      return cache.addAll(CORE_ASSETS).catch(() => {});
+    })
   );
 });
 
-// Activate: Clean old caches
+// Activate: Delete all previous caches
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -32,32 +34,48 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Stale-While-Revalidate with offline fallback
+// Fetch handling: Network-First for HTML navigations to prevent stale cached versions
 self.addEventListener('fetch', (event) => {
   const request = event.request;
 
-  // Only handle GET requests for http/https
   if (request.method !== 'GET' || !request.url.startsWith('http')) {
     return;
   }
 
+  // HTML page navigations: Always network first so users immediately see updates
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, copy));
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(request).then((cached) => {
+            return cached || caches.match('/');
+          });
+        })
+    );
+    return;
+  }
+
+  // Other assets: Stale-While-Revalidate
   event.respondWith(
     caches.match(request).then((cachedResponse) => {
-      const fetchPromise = fetch(request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
-          const responseToCache = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(request, responseToCache);
-          });
-        }
-        return networkResponse;
-      }).catch(() => {
-        // Offline and no match: if requesting a page navigation, return cached root '/'
-        if (request.mode === 'navigate') {
-          return caches.match('/');
-        }
-        return cachedResponse;
-      });
+      const fetchPromise = fetch(request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200 && networkResponse.type === 'basic') {
+            const responseToCache = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseToCache);
+            });
+          }
+          return networkResponse;
+        })
+        .catch(() => cachedResponse);
 
       return cachedResponse || fetchPromise;
     })

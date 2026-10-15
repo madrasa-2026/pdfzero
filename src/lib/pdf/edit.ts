@@ -375,12 +375,11 @@ export async function applyPdfEdits(
         }
 
         const textColor = annot.color ? hexToRgbColor(annot.color) : rgb(0, 0, 0);
-        const lineCount = Math.max(1, annot.text.split('\n').length);
         const coords = transformCoordinatesForPageRotation(
           annot.x,
           annot.y,
           annot.fontSize * (annot.text.length * 0.6),
-          annot.fontSize * lineCount * 1.2,
+          annot.fontSize,
           pageWidth,
           pageHeight,
           pageRotation
@@ -388,7 +387,7 @@ export async function applyPdfEdits(
 
         page.drawText(annot.text, {
           x: coords.x,
-          y: coords.y,
+          y: coords.y + annot.fontSize * 0.15,
           size: annot.fontSize,
           lineHeight: annot.fontSize * 1.2,
           font,
