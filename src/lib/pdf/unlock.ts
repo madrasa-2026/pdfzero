@@ -1,5 +1,4 @@
 import { PDFDocument } from 'pdf-lib-with-encrypt';
-import { MAX_FILE_SIZE_BYTES } from './merge';
 
 export interface UnlockProgress {
   message: string;
@@ -18,10 +17,6 @@ export interface EncryptionStatus {
  * @returns EncryptionStatus indicating if the document is encrypted.
  */
 export async function checkIfEncrypted(file: File): Promise<EncryptionStatus> {
-  if (file.size > MAX_FILE_SIZE_BYTES) {
-    throw new Error('File exceeds the 100MB limit.');
-  }
-
   const arrayBuffer = await file.arrayBuffer();
   try {
     const doc = await PDFDocument.load(arrayBuffer);
@@ -53,10 +48,6 @@ export async function unlockPdf(
   password: string,
   onProgress?: (progress: UnlockProgress) => void
 ): Promise<Uint8Array> {
-  if (file.size > MAX_FILE_SIZE_BYTES) {
-    throw new Error('File exceeds the 100MB limit.');
-  }
-
   const trimmedPassword = password ?? '';
   if (!trimmedPassword) {
     throw new Error('Please enter the document password.');

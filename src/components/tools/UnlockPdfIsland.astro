@@ -47,7 +47,7 @@
     </div>
 
     <div class="mt-6 flex items-center justify-center gap-4 text-xs text-slate-400">
-      <span>Cap: Max 100MB</span>
+      <span>No file size limit</span>
       <span>•</span>
       <span>Permanent restriction removal</span>
       <span>•</span>
@@ -318,11 +318,6 @@
 
     if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
       showError('Please select a valid PDF file.');
-      return;
-    }
-
-    if (file.size > 100 * 1024 * 1024) {
-      showError('File exceeds the 100MB safety limit. Please upload a smaller file.');
       return;
     }
 
