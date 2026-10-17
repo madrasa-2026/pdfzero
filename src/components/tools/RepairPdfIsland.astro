@@ -1,0 +1,305 @@
+---
+// RepairPdfIsland.astro - Interactive client-side PDF repair & content rescuer
+---
+
+<div id="repair-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="repair-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Repair Notice</h4>
+      <p id="repair-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-repair-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="repair-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="repair-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-slate-100 group-hover:bg-slate-900 flex items-center justify-center text-slate-700 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-brand-600 transition">
+      Select corrupted or damaged PDF to repair
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your damaged PDF here, or click to choose from your device.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose Damaged PDF
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>Zero cloud uploads</span>
+      <span>•</span>
+      <span>Binary stream rescuer</span>
+      <span>•</span>
+      <span>No file size limit</span>
+    </div>
+  </div>
+
+  <!-- 2. Processing & Progress State -->
+  <div id="repair-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-5">
+    <div class="w-16 h-16 mx-auto relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-brand-100 border-t-slate-900 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-brand-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-lg font-bold text-slate-800 mb-1">Repairing PDF Document...</h3>
+      <p id="repair-progress-message" class="text-xs text-slate-500">Scanning raw binary stream for salvageable objects...</p>
+    </div>
+
+    <div class="w-full max-w-md mx-auto bg-slate-100 rounded-full h-3 overflow-hidden">
+      <div id="repair-progress-bar" class="bg-brand-600 h-3 rounded-full transition-all duration-300" style="width: 25%"></div>
+    </div>
+  </div>
+
+  <!-- 3. Diagnostic Success State -->
+  <div id="repair-success-section" class="hidden bg-white rounded-2xl border border-emerald-200 p-6 sm:p-8 shadow-sm text-center space-y-6">
+    <div class="w-16 h-16 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-2xl font-extrabold text-slate-900 mb-1">PDF Successfully Repaired & Restored!</h3>
+      <p class="text-sm text-slate-600">All corrupted structural tables were rebuilt and intact pages transfused.</p>
+    </div>
+
+    <!-- Diagnostic Breakdown Card -->
+    <div class="max-w-lg mx-auto bg-slate-50 border border-slate-200 rounded-2xl p-5 text-left space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+        <div>
+          <span class="text-xs text-slate-400 uppercase tracking-wider block">Salvaged Output</span>
+          <p id="repair-file-name" class="font-bold text-sm text-slate-900 truncate">document_repaired.pdf</p>
+        </div>
+        <span id="repair-pages-badge" class="px-3 py-1 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+          0 Pages Recovered
+        </span>
+      </div>
+
+      <!-- Size metrics -->
+      <div class="grid grid-cols-2 gap-3 text-xs">
+        <div class="p-3 bg-white rounded-xl border border-slate-200">
+          <span class="text-slate-400 block mb-0.5">Original File Size</span>
+          <span id="original-size-text" class="font-bold text-slate-700">0 KB</span>
+        </div>
+        <div class="p-3 bg-white rounded-xl border border-slate-200">
+          <span class="text-slate-400 block mb-0.5">Repaired File Size</span>
+          <span id="repaired-size-text" class="font-bold text-emerald-600">0 KB</span>
+        </div>
+      </div>
+
+      <!-- Fixes Applied List -->
+      <div>
+        <span class="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-2">Diagnostic Repairs Applied</span>
+        <ul id="fixes-applied-list" class="space-y-1.5 text-xs text-slate-600">
+          <!-- Dynamically populated -->
+        </ul>
+      </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        id="download-repaired-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-bold text-white bg-emerald-600 hover:bg-emerald-700 transition shadow-sm hover:shadow"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Download Repaired PDF
+      </button>
+
+      <button
+        type="button"
+        id="repair-another-btn"
+        class="w-full sm:w-auto px-6 py-3.5 rounded-xl font-semibold text-slate-700 bg-white border border-slate-300 hover:bg-slate-50 transition"
+      >
+        Repair Another PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { repairPdf, type RepairReport } from '../../lib/pdf/repair';
+
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  let selectedFile: File | null = null;
+  let activeReport: RepairReport | null = null;
+
+  const dropZone = document.getElementById('repair-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('repair-file-input') as HTMLInputElement;
+  const progressSection = document.getElementById('repair-progress-section') as HTMLDivElement;
+  const progressMessage = document.getElementById('repair-progress-message') as HTMLParagraphElement;
+  const progressBar = document.getElementById('repair-progress-bar') as HTMLDivElement;
+
+  const successSection = document.getElementById('repair-success-section') as HTMLDivElement;
+  const fileNameEl = document.getElementById('repair-file-name') as HTMLParagraphElement;
+  const pagesBadge = document.getElementById('repair-pages-badge') as HTMLSpanElement;
+  const originalSizeText = document.getElementById('original-size-text') as HTMLSpanElement;
+  const repairedSizeText = document.getElementById('repaired-size-text') as HTMLSpanElement;
+  const fixesList = document.getElementById('fixes-applied-list') as HTMLUListElement;
+
+  const downloadBtn = document.getElementById('download-repaired-btn') as HTMLButtonElement;
+  const repairAnotherBtn = document.getElementById('repair-another-btn') as HTMLButtonElement;
+
+  const errorBanner = document.getElementById('repair-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('repair-error-message') as HTMLParagraphElement;
+  const dismissErrorBtn = document.getElementById('dismiss-repair-error') as HTMLButtonElement;
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    if (errorBanner) {
+      errorBanner.classList.add('hidden');
+    }
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  function resetState() {
+    selectedFile = null;
+    activeReport = null;
+    dropZone.classList.remove('hidden');
+    progressSection.classList.add('hidden');
+    successSection.classList.add('hidden');
+    fileInput.value = '';
+    hideError();
+  }
+
+  repairAnotherBtn?.addEventListener('click', resetState);
+
+  // Drag and drop handlers
+  ['dragenter', 'dragover'].forEach((eventName) => {
+    dropZone?.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.add('border-brand-500', 'bg-brand-50/30');
+    });
+  });
+
+  ['dragleave', 'drop'].forEach((eventName) => {
+    dropZone?.addEventListener(eventName, (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dropZone.classList.remove('border-brand-500', 'bg-brand-50/30');
+    });
+  });
+
+  dropZone?.addEventListener('drop', (e) => {
+    const files = e.dataTransfer?.files;
+    if (files && files.length > 0) {
+      handleFileSelected(files[0]);
+    }
+  });
+
+  fileInput?.addEventListener('change', () => {
+    if (fileInput.files && fileInput.files.length > 0) {
+      handleFileSelected(fileInput.files[0]);
+    }
+  });
+
+  async function handleFileSelected(file: File) {
+    hideError();
+
+    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+      showError('Please select a valid PDF file to repair.');
+      return;
+    }
+
+    selectedFile = file;
+    dropZone.classList.add('hidden');
+    progressSection.classList.remove('hidden');
+    successSection.classList.add('hidden');
+
+    try {
+      activeReport = await repairPdf(file, (p) => {
+        progressMessage.textContent = p.message;
+        progressBar.style.width = `${p.percent}%`;
+      });
+
+      renderSuccessReport(activeReport, file.name);
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      dropZone.classList.remove('hidden');
+      showError(err?.message || 'Unable to repair this file. It may be completely unreadable or not a PDF.');
+    }
+  }
+
+  function renderSuccessReport(report: RepairReport, originalName: string) {
+    progressSection.classList.add('hidden');
+    successSection.classList.remove('hidden');
+
+    const cleanBaseName = originalName.replace(/\.pdf$/i, '');
+    fileNameEl.textContent = `${cleanBaseName}_repaired.pdf`;
+    pagesBadge.textContent = `${report.pagesRecovered} ${report.pagesRecovered === 1 ? 'Page' : 'Pages'} Recovered`;
+
+    originalSizeText.textContent = formatBytes(report.originalSize);
+    repairedSizeText.textContent = formatBytes(report.repairedSize);
+
+    fixesList.innerHTML = '';
+    report.fixesApplied.forEach((fix) => {
+      const li = document.createElement('li');
+      li.className = 'flex items-start gap-2';
+      li.innerHTML = `
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+        </svg>
+        <span>${fix}</span>
+      `;
+      fixesList.appendChild(li);
+    });
+  }
+
+  downloadBtn?.addEventListener('click', () => {
+    if (!activeReport || !selectedFile) return;
+
+    const blob = new Blob([activeReport.repairedBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = selectedFile.name.replace(/\.pdf$/i, '_repaired.pdf');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+</script>
