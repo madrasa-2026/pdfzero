@@ -15,6 +15,7 @@ import UnlockPdfIsland from '../../components/tools/UnlockPdfIsland.astro';
 import EditPdfIsland from '../../components/tools/EditPdfIsland.astro';
 import RecoverPdfPasswordIsland from '../../components/tools/RecoverPdfPasswordIsland.astro';
 import RepairPdfIsland from '../../components/tools/RepairPdfIsland.astro';
+import RemoveWatermarkIsland from '../../components/tools/RemoveWatermarkIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -165,6 +166,8 @@ const relatedToolCards = allTools
       <RecoverPdfPasswordIsland />
     ) : tool.slug === 'repair-pdf' ? (
       <RepairPdfIsland />
+    ) : tool.slug === 'remove-watermark' ? (
+      <RemoveWatermarkIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}
