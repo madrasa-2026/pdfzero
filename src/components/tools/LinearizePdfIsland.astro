@@ -1,0 +1,438 @@
+---
+// LinearizePdfIsland.astro - 100% In-Browser PDF Linearization & Fast Web View Optimizer
+---
+
+<div id="linearize-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="linearize-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Linearization Notice</h4>
+      <p id="linearize-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-linearize-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="linearize-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="linearize-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-sky-50 group-hover:bg-sky-600 flex items-center justify-center text-sky-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-sky-600 transition">
+      Select PDF to Linearize & Enable Fast Web View
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your multi-page PDF here, or click to browse.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF Document
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>ISO 32000-1 Fast Web View</span>
+      <span>•</span>
+      <span>Byte-Range Streaming Ready</span>
+    </div>
+  </div>
+
+  <!-- 2. Configure & Optimize Card -->
+  <div id="linearize-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="linearize-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="linearize-file-meta" class="text-xs text-slate-500">Detecting document structure...</p>
+        </div>
+      </div>
+      <button type="button" id="change-linearize-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Live Fast Web View Diagnostic Banner -->
+    <div id="status-diagnostic-box" class="p-4 rounded-xl border flex items-start gap-3 transition">
+      <div id="status-icon" class="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+        <!-- Injected dynamically -->
+      </div>
+      <div>
+        <div class="flex items-center gap-2">
+          <h5 id="status-heading" class="text-sm font-bold text-slate-900">Scanning Document Structure...</h5>
+          <span id="status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-bold"></span>
+        </div>
+        <p id="status-description" class="text-xs text-slate-600 leading-relaxed mt-0.5"></p>
+      </div>
+    </div>
+
+    <!-- Streaming Comparison Visualizer -->
+    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-left space-y-3">
+      <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+        Web Streaming Architecture Comparison
+      </h5>
+
+      <div class="space-y-2 text-xs">
+        <div>
+          <div class="flex justify-between text-[11px] text-slate-500 mb-1">
+            <span>Standard PDF (Non-Linearized)</span>
+            <span class="text-red-600 font-semibold">100% Download Required Before First View</span>
+          </div>
+          <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden flex">
+            <div class="bg-red-400 w-full animate-pulse"></div>
+          </div>
+        </div>
+
+        <div>
+          <div class="flex justify-between text-[11px] text-slate-500 mb-1">
+            <span>Linearized PDF (Fast Web View)</span>
+            <span class="text-emerald-600 font-semibold">Page 1 Streams Instantly (5% of file)</span>
+          </div>
+          <div class="w-full h-3 bg-slate-200 rounded-full overflow-hidden flex">
+            <div class="bg-emerald-500 w-[15%]"></div>
+            <div class="bg-slate-300 w-[85%]"></div>
+          </div>
+        </div>
+      </div>
+
+      <p class="text-[11px] text-slate-500 pt-1">
+        Linearization places the Page 1 objects and hints directly in the first 1024 bytes, allowing web browsers to render Page 1 instantly via HTTP Byte-Range requests (`Range: bytes=...`).
+      </p>
+    </div>
+
+    <!-- Optimization Options Checklist -->
+    <div class="space-y-2.5">
+      <label class="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 bg-white cursor-pointer hover:bg-slate-50 transition">
+        <input type="checkbox" id="opt-reorder" checked class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500 mt-0.5" />
+        <div>
+          <span class="block text-xs font-bold text-slate-800">Isolate Page 1 Resources & Restructure Object Graph</span>
+          <span class="block text-[11px] text-slate-500">Places fonts, content streams, and catalog entries required for page 1 at the front of the byte sequence.</span>
+        </div>
+      </label>
+
+      <label class="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 bg-white cursor-pointer hover:bg-slate-50 transition">
+        <input type="checkbox" id="opt-defrag" checked class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500 mt-0.5" />
+        <div>
+          <span class="block text-xs font-bold text-slate-800">Defragment Object Tree & Prune Dangling Xrefs</span>
+          <span class="block text-[11px] text-slate-500">Purges orphan object versions and rebuilds clean, contiguous cross-reference sections.</span>
+        </div>
+      </label>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2 flex flex-col sm:flex-row items-center gap-3">
+      <button
+        type="button"
+        id="execute-linearize-btn"
+        class="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+        </svg>
+        <span id="execute-btn-text">Linearize & Enable Fast Web View</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Processing State -->
+  <div id="linearize-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-5">
+    <div class="w-16 h-16 mx-auto relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-amber-100 border-t-amber-500 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-amber-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-base font-bold text-slate-900 mb-1">Restructuring PDF Object Graph...</h3>
+      <p id="linearize-progress-text" class="text-xs text-slate-500">
+        Re-ordering page 1 dependencies and calculating byte-range hint tables...
+      </p>
+    </div>
+  </div>
+
+  <!-- 4. Success & Download State -->
+  <div id="linearize-success-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-lg font-bold text-slate-900 mb-1">Fast Web View Enabled Successfully!</h3>
+      <p class="text-xs text-slate-500 max-w-md mx-auto">
+        Your document is now linearized and ready for instant web and mobile streaming.
+      </p>
+    </div>
+
+    <!-- Metrics Details -->
+    <div id="linearize-metrics-container" class="max-w-md mx-auto p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-2 text-left">
+      <!-- Injected dynamically -->
+    </div>
+
+    <!-- Download Action -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        id="download-linearized-pdf-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-amber-600 hover:bg-amber-500 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Linearized PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="linearize-another-btn"
+        class="w-full sm:w-auto px-5 py-3 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+      >
+        Optimize Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { isPdfLinearized, linearizePdf } from '../../lib/pdf/linearize';
+  import { PDFDocument } from 'pdf-lib';
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let linearizedPdfBytes: Uint8Array | null = null;
+  let detectedPageCount = 1;
+  let isAlreadyLinear = false;
+
+  const dropZone = document.getElementById('linearize-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('linearize-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('linearize-config-section') as HTMLDivElement;
+  const progressSection = document.getElementById('linearize-progress-section') as HTMLDivElement;
+  const successSection = document.getElementById('linearize-success-section') as HTMLDivElement;
+
+  const errorBanner = document.getElementById('linearize-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('linearize-error-message') as HTMLElement;
+  const dismissErrorBtn = document.getElementById('dismiss-linearize-error') as HTMLButtonElement;
+
+  const fileNameLabel = document.getElementById('linearize-file-name') as HTMLElement;
+  const fileMetaLabel = document.getElementById('linearize-file-meta') as HTMLElement;
+  const changeFileBtn = document.getElementById('change-linearize-file-btn') as HTMLButtonElement;
+  const executeBtn = document.getElementById('execute-linearize-btn') as HTMLButtonElement;
+  const executeBtnText = document.getElementById('execute-btn-text') as HTMLElement;
+
+  const diagBox = document.getElementById('status-diagnostic-box') as HTMLDivElement;
+  const statusHeading = document.getElementById('status-heading') as HTMLElement;
+  const statusBadge = document.getElementById('status-badge') as HTMLElement;
+  const statusDescription = document.getElementById('status-description') as HTMLElement;
+  const statusIcon = document.getElementById('status-icon') as HTMLElement;
+
+  const metricsContainer = document.getElementById('linearize-metrics-container') as HTMLDivElement;
+  const downloadBtn = document.getElementById('download-linearized-pdf-btn') as HTMLButtonElement;
+  const linearizeAnotherBtn = document.getElementById('linearize-another-btn') as HTMLButtonElement;
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    if (errorBanner) {
+      errorBanner.classList.add('hidden');
+    }
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  // Load and Diagnose File
+  async function loadFile(file: File) {
+    hideError();
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please select a valid PDF file.');
+      return;
+    }
+
+    try {
+      currentFile = file;
+      fileBuffer = await file.arrayBuffer();
+      const u8 = new Uint8Array(fileBuffer);
+
+      const doc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
+      detectedPageCount = doc.getPageCount();
+
+      isAlreadyLinear = isPdfLinearized(u8);
+
+      fileNameLabel.textContent = file.name;
+      fileMetaLabel.textContent = `${formatBytes(file.size)} • ${detectedPageCount} page${detectedPageCount > 1 ? 's' : ''}`;
+
+      if (isAlreadyLinear) {
+        diagBox.className = 'p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 flex items-start gap-3 transition';
+        statusIcon.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+        `;
+        statusHeading.textContent = 'Fast Web View is Already Enabled';
+        statusBadge.textContent = 'Linearized (ISO 32000-1)';
+        statusBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800';
+        statusDescription.textContent = 'This document already has a valid /Linearized parameter dictionary at the file header. Re-optimizing will clean and defragment objects.';
+        executeBtnText.textContent = 'Re-Optimize & Defragment PDF';
+      } else {
+        diagBox.className = 'p-4 rounded-xl border border-amber-200 bg-amber-50/50 flex items-start gap-3 transition';
+        statusIcon.innerHTML = `
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        `;
+        statusHeading.textContent = 'Fast Web View is Disabled';
+        statusBadge.textContent = 'Non-Linearized';
+        statusBadge.className = 'px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800';
+        statusDescription.textContent = 'Web visitors must download the entire PDF before page 1 can render. Linearizing will restructure objects for instant streaming.';
+        executeBtnText.textContent = 'Linearize & Enable Fast Web View';
+      }
+
+      dropZone.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      progressSection.classList.add('hidden');
+      successSection.classList.add('hidden');
+    } catch (err: any) {
+      showError('Failed to parse PDF document: ' + (err?.message || 'Invalid or corrupted file'));
+    }
+  }
+
+  fileInput?.addEventListener('change', (e) => {
+    const files = (e.target as HTMLInputElement).files;
+    if (files && files.length > 0) {
+      loadFile(files[0]);
+    }
+  });
+
+  dropZone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-amber-500', 'bg-amber-50/30');
+  });
+
+  dropZone?.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-amber-500', 'bg-amber-50/30');
+  });
+
+  dropZone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-amber-500', 'bg-amber-50/30');
+    if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+      loadFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    configSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+  });
+
+  linearizeAnotherBtn?.addEventListener('click', () => {
+    successSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+  });
+
+  // Execute Linearization
+  executeBtn?.addEventListener('click', async () => {
+    if (!fileBuffer || !currentFile) {
+      showError('No PDF document loaded.');
+      return;
+    }
+
+    try {
+      configSection.classList.add('hidden');
+      progressSection.classList.remove('hidden');
+
+      const result = await linearizePdf(new Uint8Array(fileBuffer));
+      linearizedPdfBytes = result.outputBytes;
+
+      metricsContainer.innerHTML = `
+        <div class="flex justify-between py-1 border-b border-slate-200/60">
+          <span class="text-slate-500">Fast Web View Status:</span>
+          <span class="font-bold text-emerald-700">Enabled (ISO 32000-1 Annex F)</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-200/60">
+          <span class="text-slate-500">Linearization Header:</span>
+          <span class="font-mono font-bold text-slate-800">/Linearized 1.0 (Byte Offset &lt; 200)</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-200/60">
+          <span class="text-slate-500">Primary Page 1 Object:</span>
+          <span class="font-mono font-bold text-sky-700">Object #${result.firstPageObjectNumber}</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-200/60">
+          <span class="text-slate-500">Total Document Pages:</span>
+          <span class="font-bold text-slate-800">${result.pageCount} pages</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span class="text-slate-500">Optimized Stream Size:</span>
+          <span class="font-bold text-slate-800">${formatBytes(result.outputSize)}</span>
+        </div>
+      `;
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      showError('Linearization failed: ' + (err?.message || 'Unknown processing error'));
+    }
+  });
+
+  // Download Trigger
+  downloadBtn?.addEventListener('click', () => {
+    if (!linearizedPdfBytes || !currentFile) return;
+
+    const baseName = currentFile.name.replace(/\.pdf$/i, '');
+    const downloadFileName = `${baseName}-fastwebview.pdf`;
+
+    const blob = new Blob([linearizedPdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = downloadFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+</script>

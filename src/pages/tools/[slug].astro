@@ -28,6 +28,7 @@ import BookmarksPdfIsland from '../../components/tools/BookmarksPdfIsland.astro'
 import HeaderFooterPdfIsland from '../../components/tools/HeaderFooterPdfIsland.astro';
 import ResizePdfIsland from '../../components/tools/ResizePdfIsland.astro';
 import MetadataPdfIsland from '../../components/tools/MetadataPdfIsland.astro';
+import LinearizePdfIsland from '../../components/tools/LinearizePdfIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -204,6 +205,8 @@ const relatedToolCards = allTools
       <ResizePdfIsland />
     ) : tool.slug === 'metadata-pdf' ? (
       <MetadataPdfIsland />
+    ) : tool.slug === 'linearize-pdf' ? (
+      <LinearizePdfIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}
