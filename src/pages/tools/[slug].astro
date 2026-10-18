@@ -47,6 +47,7 @@ import OrganizePdfIsland from '../../components/tools/OrganizePdfIsland.astro';
 import VerifyRedactionPdfIsland from '../../components/tools/VerifyRedactionPdfIsland.astro';
 import PrinterMarksPdfIsland from '../../components/tools/PrinterMarksPdfIsland.astro';
 import FormCreatorPdfIsland from '../../components/tools/FormCreatorPdfIsland.astro';
+import ExtractFontsPdfIsland from '../../components/tools/ExtractFontsPdfIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -261,6 +262,8 @@ const relatedToolCards = allTools
       <PrinterMarksPdfIsland />
     ) : tool.slug === 'form-creator-pdf' ? (
       <FormCreatorPdfIsland />
+    ) : tool.slug === 'extract-fonts-pdf' ? (
+      <ExtractFontsPdfIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}

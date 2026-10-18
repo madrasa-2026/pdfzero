@@ -1,0 +1,419 @@
+---
+// src/components/tools/ExtractFontsPdfIsland.astro
+---
+
+<div class="w-full max-w-4xl mx-auto">
+  <!-- 1. Dropzone Section -->
+  <div
+    id="fonts-dropzone"
+    class="relative border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-white/80 hover:bg-indigo-50/20 transition-all rounded-3xl p-8 sm:p-12 text-center cursor-pointer shadow-sm group"
+  >
+    <input
+      type="file"
+      id="fonts-file-input"
+      accept="application/pdf"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+    />
+    <div class="flex flex-col items-center justify-center pointer-events-none">
+      <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-indigo-100 transition-all shadow-inner">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="4 7 4 4 20 4 20 7"></polyline>
+          <line x1="9" y1="20" x2="15" y2="20"></line>
+          <line x1="12" y1="4" x2="12" y2="20"></line>
+        </svg>
+      </div>
+      <h3 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">
+        Drop any PDF to inspect and extract embedded fonts
+      </h3>
+      <p class="text-xs sm:text-sm text-slate-500 max-w-md mb-4">
+        Extract original TrueType (.ttf) and OpenType (.otf) binaries, preview live typography specimens, and download as a ZIP archive.
+      </p>
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold">
+        <svg class="w-4 h-4 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        100% In-Browser • Flate Stream Decompression • Live Specimen Preview
+      </div>
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>Zero Upload</span>
+      <span>•</span>
+      <span>TrueType (.TTF)</span>
+      <span>•</span>
+      <span>OpenType (.OTF)</span>
+      <span>•</span>
+      <span>PostScript CFF</span>
+      <span>•</span>
+      <span>Subset Stripper</span>
+    </div>
+  </div>
+
+  <!-- 2. Loading State -->
+  <div id="fonts-loading" class="hidden bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 shadow-sm text-center space-y-4">
+    <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
+    <h3 class="text-base font-bold text-slate-900">
+      Scanning PDF indirect object table for embedded font streams...
+    </h3>
+    <p class="text-xs text-slate-500 max-w-md mx-auto">
+      Traversing /FontDescriptor dictionaries and decompressing binary Flate streams.
+    </p>
+  </div>
+
+  <!-- 3. Results Section -->
+  <div id="fonts-results-section" class="hidden space-y-6">
+    <!-- Top Summary Card -->
+    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <polyline points="4 7 4 4 20 4 20 7"></polyline>
+            <line x1="9" y1="20" x2="15" y2="20"></line>
+            <line x1="12" y1="4" x2="12" y2="20"></line>
+          </svg>
+        </div>
+        <div>
+          <h4 id="fonts-filename" class="text-base font-bold text-slate-900 truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="fonts-meta" class="text-xs text-slate-500">Scanning completed...</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          id="btn-download-all-zip"
+          class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md shadow-indigo-600/20 transition-all flex items-center gap-2 cursor-pointer group"
+        >
+          <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+          </svg>
+          <span>Download All Fonts (.ZIP)</span>
+        </button>
+
+        <button
+          type="button"
+          id="btn-change-file"
+          class="text-xs text-slate-500 hover:text-slate-800 px-3 py-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+        >
+          Change PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Specimen Testing Controls -->
+    <div id="specimen-controls" class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
+      <div class="flex-1 min-w-[240px]">
+        <label for="input-specimen-text" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+          Interactive Typography Specimen Text:
+        </label>
+        <input
+          type="text"
+          id="input-specimen-text"
+          value="The quick brown fox jumps over the lazy dog 1234567890"
+          class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+        />
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div>
+          <label for="specimen-size-slider" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">
+            Font Size: <span id="specimen-size-readout" class="text-indigo-600">22px</span>
+          </label>
+          <input
+            type="range"
+            id="specimen-size-slider"
+            min="14"
+            max="42"
+            value="22"
+            class="w-28 accent-indigo-600 cursor-pointer"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Font Cards Grid Container -->
+    <div id="font-cards-container" class="space-y-4">
+      <!-- Dynamic Font Cards Injected Here -->
+    </div>
+
+    <!-- Empty State Container (If 0 fonts found) -->
+    <div id="no-fonts-empty-state" class="hidden bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 text-center space-y-4">
+      <div class="w-16 h-16 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center mx-auto">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+      </div>
+      <h3 class="text-base font-bold text-slate-900">
+        No Embedded Font Streams Found in this PDF
+      </h3>
+      <p class="text-xs text-slate-500 max-w-lg mx-auto leading-relaxed">
+        This document does not contain embedded TrueType or OpenType binary programs. This typically occurs when a document uses the standard 14 system fonts (standard Helvetica, Times, Courier) or is a scanned paper image without vector text.
+      </p>
+      <div class="pt-2">
+        <a
+          href="/tools/ocr-pdf"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold rounded-xl transition-all"
+        >
+          <span>Try Privacy OCR to extract searchable text</span>
+          <span>&rarr;</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import {
+    extractEmbeddedFonts,
+    createFontsZip,
+    type ExtractedFont,
+    type FontExtractionResult
+  } from '../../lib/pdf/fontExtractorEngine';
+
+  let rawPdfBytes: Uint8Array | null = null;
+  let originalFilename = 'document.pdf';
+  let extractionResult: FontExtractionResult | null = null;
+  let dynamicStyleSheet: HTMLStyleElement | null = null;
+
+  // DOM Elements
+  const dropzone = document.getElementById('fonts-dropzone') as HTMLElement;
+  const fileInput = document.getElementById('fonts-file-input') as HTMLInputElement;
+  const loading = document.getElementById('fonts-loading') as HTMLElement;
+  const resultsSection = document.getElementById('fonts-results-section') as HTMLElement;
+  const filenameEl = document.getElementById('fonts-filename') as HTMLElement;
+  const metaEl = document.getElementById('fonts-meta') as HTMLElement;
+  const changeFileBtn = document.getElementById('btn-change-file') as HTMLButtonElement;
+  const btnDownloadAllZip = document.getElementById('btn-download-all-zip') as HTMLButtonElement;
+
+  const specimenControls = document.getElementById('specimen-controls') as HTMLElement;
+  const inputSpecimenText = document.getElementById('input-specimen-text') as HTMLInputElement;
+  const specimenSizeSlider = document.getElementById('specimen-size-slider') as HTMLInputElement;
+  const specimenSizeReadout = document.getElementById('specimen-size-readout') as HTMLElement;
+
+  const fontCardsContainer = document.getElementById('font-cards-container') as HTMLElement;
+  const noFontsEmptyState = document.getElementById('no-fonts-empty-state') as HTMLElement;
+
+  // Dropzone Handlers
+  dropzone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('border-indigo-500', 'bg-indigo-50/20');
+  });
+
+  dropzone?.addEventListener('dragleave', () => {
+    dropzone.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+  });
+
+  dropzone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+    if (e.dataTransfer?.files?.[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput?.addEventListener('change', () => {
+    if (fileInput.files?.[0]) {
+      handleFile(fileInput.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    resultsSection.classList.add('hidden');
+    dropzone.classList.remove('hidden');
+    fileInput.value = '';
+    rawPdfBytes = null;
+    extractionResult = null;
+    fontCardsContainer.innerHTML = '';
+  });
+
+  // Specimen Live Updates
+  inputSpecimenText?.addEventListener('input', () => {
+    const text = inputSpecimenText.value || 'Sphinx of black quartz, judge my vow';
+    document.querySelectorAll('.font-specimen-text').forEach(el => {
+      el.textContent = text;
+    });
+  });
+
+  specimenSizeSlider?.addEventListener('input', () => {
+    const px = specimenSizeSlider.value;
+    specimenSizeReadout.textContent = `${px}px`;
+    document.querySelectorAll('.font-specimen-text').forEach((el) => {
+      (el as HTMLElement).style.fontSize = `${px}px`;
+    });
+  });
+
+  // Download All as ZIP
+  btnDownloadAllZip?.addEventListener('click', async () => {
+    if (!extractionResult || extractionResult.fonts.length === 0) return;
+    btnDownloadAllZip.disabled = true;
+    const origHtml = btnDownloadAllZip.innerHTML;
+    btnDownloadAllZip.innerHTML = `<span class="animate-spin mr-1">⏳</span> Bundling ZIP...`;
+
+    try {
+      const zipBytes = await createFontsZip(extractionResult.fonts, originalFilename);
+      const blob = new Blob([zipBytes as unknown as BlobPart], { type: 'application/zip' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const baseName = originalFilename.replace(/\.pdf$/i, '');
+      a.href = url;
+      a.download = `${baseName}-extracted-fonts.zip`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('Failed to create ZIP:', err);
+      alert('Error creating ZIP bundle: ' + err.message);
+    } finally {
+      btnDownloadAllZip.disabled = false;
+      btnDownloadAllZip.innerHTML = origHtml;
+    }
+  });
+
+  async function handleFile(file: File) {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      alert('Please upload a valid PDF document.');
+      return;
+    }
+
+    originalFilename = file.name;
+    dropzone.classList.add('hidden');
+    loading.classList.remove('hidden');
+
+    try {
+      const buffer = await file.arrayBuffer();
+      rawPdfBytes = new Uint8Array(buffer);
+
+      extractionResult = await extractEmbeddedFonts(rawPdfBytes);
+
+      loading.classList.add('hidden');
+      resultsSection.classList.remove('hidden');
+
+      filenameEl.textContent = originalFilename;
+      renderResults(extractionResult);
+    } catch (err: any) {
+      console.error('Error scanning PDF fonts:', err);
+      alert('Failed to extract fonts from PDF: ' + err.message);
+      loading.classList.add('hidden');
+      dropzone.classList.remove('hidden');
+    }
+  }
+
+  function renderResults(result: FontExtractionResult) {
+    fontCardsContainer.innerHTML = '';
+
+    if (result.fonts.length === 0) {
+      metaEl.textContent = '0 embedded font binaries found';
+      btnDownloadAllZip.classList.add('hidden');
+      specimenControls.classList.add('hidden');
+      noFontsEmptyState.classList.remove('hidden');
+      return;
+    }
+
+    metaEl.textContent = `${result.fonts.length} embedded font${result.fonts.length === 1 ? '' : 's'} found • Total ${result.totalSizeFormatted}`;
+    btnDownloadAllZip.classList.remove('hidden');
+    specimenControls.classList.remove('hidden');
+    noFontsEmptyState.classList.add('hidden');
+
+    // Setup Dynamic Style Element for @font-face rules
+    if (!dynamicStyleSheet) {
+      dynamicStyleSheet = document.createElement('style');
+      document.head.appendChild(dynamicStyleSheet);
+    }
+    dynamicStyleSheet.innerHTML = '';
+
+    const currentText = inputSpecimenText.value || 'The quick brown fox jumps over the lazy dog 1234567890';
+    const currentSize = specimenSizeSlider.value || '22';
+
+    result.fonts.forEach((font, index) => {
+      const fontFaceName = `DynamicExtractedFont_${index}_${Date.now()}`;
+
+      // Register @font-face in dynamic style sheet
+      try {
+        const mimeType = font.format === 'otf' ? 'font/otf' : font.format === 'woff' ? 'font/woff' : 'font/ttf';
+        const blob = new Blob([font.data as unknown as BlobPart], { type: mimeType });
+        const blobUrl = URL.createObjectURL(blob);
+        dynamicStyleSheet!.innerHTML += `
+          @font-face {
+            font-family: '${fontFaceName}';
+            src: url('${blobUrl}') format('${font.format === 'otf' ? 'opentype' : 'truetype'}');
+          }
+        `;
+      } catch (err) {
+        console.warn('Failed to register @font-face for font:', font.cleanFamilyName, err);
+      }
+
+      // Format Badge Colors
+      let formatBg = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      if (font.format === 'otf') formatBg = 'bg-purple-50 text-purple-700 border-purple-200';
+      else if (font.format === 'cff' || font.format === 'pfb') formatBg = 'bg-blue-50 text-blue-700 border-blue-200';
+
+      const card = document.createElement('div');
+      card.className = 'bg-white rounded-2xl border border-slate-200 p-5 shadow-sm space-y-4 hover:border-indigo-300 transition-all';
+
+      card.innerHTML = `
+        <div class="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+          <div class="flex items-center gap-3">
+            <span class="w-7 h-7 rounded-lg bg-indigo-50 text-indigo-700 font-black text-xs flex items-center justify-center shrink-0">
+              #${index + 1}
+            </span>
+            <div>
+              <div class="flex items-center gap-2">
+                <h5 class="text-sm font-bold text-slate-900">${font.cleanFamilyName}</h5>
+                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold border uppercase ${formatBg}">
+                  .${font.format}
+                </span>
+                ${
+                  font.isSubset
+                    ? `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">Subset</span>`
+                    : `<span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">Full Font</span>`
+                }
+              </div>
+              <div class="text-[11px] text-slate-400 font-mono mt-0.5">
+                PostScript Name: /${font.fontName} • Subtype: ${font.subtype} • Size: ${font.sizeFormatted}
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            class="btn-download-single px-3 py-1.5 bg-slate-100 hover:bg-indigo-50 text-slate-700 hover:text-indigo-700 font-semibold rounded-xl text-xs transition-colors border border-slate-200 hover:border-indigo-200 flex items-center gap-1.5 cursor-pointer"
+            data-index="${index}"
+          >
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+            </svg>
+            <span>Download .${font.format.toUpperCase()}</span>
+          </button>
+        </div>
+
+        <!-- Live Specimen Rendering Block -->
+        <div class="p-4 bg-slate-50/70 rounded-xl border border-slate-100">
+          <div
+            class="font-specimen-text text-slate-900 leading-snug break-words tracking-normal transition-all"
+            style="font-family: '${fontFaceName}', sans-serif; font-size: ${currentSize}px;"
+          >
+            ${currentText}
+          </div>
+        </div>
+      `;
+
+      // Download Single Font Button Handler
+      const singleBtn = card.querySelector('.btn-download-single') as HTMLButtonElement;
+      singleBtn.addEventListener('click', () => {
+        const blob = new Blob([font.data as unknown as BlobPart], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const safeName = font.cleanFamilyName.replace(/[^a-zA-Z0-9_-]/g, '_');
+        a.href = url;
+        a.download = `${safeName}${font.extension}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+
+      fontCardsContainer.appendChild(card);
+    });
+  }
+</script>
