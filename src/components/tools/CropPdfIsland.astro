@@ -1,0 +1,562 @@
+---
+// CropPdfIsland.astro - 100% in-browser Lossless PDF Crop & Margin Trimmer
+---
+
+<div id="crop-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="crop-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Crop Tool Notice</h4>
+      <p id="crop-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-crop-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="crop-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="crop-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-teal-50 group-hover:bg-teal-600 flex items-center justify-center text-teal-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-teal-600 transition">
+      Select PDF to Crop Margins
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your PDF here, or click to browse.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF Document
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Vector Lossless</span>
+      <span>•</span>
+      <span>E-Reader Optimizer</span>
+    </div>
+  </div>
+
+  <!-- 2. Configure Crop Options Card -->
+  <div id="crop-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="crop-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="crop-file-meta" class="text-xs text-slate-500">Reading page dimensions...</p>
+        </div>
+      </div>
+      <button type="button" id="change-crop-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Quick Presets -->
+    <div>
+      <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+        Quick Margin Presets
+      </label>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" class="crop-preset-btn px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 transition" data-top="36" data-bottom="36" data-left="36" data-right="36">
+          Standard 0.5 in (36 pt)
+        </button>
+        <button type="button" class="crop-preset-btn px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 transition" data-top="54" data-bottom="54" data-left="45" data-right="45">
+          Tablet / Kindle Trim
+        </button>
+        <button type="button" class="crop-preset-btn px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 rounded-lg text-slate-700 transition" data-top="72" data-bottom="72" data-left="72" data-right="72">
+          1.0 in Margin Strip (72 pt)
+        </button>
+        <button type="button" class="crop-preset-btn px-3 py-1.5 text-xs font-medium bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg text-slate-500 transition" data-top="0" data-bottom="0" data-left="0" data-right="0">
+          Reset (0 pt)
+        </button>
+      </div>
+    </div>
+
+    <!-- Margin Inputs & Visualizer Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-center">
+      <!-- 4-Directional Margin Controls -->
+      <div class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+        <span class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+          Trim Margins (Points)
+        </span>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Top Margin (pt)</label>
+            <input
+              type="number"
+              id="crop-margin-top"
+              value="36"
+              min="0"
+              class="w-full px-3 py-2 text-xs font-mono rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bottom Margin (pt)</label>
+            <input
+              type="number"
+              id="crop-margin-bottom"
+              value="36"
+              min="0"
+              class="w-full px-3 py-2 text-xs font-mono rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Left Margin (pt)</label>
+            <input
+              type="number"
+              id="crop-margin-left"
+              value="36"
+              min="0"
+              class="w-full px-3 py-2 text-xs font-mono rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] font-semibold text-slate-500 mb-1">Right Margin (pt)</label>
+            <input
+              type="number"
+              id="crop-margin-right"
+              value="36"
+              min="0"
+              class="w-full px-3 py-2 text-xs font-mono rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+        </div>
+
+        <p class="text-[11px] text-slate-500 italic">
+          Tip: 72 points = 1 inch (~25.4 mm). 28.3 points ≈ 10 mm.
+        </p>
+      </div>
+
+      <!-- Live CSS Page Preview Mockup -->
+      <div class="flex flex-col items-center justify-center p-4 bg-slate-100 rounded-xl border border-slate-200 text-center">
+        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-2">
+          Live Crop Preview Mockup
+        </span>
+        <div class="relative w-40 h-52 bg-white rounded shadow-sm border border-slate-300 flex items-center justify-center overflow-hidden">
+          <!-- Inner crop box mockup -->
+          <div
+            id="crop-preview-box"
+            class="absolute border-2 border-dashed border-teal-500 bg-teal-50/40 transition-all duration-150"
+            style="top: 10%; bottom: 10%; left: 10%; right: 10%;"
+          >
+            <div class="w-full h-full flex items-center justify-center text-[10px] text-teal-800 font-bold">
+              Kept Area
+            </div>
+          </div>
+        </div>
+        <div id="crop-dimensions-badge" class="mt-2 text-xs font-mono text-slate-600">
+          612 × 792 pt → 540 × 720 pt
+        </div>
+      </div>
+    </div>
+
+    <!-- Page Scope Selection -->
+    <div>
+      <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+        Apply Crop To
+      </label>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <label class="cursor-pointer border border-teal-600 bg-teal-50/50 rounded-xl p-3 text-center text-xs font-semibold text-teal-900 transition crop-scope-label" data-scope="all">
+          <input type="radio" name="crop-scope" value="all" checked class="sr-only" />
+          All Pages
+        </label>
+        <label class="cursor-pointer border border-slate-200 bg-white rounded-xl p-3 text-center text-xs font-semibold text-slate-700 transition crop-scope-label" data-scope="odd">
+          <input type="radio" name="crop-scope" value="odd" class="sr-only" />
+          Odd Pages Only
+        </label>
+        <label class="cursor-pointer border border-slate-200 bg-white rounded-xl p-3 text-center text-xs font-semibold text-slate-700 transition crop-scope-label" data-scope="even">
+          <input type="radio" name="crop-scope" value="even" class="sr-only" />
+          Even Pages Only
+        </label>
+        <label class="cursor-pointer border border-slate-200 bg-white rounded-xl p-3 text-center text-xs font-semibold text-slate-700 transition crop-scope-label" data-scope="custom">
+          <input type="radio" name="crop-scope" value="custom" class="sr-only" />
+          Custom Range
+        </label>
+      </div>
+
+      <div id="custom-pages-container" class="hidden mt-3">
+        <label class="block text-[11px] font-semibold text-slate-600 mb-1">Enter Page Numbers (e.g. 1-3, 5, 7):</label>
+        <input
+          type="text"
+          id="crop-custom-pages-input"
+          placeholder="1-5"
+          class="w-full max-w-sm px-3 py-2 text-xs rounded-xl border border-slate-200 font-mono focus:outline-none focus:ring-2 focus:ring-teal-500"
+        />
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2 flex flex-col sm:flex-row items-center gap-3">
+      <button
+        type="button"
+        id="execute-crop-btn"
+        class="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" />
+        </svg>
+        <span>Crop Document Losslessly</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Processing State -->
+  <div id="crop-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-5">
+    <div class="w-16 h-16 mx-auto relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-teal-100 border-t-teal-600 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-teal-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879M12 12L9.121 9.121m0 5.758a3 3 0 10-4.243 4.243 3 3 0 004.243-4.243zm0-5.758a3 3 0 10-4.243-4.243 3 3 0 004.243 4.243z" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-base font-bold text-slate-900 mb-1">Cropping PDF Margins...</h3>
+      <p id="crop-progress-text" class="text-xs text-slate-500">
+        Adjusting vector /CropBox and /MediaBox coordinate boundaries...
+      </p>
+    </div>
+  </div>
+
+  <!-- 4. Success & Download State -->
+  <div id="crop-success-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-lg font-bold text-slate-900 mb-1">PDF Cropped Successfully!</h3>
+      <p class="text-xs text-slate-500 max-w-md mx-auto">
+        Margins were trimmed losslessly. All text and vector artwork remain pin-sharp.
+      </p>
+    </div>
+
+    <!-- Metrics Details -->
+    <div id="crop-metrics-container" class="max-w-md mx-auto p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-2 text-left">
+      <!-- Injected dynamically -->
+    </div>
+
+    <!-- Download Action -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        id="download-cropped-pdf-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-teal-600 hover:bg-teal-500 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Cropped PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="crop-another-btn"
+        class="w-full sm:w-auto px-5 py-3 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+      >
+        Crop Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  import { applyCropToPdf, type PageScope } from '../../lib/pdf/crop';
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let croppedPdfBytes: Uint8Array | null = null;
+  let origWidth = 612;
+  let origHeight = 792;
+  let totalPageCount = 0;
+  let selectedScope: PageScope = 'all';
+
+  const dropZone = document.getElementById('crop-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('crop-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('crop-config-section') as HTMLDivElement;
+  const progressSection = document.getElementById('crop-progress-section') as HTMLDivElement;
+  const successSection = document.getElementById('crop-success-section') as HTMLDivElement;
+
+  const errorBanner = document.getElementById('crop-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('crop-error-message') as HTMLElement;
+  const dismissErrorBtn = document.getElementById('dismiss-crop-error') as HTMLButtonElement;
+
+  const fileNameLabel = document.getElementById('crop-file-name') as HTMLElement;
+  const fileMetaLabel = document.getElementById('crop-file-meta') as HTMLElement;
+  const changeFileBtn = document.getElementById('change-crop-file-btn') as HTMLButtonElement;
+  const executeBtn = document.getElementById('execute-crop-btn') as HTMLButtonElement;
+
+  const inputTop = document.getElementById('crop-margin-top') as HTMLInputElement;
+  const inputBottom = document.getElementById('crop-margin-bottom') as HTMLInputElement;
+  const inputLeft = document.getElementById('crop-margin-left') as HTMLInputElement;
+  const inputRight = document.getElementById('crop-margin-right') as HTMLInputElement;
+
+  const previewBox = document.getElementById('crop-preview-box') as HTMLDivElement;
+  const dimensionsBadge = document.getElementById('crop-dimensions-badge') as HTMLElement;
+  const scopeLabels = document.querySelectorAll('.crop-scope-label');
+  const customPagesContainer = document.getElementById('custom-pages-container') as HTMLDivElement;
+  const customPagesInput = document.getElementById('crop-custom-pages-input') as HTMLInputElement;
+
+  const metricsContainer = document.getElementById('crop-metrics-container') as HTMLDivElement;
+  const downloadBtn = document.getElementById('download-cropped-pdf-btn') as HTMLButtonElement;
+  const cropAnotherBtn = document.getElementById('crop-another-btn') as HTMLButtonElement;
+  const presetButtons = document.querySelectorAll('.crop-preset-btn');
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    if (errorBanner) {
+      errorBanner.classList.add('hidden');
+    }
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  function updateMockup() {
+    const top = Math.max(0, parseFloat(inputTop.value) || 0);
+    const bottom = Math.max(0, parseFloat(inputBottom.value) || 0);
+    const left = Math.max(0, parseFloat(inputLeft.value) || 0);
+    const right = Math.max(0, parseFloat(inputRight.value) || 0);
+
+    const newW = Math.max(10, Math.round(origWidth - left - right));
+    const newH = Math.max(10, Math.round(origHeight - top - bottom));
+
+    if (dimensionsBadge) {
+      dimensionsBadge.textContent = `${Math.round(origWidth)} × ${Math.round(origHeight)} pt → ${newW} × ${newH} pt`;
+    }
+
+    if (previewBox && origWidth > 0 && origHeight > 0) {
+      const topPct = Math.min(45, (top / origHeight) * 100);
+      const bottomPct = Math.min(45, (bottom / origHeight) * 100);
+      const leftPct = Math.min(45, (left / origWidth) * 100);
+      const rightPct = Math.min(45, (right / origWidth) * 100);
+
+      previewBox.style.top = `${topPct}%`;
+      previewBox.style.bottom = `${bottomPct}%`;
+      previewBox.style.left = `${leftPct}%`;
+      previewBox.style.right = `${rightPct}%`;
+    }
+  }
+
+  [inputTop, inputBottom, inputLeft, inputRight].forEach((input) => {
+    input?.addEventListener('input', updateMockup);
+  });
+
+  presetButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      inputTop.value = btn.getAttribute('data-top') || '0';
+      inputBottom.value = btn.getAttribute('data-bottom') || '0';
+      inputLeft.value = btn.getAttribute('data-left') || '0';
+      inputRight.value = btn.getAttribute('data-right') || '0';
+      updateMockup();
+    });
+  });
+
+  scopeLabels.forEach((label) => {
+    label.addEventListener('click', () => {
+      const scope = (label.getAttribute('data-scope') || 'all') as PageScope;
+      selectedScope = scope;
+
+      scopeLabels.forEach((other) => {
+        other.classList.remove('border-teal-600', 'bg-teal-50/50', 'text-teal-900');
+        other.classList.add('border-slate-200', 'bg-white', 'text-slate-700');
+      });
+
+      label.classList.remove('border-slate-200', 'bg-white', 'text-slate-700');
+      label.classList.add('border-teal-600', 'bg-teal-50/50', 'text-teal-900');
+
+      if (customPagesContainer) {
+        if (scope === 'custom') {
+          customPagesContainer.classList.remove('hidden');
+        } else {
+          customPagesContainer.classList.add('hidden');
+        }
+      }
+    });
+  });
+
+  async function handleSelectedFile(file: File) {
+    if (!file || file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please select a valid PDF file.');
+      return;
+    }
+
+    hideError();
+    currentFile = file;
+
+    try {
+      fileBuffer = await file.arrayBuffer();
+      const doc = await PDFDocument.load(new Uint8Array(fileBuffer), { ignoreEncryption: true });
+      totalPageCount = doc.getPageCount();
+
+      if (totalPageCount > 0) {
+        const p1 = doc.getPage(0);
+        origWidth = p1.getWidth();
+        origHeight = p1.getHeight();
+      }
+
+      if (fileNameLabel) fileNameLabel.textContent = file.name;
+      if (fileMetaLabel) {
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+        fileMetaLabel.textContent = `${totalPageCount} page${totalPageCount === 1 ? '' : 's'} · ${Math.round(origWidth)}×${Math.round(origHeight)} pt · ${sizeMb} MB`;
+      }
+
+      updateMockup();
+
+      dropZone.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      successSection.classList.add('hidden');
+    } catch (err: any) {
+      showError(err?.message || 'Failed to parse PDF document.');
+    }
+  }
+
+  fileInput?.addEventListener('change', (e: any) => {
+    if (e.target.files && e.target.files[0]) {
+      handleSelectedFile(e.target.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    currentFile = null;
+    fileBuffer = null;
+    croppedPdfBytes = null;
+    fileInput.value = '';
+    configSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+
+  cropAnotherBtn?.addEventListener('click', () => {
+    currentFile = null;
+    fileBuffer = null;
+    croppedPdfBytes = null;
+    fileInput.value = '';
+    successSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+
+  function parseCustomPages(str: string, maxPages: number): number[] {
+    const pages = new Set<number>();
+    const parts = str.split(/[,;\s]+/);
+    for (const part of parts) {
+      if (!part) continue;
+      if (part.includes('-')) {
+        const [startStr, endStr] = part.split('-');
+        const start = parseInt(startStr, 10);
+        const end = parseInt(endStr, 10);
+        if (!isNaN(start) && !isNaN(end)) {
+          for (let p = Math.max(1, start); p <= Math.min(maxPages, end); p++) {
+            pages.add(p);
+          }
+        }
+      } else {
+        const num = parseInt(part, 10);
+        if (!isNaN(num) && num >= 1 && num <= maxPages) {
+          pages.add(num);
+        }
+      }
+    }
+    return Array.from(pages);
+  }
+
+  executeBtn?.addEventListener('click', async () => {
+    if (!fileBuffer || !currentFile) return;
+
+    try {
+      configSection.classList.add('hidden');
+      progressSection.classList.remove('hidden');
+
+      const top = Math.max(0, parseFloat(inputTop.value) || 0);
+      const bottom = Math.max(0, parseFloat(inputBottom.value) || 0);
+      const left = Math.max(0, parseFloat(inputLeft.value) || 0);
+      const right = Math.max(0, parseFloat(inputRight.value) || 0);
+
+      let customList: number[] = [];
+      if (selectedScope === 'custom' && customPagesInput) {
+        customList = parseCustomPages(customPagesInput.value, totalPageCount);
+      }
+
+      const result = await applyCropToPdf(new Uint8Array(fileBuffer), {
+        margins: { top, bottom, left, right },
+        pageScope: selectedScope,
+        customPageList: customList,
+      });
+
+      croppedPdfBytes = result.croppedBytes;
+
+      if (metricsContainer) {
+        metricsContainer.innerHTML = `
+          <div class="flex justify-between py-1 border-b border-slate-200/60">
+            <span class="text-slate-500">Pages Cropped:</span>
+            <span class="font-bold text-slate-800">${result.pagesCropped} of ${result.pageCount}</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-200/60">
+            <span class="text-slate-500">New Dimensions:</span>
+            <span class="font-bold text-slate-800 font-mono">${result.newWidth} × ${result.newHeight} pt</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-200/60">
+            <span class="text-slate-500">Vector Quality:</span>
+            <span class="font-bold text-emerald-700">100% Retained (Lossless)</span>
+          </div>
+          <div class="flex justify-between py-1">
+            <span class="text-slate-500">Scope:</span>
+            <span class="font-bold text-slate-800 capitalize">${selectedScope}</span>
+          </div>
+        `;
+      }
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      showError(err?.message || 'An error occurred during cropping.');
+    }
+  });
+
+  downloadBtn?.addEventListener('click', () => {
+    if (!croppedPdfBytes || !currentFile) return;
+
+    const blob = new Blob([croppedPdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const baseName = currentFile.name.replace(/\.pdf$/i, '');
+    link.href = url;
+    link.download = `${baseName}-cropped.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  });
+</script>

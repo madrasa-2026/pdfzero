@@ -23,6 +23,7 @@ import BatesNumberingIsland from '../../components/tools/BatesNumberingIsland.as
 import GrayscalePdfIsland from '../../components/tools/GrayscalePdfIsland.astro';
 import BookletPdfIsland from '../../components/tools/BookletPdfIsland.astro';
 import ComparePdfIsland from '../../components/tools/ComparePdfIsland.astro';
+import CropPdfIsland from '../../components/tools/CropPdfIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -189,6 +190,8 @@ const relatedToolCards = allTools
       <BookletPdfIsland />
     ) : tool.slug === 'compare-pdf' ? (
       <ComparePdfIsland />
+    ) : tool.slug === 'crop-pdf' ? (
+      <CropPdfIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}
