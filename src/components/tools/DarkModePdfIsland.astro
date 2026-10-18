@@ -1,0 +1,429 @@
+---
+// DarkModePdfIsland.astro - 100% in-browser PDF Dark Mode & Color Inverter
+---
+
+<div id="darkmode-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="darkmode-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Dark Mode Notice</h4>
+      <p id="darkmode-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-darkmode-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="darkmode-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="darkmode-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-slate-900 text-amber-300 flex items-center justify-center shadow-sm group-hover:scale-105 transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-slate-900 transition">
+      Select PDF to Convert to Dark Mode
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your textbook, academic paper, or document here.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose Bright PDF
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Vector Preserved</span>
+      <span>•</span>
+      <span>Eye Fatigue Relief</span>
+    </div>
+  </div>
+
+  <!-- 2. Configure Conversion Options Card -->
+  <div id="darkmode-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-slate-900 text-white flex items-center justify-center font-bold text-sm">
+          🌙
+        </div>
+        <div>
+          <h4 id="darkmode-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="darkmode-file-meta" class="text-xs text-slate-500">Detecting document metadata...</p>
+        </div>
+      </div>
+      <button type="button" id="change-darkmode-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Theme Selection -->
+    <div>
+      <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
+        Select Dark Theme Profile
+      </label>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+        <!-- Midnight Slate -->
+        <label class="cursor-pointer border-2 border-slate-900 bg-slate-50 rounded-xl p-4 flex flex-col justify-between transition hover:border-slate-800 relative group darkmode-theme-label" data-theme="midnight">
+          <input type="radio" name="darkmode-theme" value="midnight" checked class="sr-only" />
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-bold text-sm text-slate-900 flex items-center gap-2">
+              <span class="w-3.5 h-3.5 rounded-full bg-[#121212] border border-slate-400 inline-block"></span>
+              Midnight Slate
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-900 text-white">Recommended</span>
+            </span>
+            <div class="w-3.5 h-3.5 rounded-full border-2 border-slate-900 flex items-center justify-center theme-indicator">
+              <div class="w-2 h-2 rounded-full bg-slate-900"></div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed mb-3">
+            Deep slate gray background (#121212) with soft off-white typography (#e2e8f0). Easy on the eyes.
+          </p>
+          <div class="rounded-lg p-2.5 bg-[#121212] text-[#e2e8f0] text-[11px] font-serif border border-slate-700">
+            Preview: "Academic study and night reading without harsh white glare."
+          </div>
+        </label>
+
+        <!-- Warm Sepia -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-4 flex flex-col justify-between transition hover:border-slate-400 relative group darkmode-theme-label" data-theme="sepia">
+          <input type="radio" name="darkmode-theme" value="sepia" class="sr-only" />
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-bold text-sm text-slate-900 flex items-center gap-2">
+              <span class="w-3.5 h-3.5 rounded-full bg-[#fbf0d9] border border-amber-300 inline-block"></span>
+              Warm Sepia
+            </span>
+            <div class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 flex items-center justify-center theme-indicator">
+              <div class="w-2 h-2 rounded-full bg-transparent"></div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed mb-3">
+            Parchment beige background (#fbf0d9) with espresso text (#382b1d). Soft blue-light reduction.
+          </p>
+          <div class="rounded-lg p-2.5 bg-[#fbf0d9] text-[#382b1d] text-[11px] font-serif border border-amber-200">
+            Preview: "Warm paper tone for evening bedtime ebook reading."
+          </div>
+        </label>
+
+        <!-- OLED Pitch Black -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-4 flex flex-col justify-between transition hover:border-slate-400 relative group darkmode-theme-label" data-theme="oled">
+          <input type="radio" name="darkmode-theme" value="oled" class="sr-only" />
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-bold text-sm text-slate-900 flex items-center gap-2">
+              <span class="w-3.5 h-3.5 rounded-full bg-black border border-slate-400 inline-block"></span>
+              OLED Pitch Black
+            </span>
+            <div class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 flex items-center justify-center theme-indicator">
+              <div class="w-2 h-2 rounded-full bg-transparent"></div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed mb-3">
+            Pure #000000 black background with crisp #ffffff text. Infinite contrast and OLED battery saver.
+          </p>
+          <div class="rounded-lg p-2.5 bg-black text-white text-[11px] font-mono border border-slate-800">
+            Preview: "OLED display black pixels turn off completely."
+          </div>
+        </label>
+
+        <!-- Solarized Dark -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-4 flex flex-col justify-between transition hover:border-slate-400 relative group darkmode-theme-label" data-theme="solarized">
+          <input type="radio" name="darkmode-theme" value="solarized" class="sr-only" />
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-bold text-sm text-slate-900 flex items-center gap-2">
+              <span class="w-3.5 h-3.5 rounded-full bg-[#002b36] border border-teal-500 inline-block"></span>
+              Solarized Dark
+            </span>
+            <div class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 flex items-center justify-center theme-indicator">
+              <div class="w-2 h-2 rounded-full bg-transparent"></div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed mb-3">
+            Navy cyan background (#002b36) with muted teal text (#839496). Standard developer palette.
+          </p>
+          <div class="rounded-lg p-2.5 bg-[#002b36] text-[#839496] text-[11px] font-mono border border-teal-900">
+            Preview: "Precision low-contrast color engineering."
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Additional Options -->
+    <div class="pt-2 border-t border-slate-100 space-y-3">
+      <label class="flex items-center gap-3 cursor-pointer select-none">
+        <input
+          type="checkbox"
+          id="darkmode-invert-images-cb"
+          checked
+          class="w-4 h-4 rounded text-slate-900 border-slate-300 focus:ring-slate-900"
+        />
+        <div>
+          <span class="text-xs font-bold text-slate-800">Invert Scanned Document Pages & Embedded Graphics</span>
+          <p class="text-[11px] text-slate-500">Inverts scanned white paper to dark. Uncheck if you want to keep colored photos unchanged.</p>
+        </div>
+      </label>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2">
+      <button
+        type="button"
+        id="start-darkmode-btn"
+        class="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2"
+      >
+        <span>Convert to Dark Mode</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Progress Card -->
+  <div id="darkmode-processing-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 sm:p-12 shadow-sm text-center">
+    <div class="w-12 h-12 border-4 border-slate-200 border-t-slate-900 rounded-full animate-spin mx-auto mb-4"></div>
+    <h3 class="text-lg font-bold text-slate-800 mb-1">Inverting Colors & Generating Dark Mode...</h3>
+    <p id="darkmode-processing-status" class="text-xs text-slate-500 max-w-sm mx-auto">
+      Prepending solid dark backgrounds and transforming vector stream operators...
+    </p>
+  </div>
+
+  <!-- 4. Success State -->
+  <div id="darkmode-success-section" class="hidden bg-white rounded-2xl border border-emerald-200 p-8 sm:p-10 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-xl font-bold text-slate-900 mb-1">Dark Mode PDF Created!</h3>
+      <p class="text-xs text-slate-500">Processed 100% locally in your browser memory.</p>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl mx-auto text-left">
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+        <span class="block text-[10px] font-mono uppercase text-slate-400">Theme</span>
+        <span id="darkmode-stat-theme" class="text-xs font-bold text-slate-800 truncate">Midnight</span>
+      </div>
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+        <span class="block text-[10px] font-mono uppercase text-slate-400">Pages Converted</span>
+        <span id="darkmode-stat-pages" class="text-xs font-bold text-slate-800">1</span>
+      </div>
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+        <span class="block text-[10px] font-mono uppercase text-slate-400">Vectors Inverted</span>
+        <span id="darkmode-stat-ops" class="text-xs font-bold text-slate-800">0</span>
+      </div>
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+        <span class="block text-[10px] font-mono uppercase text-slate-400">Output Size</span>
+        <span id="darkmode-stat-size" class="text-xs font-bold text-slate-800">0 KB</span>
+      </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        id="download-darkmode-pdf-btn"
+        class="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-button flex items-center justify-center gap-2 transition"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Dark Mode PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="restart-darkmode-btn"
+        class="w-full sm:w-auto px-5 py-3 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl transition"
+      >
+        Convert Another PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let rawFileBytes: Uint8Array | null = null;
+  let originalFileName = 'document.pdf';
+  let processedBlobUrl: string | null = null;
+
+  const dropZone = document.getElementById('darkmode-drop-zone');
+  const fileInput = document.getElementById('darkmode-file-input') as HTMLInputElement | null;
+  const configSection = document.getElementById('darkmode-config-section');
+  const processingSection = document.getElementById('darkmode-processing-section');
+  const successSection = document.getElementById('darkmode-success-section');
+
+  const errorBanner = document.getElementById('darkmode-error-banner');
+  const errorMessage = document.getElementById('darkmode-error-message');
+  const dismissErrorBtn = document.getElementById('dismiss-darkmode-error');
+
+  const fileNameEl = document.getElementById('darkmode-file-name');
+  const fileMetaEl = document.getElementById('darkmode-file-meta');
+  const changeFileBtn = document.getElementById('change-darkmode-file-btn');
+  const startBtn = document.getElementById('start-darkmode-btn');
+
+  const downloadBtn = document.getElementById('download-darkmode-pdf-btn');
+  const restartBtn = document.getElementById('restart-darkmode-btn');
+
+  const themeLabels = document.querySelectorAll('.darkmode-theme-label');
+  const invertImagesCb = document.getElementById('darkmode-invert-images-cb') as HTMLInputElement | null;
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    errorBanner?.classList.add('hidden');
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  // Theme card radio selection handler
+  themeLabels.forEach((label) => {
+    label.addEventListener('click', () => {
+      themeLabels.forEach((l) => {
+        l.classList.remove('border-slate-900', 'bg-slate-50');
+        l.classList.add('border-slate-200', 'bg-white');
+        const ind = l.querySelector('.theme-indicator > div');
+        if (ind) {
+          ind.classList.remove('bg-slate-900');
+          ind.classList.add('bg-transparent');
+        }
+      });
+      label.classList.remove('border-slate-200', 'bg-white');
+      label.classList.add('border-slate-900', 'bg-slate-50');
+      const activeInd = label.querySelector('.theme-indicator > div');
+      if (activeInd) {
+        activeInd.classList.remove('bg-transparent');
+        activeInd.classList.add('bg-slate-900');
+      }
+      const radio = label.querySelector('input[type="radio"]') as HTMLInputElement | null;
+      if (radio) radio.checked = true;
+    });
+  });
+
+  async function handleFile(file: File) {
+    hideError();
+    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+      showError('Please select a valid PDF file.');
+      return;
+    }
+
+    originalFileName = file.name;
+    const sizeKb = (file.size / 1024).toFixed(1);
+
+    try {
+      const buffer = await file.arrayBuffer();
+      rawFileBytes = new Uint8Array(buffer);
+
+      dropZone?.classList.add('hidden');
+      configSection?.classList.remove('hidden');
+
+      if (fileNameEl) fileNameEl.textContent = file.name;
+      if (fileMetaEl) fileMetaEl.textContent = `Size: ${sizeKb} KB · Ready to invert colors`;
+    } catch {
+      showError('Unable to read selected PDF file. Please ensure it is not corrupt or locked.');
+    }
+  }
+
+  fileInput?.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      handleFile(target.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    configSection?.classList.add('hidden');
+    dropZone?.classList.remove('hidden');
+    if (fileInput) fileInput.value = '';
+    rawFileBytes = null;
+  });
+
+  startBtn?.addEventListener('click', async () => {
+    if (!rawFileBytes) {
+      showError('No PDF loaded. Please upload a PDF file first.');
+      return;
+    }
+
+    hideError();
+    configSection?.classList.add('hidden');
+    processingSection?.classList.remove('hidden');
+
+    const selectedRadio = document.querySelector('input[name="darkmode-theme"]:checked') as HTMLInputElement | null;
+    const theme = (selectedRadio?.value || 'midnight') as any;
+    const invertImages = invertImagesCb ? invertImagesCb.checked : true;
+
+    try {
+      const { convertPdfToDarkMode } = await import('../../lib/pdf/darkMode');
+      const result = await convertPdfToDarkMode(rawFileBytes, {
+        theme,
+        invertImages,
+      });
+
+      processingSection?.classList.add('hidden');
+      successSection?.classList.remove('hidden');
+
+      // Populate stats
+      const statTheme = document.getElementById('darkmode-stat-theme');
+      const statPages = document.getElementById('darkmode-stat-pages');
+      const statOps = document.getElementById('darkmode-stat-ops');
+      const statSize = document.getElementById('darkmode-stat-size');
+
+      if (statTheme) statTheme.textContent = theme.charAt(0).toUpperCase() + theme.slice(1);
+      if (statPages) statPages.textContent = result.pagesProcessed.toString();
+      if (statOps) statOps.textContent = result.operatorsConverted.toString();
+      if (statSize) statSize.textContent = `${(result.outputSize / 1024).toFixed(1)} KB`;
+
+      if (processedBlobUrl) URL.revokeObjectURL(processedBlobUrl);
+      const blob = new Blob([result.outputBytes], { type: 'application/pdf' });
+      processedBlobUrl = URL.createObjectURL(blob);
+    } catch (err: any) {
+      processingSection?.classList.add('hidden');
+      configSection?.classList.remove('hidden');
+      showError(`Color inversion failed: ${err?.message || 'Unknown error during PDF reconstruction.'}`);
+    }
+  });
+
+  downloadBtn?.addEventListener('click', () => {
+    if (!processedBlobUrl) return;
+    const a = document.createElement('a');
+    a.href = processedBlobUrl;
+    const baseName = originalFileName.replace(/\.pdf$/i, '');
+    a.download = `${baseName}-darkmode.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+
+  restartBtn?.addEventListener('click', () => {
+    if (processedBlobUrl) {
+      URL.revokeObjectURL(processedBlobUrl);
+      processedBlobUrl = null;
+    }
+    rawFileBytes = null;
+    successSection?.classList.add('hidden');
+    dropZone?.classList.remove('hidden');
+    if (fileInput) fileInput.value = '';
+  });
+</script>

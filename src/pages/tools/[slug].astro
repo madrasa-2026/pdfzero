@@ -32,6 +32,7 @@ import LinearizePdfIsland from '../../components/tools/LinearizePdfIsland.astro'
 import SplitByBookmarksIsland from '../../components/tools/SplitByBookmarksIsland.astro';
 import DeskewPdfIsland from '../../components/tools/DeskewPdfIsland.astro';
 import ReaderPdfIsland from '../../components/tools/ReaderPdfIsland.astro';
+import DarkModePdfIsland from '../../components/tools/DarkModePdfIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -216,6 +217,8 @@ const relatedToolCards = allTools
       <DeskewPdfIsland />
     ) : tool.slug === 'reader-pdf' ? (
       <ReaderPdfIsland />
+    ) : tool.slug === 'dark-mode-pdf' ? (
+      <DarkModePdfIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}
