@@ -1,0 +1,329 @@
+---
+// FlattenPdfIsland.astro - 100% in-browser PDF Form Flattener
+---
+
+<div id="flatten-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="flatten-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Form Flattening Notice</h4>
+      <p id="flatten-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-flatten-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="flatten-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="flatten-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-amber-50 group-hover:bg-amber-600 flex items-center justify-center text-amber-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-amber-600 transition">
+      Select PDF Form to Flatten
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your fillable PDF form here, or click to browse.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose Fillable PDF
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Permanent Immutability</span>
+      <span>•</span>
+      <span>Zero Rasterization</span>
+    </div>
+  </div>
+
+  <!-- 2. Configure & Flatten Confirmation Card -->
+  <div id="flatten-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="flatten-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">form.pdf</h4>
+          <p id="flatten-file-meta" class="text-xs text-slate-500">Scanning form fields...</p>
+        </div>
+      </div>
+      <button type="button" id="change-flatten-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Field Detection Report -->
+    <div class="p-4 rounded-xl bg-amber-50/70 border border-amber-100 space-y-2">
+      <div class="flex items-center gap-2 text-amber-900 font-bold text-xs uppercase tracking-wider">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        <span>Form Field Inspection</span>
+      </div>
+      <p id="flatten-fields-detected" class="text-xs text-amber-950 font-medium leading-relaxed">
+        Scanning document...
+      </p>
+    </div>
+
+    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1.5">
+      <span class="font-bold text-slate-800 block">Why Flatten Your Form?</span>
+      <p class="leading-relaxed">
+        Flattening permanently locks your filled-in text inputs, checked checkboxes, and signatures into the page's permanent graphics stream. Interactive form fields will be stripped, preventing any recipient from altering or erasing your values.
+      </p>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2 flex flex-col sm:flex-row items-center gap-3">
+      <button
+        type="button"
+        id="execute-flatten-btn"
+        class="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        <span>Flatten Form & Make Immutable</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Processing State -->
+  <div id="flatten-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-5">
+    <div class="w-16 h-16 mx-auto relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-amber-100 border-t-amber-600 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-amber-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-lg font-bold text-slate-800 mb-1">Flattening Form Fields...</h3>
+      <p id="flatten-progress-message" class="text-xs text-slate-500">Baking appearance streams into permanent vector layers...</p>
+    </div>
+  </div>
+
+  <!-- 4. Success & Download State -->
+  <div id="flatten-success-section" class="hidden bg-white rounded-2xl border border-emerald-200 p-6 sm:p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-xl font-bold text-slate-900 mb-1">PDF Form Flattened Successfully!</h3>
+      <p class="text-xs text-slate-600">All entered values are now permanently locked and tamper-proof.</p>
+    </div>
+
+    <!-- Diagnostic Details Breakdown -->
+    <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/80 text-left space-y-2 max-w-lg mx-auto">
+      <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-200">
+        <span class="text-slate-500">Pages Processed:</span>
+        <span id="flatten-res-pages" class="font-bold text-slate-800">1</span>
+      </div>
+      <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-200">
+        <span class="text-slate-500">File Size:</span>
+        <span id="flatten-res-size" class="font-bold text-slate-800">120 KB</span>
+      </div>
+      <div class="text-xs pt-1">
+        <span class="text-slate-500 block mb-1">Flattening Report:</span>
+        <ul id="flatten-res-list" class="space-y-1 text-slate-700 list-disc list-inside text-[11px]">
+          <li>Broke interactive widgets into permanent vector text</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Compatibility Guarantee Badge -->
+    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+      </svg>
+      <span>Universal Compatibility — Will Display Identically on All Devices & Printers</span>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        id="download-flattened-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Flattened PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="flatten-another-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition duration-150"
+      >
+        Flatten Another PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { inspectPdfForm, flattenPdf, type FormInspectionResult, type FlattenResult } from '../../lib/pdf/flatten';
+
+  let currentFile: File | null = null;
+  let rawPdfBytes: Uint8Array | null = null;
+  let flattenedResultBytes: Uint8Array | null = null;
+
+  const dropZone = document.getElementById('flatten-drop-zone')!;
+  const fileInput = document.getElementById('flatten-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('flatten-config-section')!;
+  const progressSection = document.getElementById('flatten-progress-section')!;
+  const successSection = document.getElementById('flatten-success-section')!;
+  const errorBanner = document.getElementById('flatten-error-banner')!;
+  const errorMessage = document.getElementById('flatten-error-message')!;
+  const dismissError = document.getElementById('dismiss-flatten-error')!;
+
+  const fileNameLabel = document.getElementById('flatten-file-name')!;
+  const fileMetaLabel = document.getElementById('flatten-file-meta')!;
+  const fieldsDetectedLabel = document.getElementById('flatten-fields-detected')!;
+  const changeFileBtn = document.getElementById('change-flatten-file-btn')!;
+  const executeBtn = document.getElementById('execute-flatten-btn')!;
+  const downloadBtn = document.getElementById('download-flattened-btn')!;
+  const flattenAnotherBtn = document.getElementById('flatten-another-btn')!;
+
+  const resPages = document.getElementById('flatten-res-pages')!;
+  const resSize = document.getElementById('flatten-res-size')!;
+  const resList = document.getElementById('flatten-res-list')!;
+
+  function showError(msg: string) {
+    errorMessage.textContent = msg;
+    errorBanner.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBanner.classList.add('hidden');
+  }
+
+  dismissError?.addEventListener('click', hideError);
+
+  function formatBytes(bytes: number): string {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  async function handleFile(file: File) {
+    hideError();
+    currentFile = file;
+
+    fileNameLabel.textContent = file.name;
+    fileMetaLabel.textContent = `${formatBytes(file.size)} • Loading...`;
+
+    dropZone.classList.add('hidden');
+    configSection.classList.remove('hidden');
+    progressSection.classList.add('hidden');
+    successSection.classList.add('hidden');
+
+    try {
+      rawPdfBytes = new Uint8Array(await file.arrayBuffer());
+      const inspection: FormInspectionResult = await inspectPdfForm(rawPdfBytes);
+
+      fileMetaLabel.textContent = `${formatBytes(file.size)} • ${inspection.pageCount} page(s)`;
+
+      if (inspection.hasForm) {
+        fieldsDetectedLabel.textContent = `Found ${inspection.totalFields} interactive form field(s) (${inspection.textFieldsCount} text input(s), ${inspection.checkboxesCount} checkbox(es), ${inspection.dropdownsCount} dropdown(s)).`;
+      } else {
+        fieldsDetectedLabel.textContent = 'No interactive form fields found. Flattening will lock any remaining annotations and sanitize document structure.';
+      }
+    } catch (err: any) {
+      showError(err.message || 'Failed to inspect PDF form.');
+    }
+  }
+
+  fileInput?.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      handleFile(target.files[0]);
+    }
+  });
+
+  function resetState() {
+    dropZone.classList.remove('hidden');
+    configSection.classList.add('hidden');
+    progressSection.classList.add('hidden');
+    successSection.classList.add('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    rawPdfBytes = null;
+    flattenedResultBytes = null;
+  }
+
+  changeFileBtn?.addEventListener('click', resetState);
+  flattenAnotherBtn?.addEventListener('click', resetState);
+
+  executeBtn?.addEventListener('click', async () => {
+    if (!rawPdfBytes || !currentFile) return;
+
+    configSection.classList.add('hidden');
+    progressSection.classList.remove('hidden');
+
+    try {
+      const result: FlattenResult = await flattenPdf(rawPdfBytes);
+      flattenedResultBytes = result.flattenedPdfBytes;
+
+      resPages.textContent = `${result.pagesProcessed} page(s)`;
+      resSize.textContent = `${formatBytes(result.originalSize)} → ${formatBytes(result.flattenedSize)}`;
+
+      resList.innerHTML = '';
+      result.details.forEach((d) => {
+        const li = document.createElement('li');
+        li.textContent = d;
+        resList.appendChild(li);
+      });
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      showError(err.message || 'Failed to flatten PDF document.');
+    }
+  });
+
+  downloadBtn?.addEventListener('click', () => {
+    if (!flattenedResultBytes || !currentFile) return;
+
+    const baseName = currentFile.name.replace(/\.pdf$/i, '');
+    const fileName = `${baseName}_flattened.pdf`;
+
+    const blob = new Blob([flattenedResultBytes as any], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+</script>
