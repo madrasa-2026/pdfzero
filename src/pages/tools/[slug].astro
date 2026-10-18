@@ -43,6 +43,7 @@ import SplitSpreadPdfIsland from '../../components/tools/SplitSpreadPdfIsland.as
 import PosterPdfIsland from '../../components/tools/PosterPdfIsland.astro';
 import AutoCropPdfIsland from '../../components/tools/AutoCropPdfIsland.astro';
 import InspectPdfIsland from '../../components/tools/InspectPdfIsland.astro';
+import OrganizePdfIsland from '../../components/tools/OrganizePdfIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -249,6 +250,8 @@ const relatedToolCards = allTools
       <AutoCropPdfIsland />
     ) : tool.slug === 'inspect-pdf' ? (
       <InspectPdfIsland />
+    ) : tool.slug === 'organize-pdf' ? (
+      <OrganizePdfIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}
