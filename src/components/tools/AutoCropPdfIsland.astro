@@ -1,0 +1,513 @@
+---
+// src/components/tools/AutoCropPdfIsland.astro
+---
+
+<div class="w-full max-w-4xl mx-auto">
+  <!-- 1. Dropzone Section -->
+  <div
+    id="crop-dropzone"
+    class="relative border-2 border-dashed border-slate-300 hover:border-emerald-500 bg-white/80 hover:bg-emerald-50/20 transition-all rounded-3xl p-8 sm:p-12 text-center cursor-pointer shadow-sm group"
+  >
+    <input
+      type="file"
+      id="crop-file-input"
+      accept="application/pdf"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+    />
+    <div class="flex flex-col items-center justify-center pointer-events-none">
+      <div class="w-16 h-16 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-emerald-100 transition-all shadow-inner">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 2v14a2 2 0 0 0 2 2h14"></path>
+          <path d="M18 22V8a2 2 0 0 0-2-2H2"></path>
+        </svg>
+      </div>
+      <h3 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">
+        Drop your PDF here to auto-crop margins
+      </h3>
+      <p class="text-sm text-slate-500 max-w-md mb-4">
+        Automatically detect ink boundaries, trim excessive blank borders, and maximize reading size on Kindle, iPad & e-readers.
+      </p>
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold">
+        <svg class="w-4 h-4 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        100% Vector Crispness • Zero Rasterization • Private & Client-Side
+      </div>
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Kindle & Remarkable Ready</span>
+      <span>•</span>
+      <span>E-Reader Jitter Free</span>
+      <span>•</span>
+      <span>No File Limits</span>
+    </div>
+  </div>
+
+  <!-- 2. Scanning / Processing Overlay -->
+  <div id="crop-scanning-section" class="hidden bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 shadow-sm text-center space-y-4">
+    <div class="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin mx-auto"></div>
+    <h3 class="text-base font-bold text-slate-900" id="crop-scan-status">
+      Scanning page ink density...
+    </h3>
+    <p class="text-xs text-slate-500 max-w-md mx-auto" id="crop-scan-details">
+      Analyzing pixel bounding boxes across pages to identify content margins.
+    </p>
+    <div class="w-full max-w-xs bg-slate-100 rounded-full h-2 mx-auto overflow-hidden">
+      <div id="crop-scan-progress-bar" class="bg-emerald-600 h-full w-0 transition-all duration-200"></div>
+    </div>
+  </div>
+
+  <!-- 3. Configuration & Preview Panel -->
+  <div id="crop-config-section" class="hidden bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="crop-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="crop-file-meta" class="text-xs text-slate-500">Checking document...</p>
+        </div>
+      </div>
+      <button type="button" id="change-crop-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Live Preview & Crop Inspection Box -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- Visual Thumbnail Preview with Overlay Box -->
+      <div class="lg:col-span-5 bg-slate-950 rounded-2xl p-4 flex flex-col items-center justify-center relative shadow-inner overflow-hidden min-h-[300px]">
+        <div class="text-[11px] font-mono text-slate-400 mb-2 flex items-center justify-between w-full px-2">
+          <span>Page 1 Detected Bounds</span>
+          <span class="text-emerald-400 font-bold" id="crop-detected-tag">Auto-Cropped</span>
+        </div>
+        
+        <div class="relative inline-block border border-slate-700 rounded shadow-md overflow-hidden bg-white" id="preview-wrapper">
+          <canvas id="crop-preview-canvas" class="max-w-full max-h-[360px] object-contain block"></canvas>
+          <!-- Glowing Green Ink Overlay -->
+          <div
+            id="crop-box-indicator"
+            class="absolute border-2 border-emerald-500 bg-emerald-500/15 pointer-events-none transition-all duration-300 rounded-sm shadow-[0_0_12px_rgba(16,185,129,0.35)]"
+          >
+            <span class="absolute -top-5 left-1 text-[9px] font-mono font-bold bg-emerald-600 text-white px-1.5 py-0.5 rounded shadow">
+              INK BOUNDS
+            </span>
+          </div>
+        </div>
+
+        <p class="text-[10px] text-slate-400 mt-2 text-center">
+          Green highlight shows content area retained. Outer dark zone will be trimmed.
+        </p>
+      </div>
+
+      <!-- Controls & Strategy -->
+      <div class="lg:col-span-7 space-y-5">
+        <!-- Crop Mode Selection -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+            Auto-Crop Strategy
+          </label>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            <!-- Uniform (Default) -->
+            <label class="cursor-pointer border-2 border-emerald-600 bg-emerald-50/50 rounded-xl p-3 text-left transition hover:border-emerald-500 crop-mode-card" data-mode="uniform">
+              <input type="radio" name="crop-mode" value="uniform" checked class="sr-only" />
+              <div class="text-xs font-bold text-slate-900 mb-0.5">Uniform (E-Reader)</div>
+              <div class="text-[11px] text-slate-500 leading-tight">Single uniform crop box. Prevents screen jumping.</div>
+            </label>
+
+            <!-- Per-Page -->
+            <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-left transition hover:border-emerald-500 crop-mode-card" data-mode="per-page">
+              <input type="radio" name="crop-mode" value="per-page" class="sr-only" />
+              <div class="text-xs font-bold text-slate-900 mb-0.5">Per-Page Tight</div>
+              <div class="text-[11px] text-slate-500 leading-tight">Crops each page to its exact individual ink bounds.</div>
+            </label>
+
+            <!-- Even/Odd -->
+            <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-left transition hover:border-emerald-500 crop-mode-card" data-mode="even-odd">
+              <input type="radio" name="crop-mode" value="even-odd" class="sr-only" />
+              <div class="text-xs font-bold text-slate-900 mb-0.5">Even/Odd Symmetrical</div>
+              <div class="text-[11px] text-slate-500 leading-tight">Compensates for book gutter and facing margins.</div>
+            </label>
+          </div>
+        </div>
+
+        <!-- Padding / Safety Margin -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="crop-padding-select" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              Safety Margin (Padding)
+            </label>
+            <select
+              id="crop-padding-select"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+            >
+              <option value="0">0 pt (Tightest / Edge-to-Edge)</option>
+              <option value="10" selected>10 pt (~3.5 mm / E-Reader Best)</option>
+              <option value="20">20 pt (~7 mm / Comfortable)</option>
+              <option value="36">36 pt (~12.7 mm / Half-Inch)</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="crop-sensitivity-select" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              Ink Sensitivity
+            </label>
+            <select
+              id="crop-sensitivity-select"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+            >
+              <option value="248" selected>Standard (RGB &lt; 248)</option>
+              <option value="252">Aggressive (Catches Faint Watermarks)</option>
+              <option value="235">Conservative (Ignores Scanner Dust)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Savings / Enhancement Metric Banner -->
+        <div class="p-4 bg-emerald-50/70 rounded-2xl border border-emerald-100 flex items-center justify-between text-xs text-emerald-950">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-sm shrink-0">
+              ✓
+            </div>
+            <div>
+              <div class="font-bold text-slate-900" id="crop-savings-text">
+                Trimmed 34.8% blank margin waste
+              </div>
+              <div class="text-[11px] text-slate-600" id="crop-zoom-text">
+                Kindle & mobile viewing area magnified by ~1.53×
+              </div>
+            </div>
+          </div>
+          <span class="font-mono text-emerald-800 font-bold text-right" id="crop-dims-text">
+            420 × 680 pt
+          </span>
+        </div>
+
+        <!-- Action Button -->
+        <button
+          type="button"
+          id="apply-crop-btn"
+          class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg shadow-emerald-600/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span id="apply-crop-btn-text">Download Auto-Cropped PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import {
+    detectInkBoundingBoxFromImageData,
+    canvasBoxToPdfBox,
+    computeUniformPdfCropBox,
+    applyAutoCrop,
+    type BoundingBox,
+    type PdfCropBox,
+  } from '../../lib/pdf/autoCropEngine';
+
+  let pdfDocProxy: any = null;
+  let rawPdfBytes: Uint8Array | null = null;
+  let originalFileName = 'document.pdf';
+  let totalPageCount = 0;
+  let page1Dimensions = { width: 612, height: 792 };
+  let page1CanvasBox: BoundingBox | null = null;
+  let page1CanvasSize = { width: 0, height: 0 };
+  let pageCropsMap = new Map<number, PdfCropBox>();
+  let uniformBox: { x: number; y: number; width: number; height: number } | null = null;
+
+  // DOM Elements
+  const dropzone = document.getElementById('crop-dropzone') as HTMLElement;
+  const fileInput = document.getElementById('crop-file-input') as HTMLInputElement;
+  const scanningSection = document.getElementById('crop-scanning-section') as HTMLElement;
+  const scanProgressBar = document.getElementById('crop-scan-progress-bar') as HTMLElement;
+  const scanStatus = document.getElementById('crop-scan-status') as HTMLElement;
+  const configSection = document.getElementById('crop-config-section') as HTMLElement;
+  const fileNameEl = document.getElementById('crop-file-name') as HTMLElement;
+  const fileMetaEl = document.getElementById('crop-file-meta') as HTMLElement;
+  const changeFileBtn = document.getElementById('change-crop-file-btn') as HTMLButtonElement;
+  const previewCanvas = document.getElementById('crop-preview-canvas') as HTMLCanvasElement;
+  const cropBoxIndicator = document.getElementById('crop-box-indicator') as HTMLElement;
+  const paddingSelect = document.getElementById('crop-padding-select') as HTMLSelectElement;
+  const sensitivitySelect = document.getElementById('crop-sensitivity-select') as HTMLSelectElement;
+  const applyCropBtn = document.getElementById('apply-crop-btn') as HTMLButtonElement;
+  const applyCropBtnText = document.getElementById('apply-crop-btn-text') as HTMLElement;
+  const savingsText = document.getElementById('crop-savings-text') as HTMLElement;
+  const zoomText = document.getElementById('crop-zoom-text') as HTMLElement;
+  const dimsText = document.getElementById('crop-dims-text') as HTMLElement;
+  const modeCards = document.querySelectorAll('.crop-mode-card');
+
+  let currentMode: 'uniform' | 'per-page' | 'even-odd' = 'uniform';
+
+  // Drag and Drop
+  dropzone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('border-emerald-500', 'bg-emerald-50/20');
+  });
+
+  dropzone?.addEventListener('dragleave', () => {
+    dropzone.classList.remove('border-emerald-500', 'bg-emerald-50/20');
+  });
+
+  dropzone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('border-emerald-500', 'bg-emerald-50/20');
+    if (e.dataTransfer?.files?.[0]) {
+      handleSelectedFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput?.addEventListener('change', () => {
+    if (fileInput.files?.[0]) {
+      handleSelectedFile(fileInput.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    configSection.classList.add('hidden');
+    dropzone.classList.remove('hidden');
+    fileInput.value = '';
+    rawPdfBytes = null;
+    pdfDocProxy = null;
+  });
+
+  // Strategy Mode Toggle
+  modeCards.forEach((card) => {
+    card.addEventListener('click', () => {
+      const mode = (card as HTMLElement).dataset.mode as 'uniform' | 'per-page' | 'even-odd';
+      currentMode = mode;
+
+      modeCards.forEach((c) => {
+        c.classList.remove('border-emerald-600', 'bg-emerald-50/50');
+        c.classList.add('border-slate-200', 'bg-white');
+      });
+      card.classList.add('border-emerald-600', 'bg-emerald-50/50');
+      card.classList.remove('border-slate-200', 'bg-white');
+
+      updateCropPreviewMetrics();
+    });
+  });
+
+  paddingSelect?.addEventListener('change', () => updateCropPreviewMetrics());
+  sensitivitySelect?.addEventListener('change', () => rescanDocument());
+
+  async function handleSelectedFile(file: File) {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      alert('Please upload a valid PDF file.');
+      return;
+    }
+
+    originalFileName = file.name;
+    dropzone.classList.add('hidden');
+    scanningSection.classList.remove('hidden');
+    scanProgressBar.style.width = '10%';
+    scanStatus.textContent = 'Loading PDF engine...';
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      rawPdfBytes = new Uint8Array(arrayBuffer);
+
+      // Dynamically load pdfjs-dist
+      // @ts-ignore
+      const pdfjsLib = window.pdfjsLib || await import('pdfjs-dist');
+      if (pdfjsLib.GlobalWorkerOptions && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+
+      pdfDocProxy = await pdfjsLib.getDocument({ data: rawPdfBytes.slice(0) }).promise;
+      totalPageCount = pdfDocProxy.numPages;
+
+      await runInkScanAcrossPages();
+
+      scanningSection.classList.add('hidden');
+      configSection.classList.remove('hidden');
+
+      fileNameEl.textContent = originalFileName;
+      fileMetaEl.textContent = `${totalPageCount} page${totalPageCount > 1 ? 's' : ''} • ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+
+      updateCropPreviewMetrics();
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to parse PDF: ' + (err.message || err));
+      scanningSection.classList.add('hidden');
+      dropzone.classList.remove('hidden');
+    }
+  }
+
+  async function runInkScanAcrossPages() {
+    const threshold = parseInt(sensitivitySelect.value, 10) || 248;
+    const padding = parseInt(paddingSelect.value, 10) || 10;
+    pageCropsMap.clear();
+
+    const sampleLimit = Math.min(totalPageCount, 40);
+    const sampledBoxes: Array<{ width: number; height: number; crop: { x: number; y: number; width: number; height: number } }> = [];
+
+    for (let pageNum = 1; pageNum <= sampleLimit; pageNum++) {
+      scanStatus.textContent = `Scanning ink on page ${pageNum} of ${sampleLimit}...`;
+      scanProgressBar.style.width = `${Math.round((pageNum / sampleLimit) * 90)}%`;
+
+      const page = await pdfDocProxy.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 1.0 });
+
+      if (pageNum === 1) {
+        page1Dimensions = { width: viewport.width, height: viewport.height };
+      }
+
+      // Render to hidden canvas for pixel scanning
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = Math.round(viewport.width);
+      offCanvas.height = Math.round(viewport.height);
+      const ctx = offCanvas.getContext('2d', { willReadFrequently: true });
+      if (!ctx) continue;
+
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      if (pageNum === 1) {
+        // Also render visible preview canvas
+        previewCanvas.width = offCanvas.width;
+        previewCanvas.height = offCanvas.height;
+        const pCtx = previewCanvas.getContext('2d');
+        pCtx?.drawImage(offCanvas, 0, 0);
+        page1CanvasSize = { width: offCanvas.width, height: offCanvas.height };
+      }
+
+      const imgData = ctx.getImageData(0, 0, offCanvas.width, offCanvas.height);
+      const inkBox = detectInkBoundingBoxFromImageData(imgData.data, offCanvas.width, offCanvas.height, threshold);
+
+      if (pageNum === 1) {
+        page1CanvasBox = inkBox;
+      }
+
+      if (inkBox) {
+        const pdfCrop = canvasBoxToPdfBox(inkBox, offCanvas.width, offCanvas.height, viewport.width, viewport.height, padding);
+        pageCropsMap.set(pageNum - 1, { pageIndex: pageNum - 1, ...pdfCrop });
+        sampledBoxes.push({ width: viewport.width, height: viewport.height, crop: pdfCrop });
+      } else {
+        // Blank page fallback: keep entire page
+        pageCropsMap.set(pageNum - 1, { pageIndex: pageNum - 1, x: 0, y: 0, width: viewport.width, height: viewport.height });
+      }
+    }
+
+    // Compute uniform document bounding box
+    uniformBox = computeUniformPdfCropBox(sampledBoxes, page1Dimensions.width, page1Dimensions.height);
+  }
+
+  async function rescanDocument() {
+    if (!pdfDocProxy) return;
+    configSection.classList.add('hidden');
+    scanningSection.classList.remove('hidden');
+    await runInkScanAcrossPages();
+    scanningSection.classList.add('hidden');
+    configSection.classList.remove('hidden');
+    updateCropPreviewMetrics();
+  }
+
+  function updateCropPreviewMetrics() {
+    if (!page1CanvasBox || !previewCanvas.width || !previewCanvas.height) return;
+
+    const padding = parseInt(paddingSelect.value, 10) || 10;
+    let targetCrop: { x: number; y: number; width: number; height: number };
+
+    if (currentMode === 'uniform' && uniformBox) {
+      targetCrop = uniformBox;
+    } else {
+      const page1Crop = pageCropsMap.get(0);
+      targetCrop = page1Crop ? { x: page1Crop.x, y: page1Crop.y, width: page1Crop.width, height: page1Crop.height } : uniformBox!;
+    }
+
+    if (!targetCrop) return;
+
+    // Convert PDF Crop coordinates back to Preview Canvas CSS pixels for the glowing overlay
+    const scaleX = previewCanvas.clientWidth / page1Dimensions.width;
+    const scaleY = previewCanvas.clientHeight / page1Dimensions.height;
+
+    // PDF Y-axis is inverted: targetCrop.y is distance from bottom
+    const boxLeft = targetCrop.x * scaleX;
+    const boxTop = (page1Dimensions.height - (targetCrop.y + targetCrop.height)) * scaleY;
+    const boxW = targetCrop.width * scaleX;
+    const boxH = targetCrop.height * scaleY;
+
+    cropBoxIndicator.style.left = `${Math.max(0, boxLeft)}px`;
+    cropBoxIndicator.style.top = `${Math.max(0, boxTop)}px`;
+    cropBoxIndicator.style.width = `${Math.min(previewCanvas.clientWidth, boxW)}px`;
+    cropBoxIndicator.style.height = `${Math.min(previewCanvas.clientHeight, boxH)}px`;
+
+    // Metrics
+    const originalArea = page1Dimensions.width * page1Dimensions.height;
+    const croppedArea = targetCrop.width * targetCrop.height;
+    const savedAreaPercent = Math.max(0, Math.round(((originalArea - croppedArea) / originalArea) * 1000) / 10);
+    const zoomMultiplier = Math.round((Math.min(page1Dimensions.width / targetCrop.width, page1Dimensions.height / targetCrop.height)) * 100) / 100;
+
+    savingsText.textContent = `Trimmed ${savedAreaPercent}% blank margin waste`;
+    zoomText.textContent = `E-reader / Kindle reading area magnified by ~${zoomMultiplier}×`;
+    dimsText.textContent = `${Math.round(targetCrop.width)} × ${Math.round(targetCrop.height)} pt`;
+  }
+
+  // Handle Download / Export
+  applyCropBtn?.addEventListener('click', async () => {
+    if (!rawPdfBytes) return;
+
+    applyCropBtn.disabled = true;
+    applyCropBtnText.textContent = 'Applying Auto-Crop...';
+
+    try {
+      const cropList: PdfCropBox[] = [];
+
+      if (currentMode === 'uniform' && uniformBox) {
+        for (let i = 0; i < totalPageCount; i++) {
+          cropList.push({ pageIndex: i, ...uniformBox });
+        }
+      } else if (currentMode === 'per-page') {
+        for (let i = 0; i < totalPageCount; i++) {
+          const c = pageCropsMap.get(i) || uniformBox;
+          if (c) {
+            cropList.push({ pageIndex: i, x: c.x, y: c.y, width: c.width, height: c.height });
+          }
+        }
+      } else if (currentMode === 'even-odd') {
+        // Compute separate even/odd boxes
+        const evenBoxes: any[] = [];
+        const oddBoxes: any[] = [];
+        pageCropsMap.forEach((c, idx) => {
+          if (idx % 2 === 0) oddBoxes.push({ width: page1Dimensions.width, height: page1Dimensions.height, crop: c });
+          else evenBoxes.push({ width: page1Dimensions.width, height: page1Dimensions.height, crop: c });
+        });
+        const oddUniform = computeUniformPdfCropBox(oddBoxes, page1Dimensions.width, page1Dimensions.height);
+        const evenUniform = computeUniformPdfCropBox(evenBoxes, page1Dimensions.width, page1Dimensions.height);
+
+        for (let i = 0; i < totalPageCount; i++) {
+          const box = (i % 2 === 0) ? oddUniform : evenUniform;
+          cropList.push({ pageIndex: i, ...box });
+        }
+      }
+
+      const croppedBytes = await applyAutoCrop(rawPdfBytes, cropList);
+
+      const blob = new Blob([croppedBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = originalFileName.replace(/\.pdf$/i, '') + '-autocropped.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error(err);
+      alert('Error applying auto-crop: ' + (err.message || err));
+    } finally {
+      applyCropBtn.disabled = false;
+      applyCropBtnText.textContent = 'Download Auto-Cropped PDF';
+    }
+  });
+</script>
