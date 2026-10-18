@@ -1,0 +1,406 @@
+---
+// ComparePdfIsland.astro - 100% in-browser Side-by-Side PDF Diff Comparator
+---
+
+<div id="compare-island-app" class="w-full max-w-5xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="compare-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Comparison Notice</h4>
+      <p id="compare-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-compare-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Dual File Selection Section -->
+  <div id="compare-upload-section" class="space-y-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- File A Dropzone -->
+      <div
+        id="dropzone-a"
+        class="relative rounded-2xl border-2 border-dashed border-slate-200 hover:border-slate-400 bg-white shadow-sm p-6 sm:p-8 text-center transition cursor-pointer group"
+      >
+        <input
+          type="file"
+          id="compare-file-input-a"
+          class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+          accept=".pdf,application/pdf"
+        />
+
+        <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-blue-50 group-hover:bg-blue-600 flex items-center justify-center text-blue-600 group-hover:text-white shadow-sm transition">
+          <span class="font-bold text-base">A</span>
+        </div>
+
+        <h4 class="text-base font-bold text-slate-800 mb-1 group-hover:text-blue-600 transition">
+          Original Document (Doc A)
+        </h4>
+        <p id="meta-label-a" class="text-xs text-slate-500 mb-4">
+          Upload baseline contract or initial draft.
+        </p>
+
+        <div class="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 group-hover:bg-slate-200 rounded-lg transition">
+          Choose Original PDF
+        </div>
+      </div>
+
+      <!-- File B Dropzone -->
+      <div
+        id="dropzone-b"
+        class="relative rounded-2xl border-2 border-dashed border-slate-200 hover:border-slate-400 bg-white shadow-sm p-6 sm:p-8 text-center transition cursor-pointer group"
+      >
+        <input
+          type="file"
+          id="compare-file-input-b"
+          class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+          accept=".pdf,application/pdf"
+        />
+
+        <div class="w-12 h-12 mx-auto mb-3 rounded-xl bg-emerald-50 group-hover:bg-emerald-600 flex items-center justify-center text-emerald-600 group-hover:text-white shadow-sm transition">
+          <span class="font-bold text-base">B</span>
+        </div>
+
+        <h4 class="text-base font-bold text-slate-800 mb-1 group-hover:text-emerald-600 transition">
+          Modified Document (Doc B)
+        </h4>
+        <p id="meta-label-b" class="text-xs text-slate-500 mb-4">
+          Upload revised version or counter-proposal.
+        </p>
+
+        <div class="inline-flex items-center justify-center px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 group-hover:bg-slate-200 rounded-lg transition">
+          Choose Revised PDF
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Bar -->
+    <div class="text-center pt-2">
+      <button
+        type="button"
+        id="execute-compare-btn"
+        disabled
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-cyan-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+        <span>Compare Revisions Side-by-Side</span>
+      </button>
+
+      <div class="mt-4 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+        <span>100% In-Browser</span>
+        <span>•</span>
+        <span>Word-Level Semantic Diff</span>
+        <span>•</span>
+        <span>Attorney-Client Privilege Safe</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Processing State -->
+  <div id="compare-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-5">
+    <div class="w-16 h-16 mx-auto relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-cyan-100 border-t-cyan-600 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-cyan-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-base font-bold text-slate-900 mb-1">Comparing Documents...</h3>
+      <p id="compare-progress-text" class="text-xs text-slate-500">
+        Extracting text streams and computing LCS token diffs...
+      </p>
+    </div>
+  </div>
+
+  <!-- 3. Side-by-Side Diff Dashboard -->
+  <div id="compare-results-section" class="hidden space-y-4">
+    <!-- Header Metrics Bar -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 sm:p-6 shadow-sm flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div id="similarity-score-badge" class="px-3.5 py-1.5 rounded-full bg-slate-900 text-white font-bold text-xs tracking-wide">
+          95% Match
+        </div>
+        <div class="flex items-center gap-2 text-xs font-medium">
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span class="font-bold">+</span> <span id="stat-additions">0</span> Added
+          </span>
+          <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-red-50 text-red-700 border border-red-200">
+            <span class="font-bold">-</span> <span id="stat-deletions">0</span> Removed
+          </span>
+        </div>
+      </div>
+
+      <!-- Page Pagination -->
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          id="prev-page-btn"
+          class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition disabled:opacity-40"
+        >
+          ← Prev
+        </button>
+        <span id="page-indicator" class="text-xs font-medium text-slate-600 min-w-20 text-center">
+          Page 1 of 1
+        </span>
+        <button
+          type="button"
+          id="next-page-btn"
+          class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition disabled:opacity-40"
+        >
+          Next →
+        </button>
+      </div>
+
+      <button
+        type="button"
+        id="reset-compare-btn"
+        class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline"
+      >
+        Compare Other Files
+      </button>
+    </div>
+
+    <!-- Side-by-Side Split View -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <!-- Doc A Column -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden text-left">
+        <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <span class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-blue-500"></span>
+            Doc A: <span id="label-name-a" class="truncate max-w-[180px]">original.pdf</span>
+          </span>
+          <span class="text-[11px] text-slate-500">Removed text in red</span>
+        </div>
+        <div id="diff-content-a" class="p-6 text-xs text-slate-800 leading-relaxed font-mono whitespace-pre-wrap h-96 overflow-y-auto">
+          <!-- Text with deletions rendered here -->
+        </div>
+      </div>
+
+      <!-- Doc B Column -->
+      <div class="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden text-left">
+        <div class="px-4 py-3 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+          <span class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            Doc B: <span id="label-name-b" class="truncate max-w-[180px]">modified.pdf</span>
+          </span>
+          <span class="text-[11px] text-slate-500">Added text in green</span>
+        </div>
+        <div id="diff-content-b" class="p-6 text-xs text-slate-800 leading-relaxed font-mono whitespace-pre-wrap h-96 overflow-y-auto">
+          <!-- Text with insertions rendered here -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import * as pdfjsLib from 'pdfjs-dist';
+  import {
+    comparePageTexts,
+    type PageComparisonResult,
+    type DiffToken,
+  } from '../../lib/pdf/compare';
+
+  // Configure pdfjs worker
+  if (typeof window !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+  }
+
+  let fileA: File | null = null;
+  let fileB: File | null = null;
+  let pageResults: PageComparisonResult[] = [];
+  let currentPageIndex = 0;
+
+  const uploadSection = document.getElementById('compare-upload-section') as HTMLDivElement;
+  const progressSection = document.getElementById('compare-progress-section') as HTMLDivElement;
+  const resultsSection = document.getElementById('compare-results-section') as HTMLDivElement;
+
+  const inputA = document.getElementById('compare-file-input-a') as HTMLInputElement;
+  const inputB = document.getElementById('compare-file-input-b') as HTMLInputElement;
+  const metaA = document.getElementById('meta-label-a') as HTMLElement;
+  const metaB = document.getElementById('meta-label-b') as HTMLElement;
+  const executeBtn = document.getElementById('execute-compare-btn') as HTMLButtonElement;
+
+  const errorBanner = document.getElementById('compare-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('compare-error-message') as HTMLElement;
+  const dismissErrorBtn = document.getElementById('dismiss-compare-error') as HTMLButtonElement;
+
+  const scoreBadge = document.getElementById('similarity-score-badge') as HTMLElement;
+  const statAdditions = document.getElementById('stat-additions') as HTMLElement;
+  const statDeletions = document.getElementById('stat-deletions') as HTMLElement;
+
+  const prevBtn = document.getElementById('prev-page-btn') as HTMLButtonElement;
+  const nextBtn = document.getElementById('next-page-btn') as HTMLButtonElement;
+  const pageIndicator = document.getElementById('page-indicator') as HTMLElement;
+
+  const labelNameA = document.getElementById('label-name-a') as HTMLElement;
+  const labelNameB = document.getElementById('label-name-b') as HTMLElement;
+  const contentA = document.getElementById('diff-content-a') as HTMLDivElement;
+  const contentB = document.getElementById('diff-content-b') as HTMLDivElement;
+  const resetBtn = document.getElementById('reset-compare-btn') as HTMLButtonElement;
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    if (errorBanner) {
+      errorBanner.classList.add('hidden');
+    }
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  function checkReady() {
+    if (fileA && fileB) {
+      executeBtn.disabled = false;
+    }
+  }
+
+  inputA?.addEventListener('change', (e: any) => {
+    if (e.target.files && e.target.files[0]) {
+      fileA = e.target.files[0];
+      if (metaA) metaA.textContent = `${fileA.name} (${(fileA.size / 1024).toFixed(1)} KB)`;
+      checkReady();
+    }
+  });
+
+  inputB?.addEventListener('change', (e: any) => {
+    if (e.target.files && e.target.files[0]) {
+      fileB = e.target.files[0];
+      if (metaB) metaB.textContent = `${fileB.name} (${(fileB.size / 1024).toFixed(1)} KB)`;
+      checkReady();
+    }
+  });
+
+  async function extractPageText(doc: any, pageNum: number): Promise<string> {
+    if (pageNum > doc.numPages) return '';
+    try {
+      const page = await doc.getPage(pageNum);
+      const content = await page.getTextContent();
+      return content.items.map((item: any) => item.str || '').join(' ');
+    } catch {
+      return '';
+    }
+  }
+
+  function renderPageDiff(index: number) {
+    if (!pageResults || index < 0 || index >= pageResults.length) return;
+    currentPageIndex = index;
+    const page = pageResults[index];
+
+    if (pageIndicator) pageIndicator.textContent = `Page ${index + 1} of ${pageResults.length}`;
+    if (prevBtn) prevBtn.disabled = index === 0;
+    if (nextBtn) nextBtn.disabled = index === pageResults.length - 1;
+
+    // Render Side A
+    if (contentA) {
+      contentA.innerHTML = page.tokensA
+        .map((t) => {
+          if (t.type === 'delete') {
+            return `<mark class="bg-red-100 text-red-900 line-through rounded px-0.5">${escapeHtml(t.value)}</mark>`;
+          }
+          return escapeHtml(t.value);
+        })
+        .join('');
+    }
+
+    // Render Side B
+    if (contentB) {
+      contentB.innerHTML = page.tokensB
+        .map((t) => {
+          if (t.type === 'insert') {
+            return `<mark class="bg-emerald-100 text-emerald-950 font-bold rounded px-0.5">${escapeHtml(t.value)}</mark>`;
+          }
+          return escapeHtml(t.value);
+        })
+        .join('');
+    }
+  }
+
+  function escapeHtml(str: string): string {
+    return str
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;');
+  }
+
+  prevBtn?.addEventListener('click', () => renderPageDiff(currentPageIndex - 1));
+  nextBtn?.addEventListener('click', () => renderPageDiff(currentPageIndex + 1));
+
+  resetBtn?.addEventListener('click', () => {
+    fileA = null;
+    fileB = null;
+    pageResults = [];
+    inputA.value = '';
+    inputB.value = '';
+    metaA.textContent = 'Upload baseline contract or initial draft.';
+    metaB.textContent = 'Upload revised version or counter-proposal.';
+    executeBtn.disabled = true;
+    resultsSection.classList.add('hidden');
+    uploadSection.classList.remove('hidden');
+  });
+
+  executeBtn?.addEventListener('click', async () => {
+    if (!fileA || !fileB) return;
+
+    try {
+      hideError();
+      uploadSection.classList.add('hidden');
+      progressSection.classList.remove('hidden');
+
+      const bufferA = await fileA.arrayBuffer();
+      const bufferB = await fileB.arrayBuffer();
+
+      const docA = await pdfjsLib.getDocument({ data: new Uint8Array(bufferA) }).promise;
+      const docB = await pdfjsLib.getDocument({ data: new Uint8Array(bufferB) }).promise;
+
+      const maxPages = Math.max(docA.numPages, docB.numPages);
+      pageResults = [];
+      let totalAdditions = 0;
+      let totalDeletions = 0;
+      let totalUnchanged = 0;
+
+      for (let p = 1; p <= maxPages; p++) {
+        const textA = await extractPageText(docA, p);
+        const textB = await extractPageText(docB, p);
+        const res = comparePageTexts(p, textA, textB);
+        pageResults.push(res);
+
+        totalAdditions += res.stats.additions;
+        totalDeletions += res.stats.deletions;
+        totalUnchanged += res.stats.unchanged;
+      }
+
+      const totalWords = totalAdditions + totalDeletions + totalUnchanged * 2;
+      const overallSimilarity = totalWords > 0
+        ? Math.round(((totalUnchanged * 2) / totalWords) * 100)
+        : 100;
+
+      if (scoreBadge) scoreBadge.textContent = `${overallSimilarity}% Match`;
+      if (statAdditions) statAdditions.textContent = `${totalAdditions}`;
+      if (statDeletions) statDeletions.textContent = `${totalDeletions}`;
+      if (labelNameA) labelNameA.textContent = fileA.name;
+      if (labelNameB) labelNameB.textContent = fileB.name;
+
+      renderPageDiff(0);
+
+      progressSection.classList.add('hidden');
+      resultsSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      uploadSection.classList.remove('hidden');
+      showError(err?.message || 'Failed to compare PDF documents.');
+    }
+  });
+</script>
