@@ -1,0 +1,416 @@
+---
+// SplitSpreadPdfIsland.astro - 100% In-Browser PDF Two-Page Spread Cutter
+---
+
+<div id="split-spread-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="spread-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Spread Cutter Notice</h4>
+      <p id="spread-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-spread-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="spread-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="spread-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-violet-50 group-hover:bg-violet-600 flex items-center justify-center text-violet-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 4.5v15m6-15v15m-10.5-15h15a1.5 1.5 0 011.5 1.5v12a1.5 1.5 0 01-1.5 1.5h-15a1.5 1.5 0 01-1.5-1.5v-12a1.5 1.5 0 011.5-1.5z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-violet-600 transition">
+      Select Scanned Book Spread PDF
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop scanned textbooks, sheet music, or manga with side-by-side pages.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose Scanned PDF
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Cut Books in Half</span>
+      <span>•</span>
+      <span>Manga RTL Support</span>
+      <span>•</span>
+      <span>Spine Gutter Removal</span>
+    </div>
+  </div>
+
+  <!-- 2. Configuration Settings Panel -->
+  <div id="spread-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="spread-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="spread-file-meta" class="text-xs text-slate-500">Scanning document geometry...</p>
+        </div>
+      </div>
+      <button type="button" id="change-spread-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Direction & Reading Order -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <!-- Cut Direction -->
+      <div>
+        <label for="spread-direction" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Split Direction
+        </label>
+        <select
+          id="spread-direction"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-white"
+        >
+          <option value="vertical" selected>Vertical Split (Left / Right Pages — Books & Spreads)</option>
+          <option value="horizontal">Horizontal Split (Top / Bottom Halves — Slides & Receipts)</option>
+        </select>
+      </div>
+
+      <!-- Reading Order -->
+      <div>
+        <label for="spread-reading-order" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Reading Order
+        </label>
+        <select
+          id="spread-reading-order"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-white"
+        >
+          <option value="ltr" selected>Left-to-Right (Western Books, Sheet Music)</option>
+          <option value="rtl">Right-to-Left (Japanese Manga, Arabic, Hebrew)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Cover Page Options & Spine Seam Removal -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+      <!-- Cover Page Handling -->
+      <div>
+        <label for="spread-cover-handling" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Book Cover Handling
+        </label>
+        <select
+          id="spread-cover-handling"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:bg-white"
+        >
+          <option value="all">Split All Pages Equally</option>
+          <option value="skip-first" selected>Keep First Page Single (Front Cover)</option>
+          <option value="skip-first-and-last">Keep First & Last Pages Single (Covers)</option>
+        </select>
+      </div>
+
+      <!-- Spine Gutter Seam Slider -->
+      <div>
+        <div class="flex items-center justify-between text-xs mb-2 font-bold text-slate-700 uppercase tracking-wider">
+          <span>Spine Shadow Gutter:</span>
+          <span id="gutter-val-label" class="font-mono text-violet-700 font-extrabold">0 pt (None)</span>
+        </div>
+        <input
+          type="range"
+          id="spread-spine-gutter"
+          min="0"
+          max="40"
+          step="2"
+          value="0"
+          class="w-full accent-violet-600"
+        />
+        <span class="text-[11px] text-slate-400 block mt-1">Trims dark shadows or binding curve along the center seam</span>
+      </div>
+    </div>
+
+    <!-- Live Forecast Banner -->
+    <div class="p-4 bg-violet-50/70 rounded-xl border border-violet-100 flex items-center justify-between text-xs text-violet-950">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-violet-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+        <span id="spread-forecast-text">Calculating single-page forecast...</span>
+      </div>
+      <span class="font-bold text-violet-600">Mobile & Kindle Ready</span>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2 flex flex-col sm:flex-row gap-3">
+      <button
+        type="button"
+        id="run-spread-btn"
+        class="flex-1 py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 shadow-md shadow-violet-600/20 active:scale-[0.99] transition flex items-center justify-center gap-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+        </svg>
+        Split Spreads & Download PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Progress State -->
+  <div id="spread-progress-card" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-4">
+    <div class="w-12 h-12 mx-auto rounded-full bg-violet-50 border-2 border-violet-600 border-t-transparent animate-spin"></div>
+    <h3 class="text-base font-bold text-slate-800">Cutting Book Spreads into Single Pages...</h3>
+    <p id="spread-progress-status" class="text-xs text-slate-500">Clipping vector Form XObjects and sequencing pages in RAM...</p>
+  </div>
+
+  <!-- 4. Success View -->
+  <div id="spread-success-card" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-xl font-bold text-slate-900 mb-1">Book Spreads Successfully Cut!</h3>
+      <p id="spread-success-stats" class="text-xs text-slate-600">
+        Generated 40 individual portrait pages from 20 two-page spreads.
+      </p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <a
+        id="spread-download-link"
+        download="single-pages.pdf"
+        class="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-violet-600 hover:bg-violet-700 shadow-md shadow-violet-600/20 active:scale-[0.99] transition inline-flex items-center justify-center gap-2 cursor-pointer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Download Single-Page PDF
+      </a>
+
+      <button
+        type="button"
+        id="spread-reset-btn"
+        class="w-full sm:w-auto px-5 py-3 rounded-xl font-semibold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
+      >
+        Split Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  import {
+    splitSpreadPdf,
+    type SplitDirection,
+    type ReadingDirection,
+    type CoverHandling,
+  } from '../../lib/pdf/splitSpread';
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let detectedPageCount = 0;
+  let detectedLandscapeCount = 0;
+  let generatedBlobUrl: string | null = null;
+
+  // DOM Elements
+  const dropZone = document.getElementById('spread-drop-zone')!;
+  const fileInput = document.getElementById('spread-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('spread-config-section')!;
+  const progressCard = document.getElementById('spread-progress-card')!;
+  const successCard = document.getElementById('spread-success-card')!;
+  const errorBanner = document.getElementById('spread-error-banner')!;
+  const errorMessage = document.getElementById('spread-error-message')!;
+  const dismissErrorBtn = document.getElementById('dismiss-spread-error')!;
+
+  const fileNameEl = document.getElementById('spread-file-name')!;
+  const fileMetaEl = document.getElementById('spread-file-meta')!;
+  const changeFileBtn = document.getElementById('change-spread-file-btn')!;
+
+  const directionSelect = document.getElementById('spread-direction') as HTMLSelectElement;
+  const readingOrderSelect = document.getElementById('spread-reading-order') as HTMLSelectElement;
+  const coverHandlingSelect = document.getElementById('spread-cover-handling') as HTMLSelectElement;
+  const spineGutterSlider = document.getElementById('spread-spine-gutter') as HTMLInputElement;
+  const gutterValLabel = document.getElementById('gutter-val-label')!;
+  const forecastText = document.getElementById('spread-forecast-text')!;
+  const runBtn = document.getElementById('run-spread-btn')!;
+
+  const successStats = document.getElementById('spread-success-stats')!;
+  const downloadLink = document.getElementById('spread-download-link') as HTMLAnchorElement;
+  const resetBtn = document.getElementById('spread-reset-btn')!;
+
+  function showError(msg: string) {
+    errorMessage.textContent = msg;
+    errorBanner.classList.remove('hidden');
+    progressCard.classList.add('hidden');
+  }
+
+  function hideError() {
+    errorBanner.classList.add('hidden');
+  }
+
+  dismissErrorBtn.addEventListener('click', hideError);
+
+  function updateForecast() {
+    if (detectedPageCount === 0) return;
+
+    const cover = coverHandlingSelect.value as CoverHandling;
+    let singleCount = 0;
+    if (cover === 'skip-first') singleCount = 1;
+    else if (cover === 'skip-first-and-last') singleCount = Math.min(2, detectedPageCount);
+
+    const spreadsToSplit = Math.max(0, detectedPageCount - singleCount);
+    const expectedOutput = singleCount + spreadsToSplit * 2;
+
+    forecastText.textContent = `Input: ${detectedPageCount} page${detectedPageCount === 1 ? '' : 's'} (${detectedLandscapeCount} spreads) -> Output: ${expectedOutput} sequential single pages`;
+  }
+
+  spineGutterSlider.addEventListener('input', () => {
+    const val = parseInt(spineGutterSlider.value, 10);
+    gutterValLabel.textContent = val === 0 ? '0 pt (None)' : `${val} pt`;
+  });
+
+  [directionSelect, readingOrderSelect, coverHandlingSelect].forEach((el) => {
+    el.addEventListener('change', updateForecast);
+  });
+
+  // Handle PDF Upload
+  async function handleFile(file: File) {
+    if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please upload a valid PDF file.');
+      return;
+    }
+
+    hideError();
+    currentFile = file;
+    fileNameEl.textContent = file.name;
+    fileMetaEl.textContent = 'Reading document page dimensions...';
+
+    dropZone.classList.add('hidden');
+    configSection.classList.remove('hidden');
+
+    try {
+      fileBuffer = await file.arrayBuffer();
+      const testDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
+      detectedPageCount = testDoc.getPageCount();
+
+      if (detectedPageCount === 0) {
+        throw new Error('PDF document contains no pages.');
+      }
+
+      detectedLandscapeCount = 0;
+      for (const p of testDoc.getPages()) {
+        const { width, height } = p.getSize();
+        if (width > height) detectedLandscapeCount++;
+      }
+
+      fileMetaEl.textContent = `${detectedPageCount} page${detectedPageCount === 1 ? '' : 's'} (${detectedLandscapeCount} wide spreads) • ${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+      updateForecast();
+    } catch (err: any) {
+      showError(err.message || 'Failed to inspect PDF structure.');
+      configSection.classList.add('hidden');
+      dropZone.classList.remove('hidden');
+    }
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files[0]) {
+      handleFile(target.files[0]);
+    }
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-violet-500', 'bg-violet-50/20');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-violet-500', 'bg-violet-50/20');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-violet-500', 'bg-violet-50/20');
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  changeFileBtn.addEventListener('click', () => {
+    configSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+  });
+
+  resetBtn.addEventListener('click', () => {
+    successCard.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+    if (generatedBlobUrl) {
+      URL.revokeObjectURL(generatedBlobUrl);
+      generatedBlobUrl = null;
+    }
+  });
+
+  // Execute Spread Cutting
+  runBtn.addEventListener('click', async () => {
+    if (!fileBuffer || !currentFile) {
+      showError('Please upload a PDF document first.');
+      return;
+    }
+
+    hideError();
+    configSection.classList.add('hidden');
+    progressCard.classList.remove('hidden');
+
+    try {
+      const result = await splitSpreadPdf(new Uint8Array(fileBuffer), {
+        direction: directionSelect.value as SplitDirection,
+        readingOrder: readingOrderSelect.value as ReadingDirection,
+        coverHandling: coverHandlingSelect.value as CoverHandling,
+        spineGutter: parseInt(spineGutterSlider.value, 10),
+        onlyLandscape: true,
+      });
+
+      const blob = new Blob([result.pdfBytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' });
+      if (generatedBlobUrl) {
+        URL.revokeObjectURL(generatedBlobUrl);
+      }
+      generatedBlobUrl = URL.createObjectURL(blob);
+
+      downloadLink.href = generatedBlobUrl;
+      const baseName = currentFile.name.replace(/\.pdf$/i, '');
+      downloadLink.download = `${baseName}-single-pages.pdf`;
+
+      successStats.textContent = `Cut ${result.spreadsSplitCount} spreads into ${result.outputPagesCount} sequential single pages. Output file: ${(result.outputSize / (1024 * 1024)).toFixed(2)} MB.`;
+
+      progressCard.classList.add('hidden');
+      successCard.classList.remove('hidden');
+    } catch (err: any) {
+      showError(err.message || 'Failed to split spreads.');
+      progressCard.classList.add('hidden');
+      configSection.classList.remove('hidden');
+    }
+  });
+</script>

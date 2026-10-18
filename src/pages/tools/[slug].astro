@@ -39,6 +39,7 @@ import NupPdfIsland from '../../components/tools/NupPdfIsland.astro';
 import SignPkcsPdfIsland from '../../components/tools/SignPkcsPdfIsland.astro';
 import MeasurePdfIsland from '../../components/tools/MeasurePdfIsland.astro';
 import DownsamplePdfIsland from '../../components/tools/DownsamplePdfIsland.astro';
+import SplitSpreadPdfIsland from '../../components/tools/SplitSpreadPdfIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -237,6 +238,8 @@ const relatedToolCards = allTools
       <MeasurePdfIsland />
     ) : tool.slug === 'downsample-pdf' ? (
       <DownsamplePdfIsland />
+    ) : tool.slug === 'split-spread-pdf' ? (
+      <SplitSpreadPdfIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}
