@@ -1,0 +1,464 @@
+---
+// DownsamplePdfIsland.astro - 100% In-Browser PDF DPI Downsampler & Image Compression Tuner
+---
+
+<div id="downsample-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="downsample-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">DPI Downsampler Notice</h4>
+      <p id="downsample-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-downsample-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="downsample-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="downsample-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-cyan-50 group-hover:bg-cyan-600 flex items-center justify-center text-cyan-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-cyan-600 transition">
+      Select PDF to Downsample & Optimize
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop scanned documents, photo PDFs, or heavy portfolios here.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose Heavy PDF
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>72, 150, 300 DPI Target</span>
+      <span>•</span>
+      <span>100% Vector Text Preserved</span>
+      <span>•</span>
+      <span>Zero Uploads</span>
+    </div>
+  </div>
+
+  <!-- 2. Optimization Settings Panel -->
+  <div id="downsample-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="downsample-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="downsample-file-meta" class="text-xs text-slate-500">Scanning document...</p>
+        </div>
+      </div>
+      <button type="button" id="change-downsample-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Preset Selection Cards -->
+    <div>
+      <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
+        Target Resolution (DPI) & Optimization Level
+      </label>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <!-- 72 DPI (Screen) -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-4 flex flex-col justify-between transition hover:border-cyan-500 relative group downsample-preset-card" data-dpi="72" data-quality="0.65">
+          <input type="radio" name="downsample-preset" value="72" class="sr-only" />
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-bold text-sm text-slate-900">72 DPI — Screen & Web</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-100 text-cyan-800">Max Savings</span>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Extreme size reduction (75%–90%). Perfect for email attachments, online forms, and mobile viewing.
+          </p>
+        </label>
+
+        <!-- 150 DPI (Office - Default) -->
+        <label class="cursor-pointer border-2 border-cyan-600 bg-cyan-50/50 rounded-xl p-4 flex flex-col justify-between transition hover:border-cyan-500 relative group downsample-preset-card" data-dpi="150" data-quality="0.75">
+          <input type="radio" name="downsample-preset" value="150" checked class="sr-only" />
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-bold text-sm text-slate-900">150 DPI — Office & Print</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">Recommended</span>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Balanced resolution. Ideal for reading on Retina screens, tablet presentations, and sharp laser printing.
+          </p>
+        </label>
+
+        <!-- 300 DPI (Archive) -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-4 flex flex-col justify-between transition hover:border-cyan-500 relative group downsample-preset-card" data-dpi="300" data-quality="0.85">
+          <input type="radio" name="downsample-preset" value="300" class="sr-only" />
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="font-bold text-sm text-slate-900">300 DPI — High Print</span>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800">Archival</span>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            High-end fidelity. Eliminates wasteful 600+ DPI scanner bloat while preserving fine photography details.
+          </p>
+        </label>
+      </div>
+    </div>
+
+    <!-- Custom Fine-Tuning Drawer (Toggleable) -->
+    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-4">
+      <div class="flex items-center justify-between">
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            id="only-if-smaller-check"
+            checked
+            class="w-4 h-4 text-cyan-600 rounded border-slate-300 focus:ring-cyan-500"
+          />
+          <div>
+            <span class="text-xs font-bold text-slate-800 block">Never Increase File Size</span>
+            <span class="text-[11px] text-slate-500">Automatically skips images that are already lower resolution than target DPI</span>
+          </div>
+        </label>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-slate-200/60">
+        <div>
+          <div class="flex items-center justify-between text-xs mb-1 font-bold text-slate-700">
+            <span>Target DPI Threshold:</span>
+            <span id="dpi-value-label" class="font-mono text-cyan-700 font-extrabold">150 DPI</span>
+          </div>
+          <input
+            type="range"
+            id="custom-dpi-slider"
+            min="50"
+            max="400"
+            step="10"
+            value="150"
+            class="w-full accent-cyan-600"
+          />
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between text-xs mb-1 font-bold text-slate-700">
+            <span>JPEG Recompression Quality:</span>
+            <span id="quality-value-label" class="font-mono text-cyan-700 font-extrabold">75%</span>
+          </div>
+          <input
+            type="range"
+            id="custom-quality-slider"
+            min="40"
+            max="95"
+            step="5"
+            value="75"
+            class="w-full accent-cyan-600"
+          />
+        </div>
+      </div>
+    </div>
+
+    <!-- Vector Text Guarantee Notice -->
+    <div class="p-3 bg-blue-50/70 border border-blue-200/90 rounded-xl flex items-center gap-2.5 text-xs text-blue-900">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-blue-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+      <span><strong>Vector Text Guaranteed:</strong> All document text, fonts, links, and line art remain 100% native vector graphics and selectable.</span>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2 flex flex-col sm:flex-row gap-3">
+      <button
+        type="button"
+        id="run-downsample-btn"
+        class="flex-1 py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-cyan-600 hover:bg-cyan-700 shadow-md shadow-cyan-600/20 active:scale-[0.99] transition flex items-center justify-center gap-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+        </svg>
+        Downsample & Optimize PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Progress State -->
+  <div id="downsample-progress-card" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-4">
+    <div class="w-12 h-12 mx-auto rounded-full bg-cyan-50 border-2 border-cyan-600 border-t-transparent animate-spin"></div>
+    <h3 class="text-base font-bold text-slate-800">Downsampling & Resampling Raster Images...</h3>
+    <p id="downsample-progress-status" class="text-xs text-slate-500">Resizing image XObjects with hardware-accelerated bicubic interpolation...</p>
+  </div>
+
+  <!-- 4. Success & Download View -->
+  <div id="downsample-success-card" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-xl font-bold text-slate-900 mb-1">PDF Optimization Complete!</h3>
+      <p id="downsample-success-stats" class="text-xs text-slate-600">
+        Reduced file size from 24.5 MB to 3.8 MB (84% reduction).
+      </p>
+    </div>
+
+    <!-- Optimization Metrics Badges -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 max-w-md mx-auto">
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+        <div class="text-[10px] uppercase font-bold text-slate-400">Original Size</div>
+        <div id="metric-original-size" class="text-sm font-bold text-slate-800 mt-0.5">24.5 MB</div>
+      </div>
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center">
+        <div class="text-[10px] uppercase font-bold text-slate-400">Optimized Size</div>
+        <div id="metric-output-size" class="text-sm font-bold text-emerald-600 mt-0.5">3.8 MB</div>
+      </div>
+      <div class="p-3 bg-slate-50 rounded-xl border border-slate-100 text-center col-span-2 sm:col-span-1">
+        <div class="text-[10px] uppercase font-bold text-slate-400">Savings</div>
+        <div id="metric-savings-pct" class="text-sm font-bold text-cyan-600 mt-0.5">-84%</div>
+      </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <a
+        id="downsample-download-link"
+        download="optimized.pdf"
+        class="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-cyan-600 hover:bg-cyan-700 shadow-md shadow-cyan-600/20 active:scale-[0.99] transition inline-flex items-center justify-center gap-2 cursor-pointer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Download Optimized PDF
+      </a>
+
+      <button
+        type="button"
+        id="downsample-reset-btn"
+        class="w-full sm:w-auto px-5 py-3 rounded-xl font-semibold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
+      >
+        Optimize Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  import { downsamplePdfImages } from '../../lib/pdf/downsampler';
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let detectedPageCount = 0;
+  let selectedDpi = 150;
+  let selectedQuality = 0.75;
+  let generatedBlobUrl: string | null = null;
+
+  // DOM Elements
+  const dropZone = document.getElementById('downsample-drop-zone')!;
+  const fileInput = document.getElementById('downsample-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('downsample-config-section')!;
+  const progressCard = document.getElementById('downsample-progress-card')!;
+  const successCard = document.getElementById('downsample-success-card')!;
+  const errorBanner = document.getElementById('downsample-error-banner')!;
+  const errorMessage = document.getElementById('downsample-error-message')!;
+  const dismissErrorBtn = document.getElementById('dismiss-downsample-error')!;
+
+  const fileNameEl = document.getElementById('downsample-file-name')!;
+  const fileMetaEl = document.getElementById('downsample-file-meta')!;
+  const changeFileBtn = document.getElementById('change-downsample-file-btn')!;
+
+  const presetCards = document.querySelectorAll<HTMLElement>('.downsample-preset-card');
+  const dpiSlider = document.getElementById('custom-dpi-slider') as HTMLInputElement;
+  const qualitySlider = document.getElementById('custom-quality-slider') as HTMLInputElement;
+  const dpiValueLabel = document.getElementById('dpi-value-label')!;
+  const qualityValueLabel = document.getElementById('quality-value-label')!;
+  const onlyIfSmallerCheck = document.getElementById('only-if-smaller-check') as HTMLInputElement;
+  const runBtn = document.getElementById('run-downsample-btn')!;
+
+  const successStats = document.getElementById('downsample-success-stats')!;
+  const metricOriginalSize = document.getElementById('metric-original-size')!;
+  const metricOutputSize = document.getElementById('metric-output-size')!;
+  const metricSavingsPct = document.getElementById('metric-savings-pct')!;
+  const downloadLink = document.getElementById('downsample-download-link') as HTMLAnchorElement;
+  const resetBtn = document.getElementById('downsample-reset-btn')!;
+
+  function showError(msg: string) {
+    errorMessage.textContent = msg;
+    errorBanner.classList.remove('hidden');
+    progressCard.classList.add('hidden');
+  }
+
+  function hideError() {
+    errorBanner.classList.add('hidden');
+  }
+
+  dismissErrorBtn.addEventListener('click', hideError);
+
+  // Preset Card Handlers
+  presetCards.forEach((card) => {
+    card.addEventListener('click', () => {
+      presetCards.forEach((c) => {
+        c.classList.remove('border-cyan-600', 'bg-cyan-50/50');
+        c.classList.add('border-slate-200', 'bg-white');
+      });
+      card.classList.remove('border-slate-200', 'bg-white');
+      card.classList.add('border-cyan-600', 'bg-cyan-50/50');
+
+      const dpi = parseInt(card.dataset.dpi || '150', 10);
+      const quality = parseFloat(card.dataset.quality || '0.75');
+
+      selectedDpi = dpi;
+      selectedQuality = quality;
+
+      dpiSlider.value = String(dpi);
+      qualitySlider.value = String(Math.round(quality * 100));
+      dpiValueLabel.textContent = `${dpi} DPI`;
+      qualityValueLabel.textContent = `${Math.round(quality * 100)}%`;
+    });
+  });
+
+  dpiSlider.addEventListener('input', () => {
+    selectedDpi = parseInt(dpiSlider.value, 10);
+    dpiValueLabel.textContent = `${selectedDpi} DPI`;
+  });
+
+  qualitySlider.addEventListener('input', () => {
+    selectedQuality = parseInt(qualitySlider.value, 10) / 100;
+    qualityValueLabel.textContent = `${qualitySlider.value}%`;
+  });
+
+  // Handle PDF Upload
+  async function handleFile(file: File) {
+    if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please select a valid PDF file.');
+      return;
+    }
+
+    hideError();
+    currentFile = file;
+    fileNameEl.textContent = file.name;
+    fileMetaEl.textContent = 'Analyzing document structures and image XObjects...';
+
+    dropZone.classList.add('hidden');
+    configSection.classList.remove('hidden');
+
+    try {
+      fileBuffer = await file.arrayBuffer();
+      const testDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
+      detectedPageCount = testDoc.getPageCount();
+
+      fileMetaEl.textContent = `${detectedPageCount} page${detectedPageCount === 1 ? '' : 's'} • ${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+    } catch (err: any) {
+      showError(err.message || 'Failed to read PDF document.');
+      configSection.classList.add('hidden');
+      dropZone.classList.remove('hidden');
+    }
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files[0]) {
+      handleFile(target.files[0]);
+    }
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-cyan-500', 'bg-cyan-50/20');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-cyan-500', 'bg-cyan-50/20');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-cyan-500', 'bg-cyan-50/20');
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  changeFileBtn.addEventListener('click', () => {
+    configSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+  });
+
+  resetBtn.addEventListener('click', () => {
+    successCard.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+    if (generatedBlobUrl) {
+      URL.revokeObjectURL(generatedBlobUrl);
+      generatedBlobUrl = null;
+    }
+  });
+
+  // Execute Downsampling
+  runBtn.addEventListener('click', async () => {
+    if (!fileBuffer || !currentFile) {
+      showError('Please upload a PDF document first.');
+      return;
+    }
+
+    hideError();
+    configSection.classList.add('hidden');
+    progressCard.classList.remove('hidden');
+
+    try {
+      const result = await downsamplePdfImages(new Uint8Array(fileBuffer), {
+        targetDpi: selectedDpi,
+        jpegQuality: selectedQuality,
+        onlyIfSmaller: onlyIfSmallerCheck.checked,
+      });
+
+      const blob = new Blob([result.pdfBytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' });
+      if (generatedBlobUrl) {
+        URL.revokeObjectURL(generatedBlobUrl);
+      }
+      generatedBlobUrl = URL.createObjectURL(blob);
+
+      downloadLink.href = generatedBlobUrl;
+      const baseName = currentFile.name.replace(/\.pdf$/i, '');
+      downloadLink.download = `${baseName}-${selectedDpi}dpi-optimized.pdf`;
+
+      const origMb = (result.originalSize / (1024 * 1024)).toFixed(2);
+      const outMb = (result.outputSize / (1024 * 1024)).toFixed(2);
+      const pct = result.originalSize > 0
+        ? Math.round(((result.originalSize - result.outputSize) / result.originalSize) * 100)
+        : 0;
+
+      metricOriginalSize.textContent = `${origMb} MB`;
+      metricOutputSize.textContent = `${outMb} MB`;
+      metricSavingsPct.textContent = pct > 0 ? `-${pct}%` : 'Optimized';
+
+      successStats.textContent = `Downsampled ${result.imagesDownsampled} image${result.imagesDownsampled === 1 ? '' : 's'} to ${selectedDpi} DPI. Vector text and typography remain 100% crisp.`;
+
+      progressCard.classList.add('hidden');
+      successCard.classList.remove('hidden');
+    } catch (err: any) {
+      showError(err.message || 'DPI downsampling failed.');
+      progressCard.classList.add('hidden');
+      configSection.classList.remove('hidden');
+    }
+  });
+</script>
