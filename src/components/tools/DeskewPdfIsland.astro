@@ -1,0 +1,603 @@
+---
+// DeskewPdfIsland.astro - 100% In-Browser PDF Deskew & Straightener
+---
+
+<div id="deskew-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="deskew-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Deskew Notice</h4>
+      <p id="deskew-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-deskew-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="deskew-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="deskew-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-sky-50 group-hover:bg-sky-600 flex items-center justify-center text-sky-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-sky-600 transition">
+      Select PDF to Straighten & Deskew
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your crooked scan, contract, or receipt here.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF Document
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Auto-Detect Tilt Angle</span>
+      <span>•</span>
+      <span>Rule Grid Alignment</span>
+    </div>
+  </div>
+
+  <!-- 2. Configure & Straighten Viewport Card -->
+  <div id="deskew-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="deskew-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="deskew-file-meta" class="text-xs text-slate-500">Detecting document...</p>
+        </div>
+      </div>
+      <button type="button" id="change-deskew-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Navigation & Quick Actions Bar -->
+    <div class="flex flex-wrap items-center justify-between gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+      <!-- Page Navigation -->
+      <div class="flex items-center gap-2">
+        <button type="button" id="deskew-prev-page-btn" class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition" title="Previous Page">
+          ◀
+        </button>
+        <span id="deskew-page-indicator" class="text-xs font-bold text-slate-700 min-w-[90px] text-center">
+          Page 1 of 1
+        </span>
+        <button type="button" id="deskew-next-page-btn" class="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition" title="Next Page">
+          ▶
+        </button>
+      </div>
+
+      <!-- Alignment Grid Toggle & Auto-Detect -->
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          id="deskew-auto-detect-btn"
+          class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-300 rounded-lg transition"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <span>Auto-Detect Skew</span>
+        </button>
+
+        <button
+          type="button"
+          id="toggle-grid-btn"
+          class="px-3 py-1.5 text-xs font-semibold text-slate-700 bg-white hover:bg-slate-100 border border-slate-300 rounded-lg transition"
+        >
+          Toggle Grid Lines
+        </button>
+      </div>
+    </div>
+
+    <!-- Live Canvas Viewer Container -->
+    <div class="relative w-full h-[460px] bg-slate-100/90 rounded-2xl border-2 border-slate-200 flex items-center justify-center overflow-hidden select-none">
+      <!-- Alignment Grid Overlay -->
+      <div id="alignment-grid" class="absolute inset-0 pointer-events-none opacity-40 z-20" style="background-size: 24px 24px; background-image: linear-gradient(to right, #0284c7 1px, transparent 1px), linear-gradient(to bottom, #0284c7 1px, transparent 1px);"></div>
+
+      <!-- Canvas Wrapper (rotates smoothly via CSS transform) -->
+      <div id="canvas-rotator" class="relative transition-transform duration-150 ease-out z-10 shadow-lg border border-slate-300 rounded">
+        <canvas id="deskew-preview-canvas" class="block max-h-[420px] max-w-full bg-white"></canvas>
+      </div>
+    </div>
+
+    <!-- Rotation Controls Slider -->
+    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-3">
+      <div class="flex items-center justify-between">
+        <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+          Straighten Angle Adjustment:
+        </label>
+        <div class="flex items-center gap-2">
+          <span id="detected-badge" class="hidden px-2 py-0.5 rounded-full text-[10px] font-bold bg-sky-100 text-sky-800"></span>
+          <span id="angle-value-display" class="text-sm font-mono font-bold text-sky-600">0.0°</span>
+        </div>
+      </div>
+
+      <input
+        type="range"
+        id="angle-slider"
+        min="-15.0"
+        max="15.0"
+        step="0.1"
+        value="0.0"
+        class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-600"
+      />
+
+      <div class="flex justify-between text-[10px] text-slate-400">
+        <span>-15.0° (Counter-Clockwise)</span>
+        <span class="font-bold text-slate-500">0.0° (Original)</span>
+        <span>+15.0° (Clockwise)</span>
+      </div>
+
+      <!-- Quick Preset Angle Buttons -->
+      <div class="flex flex-wrap items-center gap-1.5 pt-1">
+        <span class="text-xs text-slate-500 mr-1">Quick Presets:</span>
+        <button type="button" class="angle-preset-btn px-2 py-1 text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 rounded-lg transition" data-angle="-3.0">-3.0°</button>
+        <button type="button" class="angle-preset-btn px-2 py-1 text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 rounded-lg transition" data-angle="-1.5">-1.5°</button>
+        <button type="button" class="angle-preset-btn px-2 py-1 text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 rounded-lg transition font-bold" data-angle="0.0">0.0° (Reset)</button>
+        <button type="button" class="angle-preset-btn px-2 py-1 text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 rounded-lg transition" data-angle="1.5">+1.5°</button>
+        <button type="button" class="angle-preset-btn px-2 py-1 text-xs bg-white hover:bg-sky-50 text-slate-700 border border-slate-200 rounded-lg transition" data-angle="3.0">+3.0°</button>
+      </div>
+    </div>
+
+    <!-- Options Checklist -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <label class="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 bg-white cursor-pointer hover:bg-slate-50 transition">
+        <input type="checkbox" id="deskew-apply-all" checked class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500 mt-0.5" />
+        <div>
+          <span class="block text-xs font-bold text-slate-800">Apply Angle to All Pages</span>
+          <span class="block text-[11px] text-slate-500">Applies this angle across every page in your document.</span>
+        </div>
+      </label>
+
+      <label class="flex items-start gap-2.5 p-3 rounded-xl border border-slate-200 bg-white cursor-pointer hover:bg-slate-50 transition">
+        <input type="checkbox" id="deskew-expand-canvas" class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500 mt-0.5" />
+        <div>
+          <span class="block text-xs font-bold text-slate-800">Expand Canvas for Corners</span>
+          <span class="block text-[11px] text-slate-500">Expands page bounds so rotated corners are not clipped.</span>
+        </div>
+      </label>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2 flex flex-col sm:flex-row items-center gap-3">
+      <button
+        type="button"
+        id="execute-deskew-btn"
+        class="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+        </svg>
+        <span>Straighten & Download PDF</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Processing State -->
+  <div id="deskew-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-5">
+    <div class="w-16 h-16 mx-auto relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-sky-100 border-t-sky-600 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-sky-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-base font-bold text-slate-900 mb-1">Applying Deskew Transformation...</h3>
+      <p id="deskew-progress-text" class="text-xs text-slate-500">
+        Re-encoding vector matrix transformations and leveling pages...
+      </p>
+    </div>
+  </div>
+
+  <!-- 4. Success & Download State -->
+  <div id="deskew-success-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-lg font-bold text-slate-900 mb-1">PDF Straightened Successfully!</h3>
+      <p class="text-xs text-slate-500 max-w-md mx-auto">
+        Your pages have been leveled and re-compiled with crisp vector fidelity.
+      </p>
+    </div>
+
+    <!-- Metrics Details -->
+    <div id="deskew-metrics-container" class="max-w-md mx-auto p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-2 text-left">
+      <!-- Injected dynamically -->
+    </div>
+
+    <!-- Download Action -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        id="download-deskewed-pdf-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Straightened PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="deskew-another-btn"
+        class="w-full sm:w-auto px-5 py-3 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+      >
+        Straighten Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import * as pdfjsLib from 'pdfjs-dist';
+  import { applyDeskewToPdf, detectSkewAngle } from '../../lib/pdf/deskew';
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let deskewedPdfBytes: Uint8Array | null = null;
+  let pdfDocProxy: any = null;
+  let totalPageCount = 1;
+  let currentPageIndex = 1;
+  let currentAngle = 0.0;
+  let pageAngleMap: Record<number, number> = {};
+
+  const dropZone = document.getElementById('deskew-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('deskew-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('deskew-config-section') as HTMLDivElement;
+  const progressSection = document.getElementById('deskew-progress-section') as HTMLDivElement;
+  const successSection = document.getElementById('deskew-success-section') as HTMLDivElement;
+
+  const errorBanner = document.getElementById('deskew-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('deskew-error-message') as HTMLElement;
+  const dismissErrorBtn = document.getElementById('dismiss-deskew-error') as HTMLButtonElement;
+
+  const fileNameLabel = document.getElementById('deskew-file-name') as HTMLElement;
+  const fileMetaLabel = document.getElementById('deskew-file-meta') as HTMLElement;
+  const changeFileBtn = document.getElementById('change-deskew-file-btn') as HTMLButtonElement;
+  const executeBtn = document.getElementById('execute-deskew-btn') as HTMLButtonElement;
+
+  const prevPageBtn = document.getElementById('deskew-prev-page-btn') as HTMLButtonElement;
+  const nextPageBtn = document.getElementById('deskew-next-page-btn') as HTMLButtonElement;
+  const pageIndicator = document.getElementById('deskew-page-indicator') as HTMLElement;
+
+  const autoDetectBtn = document.getElementById('deskew-auto-detect-btn') as HTMLButtonElement;
+  const toggleGridBtn = document.getElementById('toggle-grid-btn') as HTMLButtonElement;
+  const alignmentGrid = document.getElementById('alignment-grid') as HTMLDivElement;
+  const canvasRotator = document.getElementById('canvas-rotator') as HTMLDivElement;
+  const previewCanvas = document.getElementById('deskew-preview-canvas') as HTMLCanvasElement;
+
+  const angleSlider = document.getElementById('angle-slider') as HTMLInputElement;
+  const angleValueDisplay = document.getElementById('angle-value-display') as HTMLElement;
+  const detectedBadge = document.getElementById('detected-badge') as HTMLElement;
+  const applyAllCheckbox = document.getElementById('deskew-apply-all') as HTMLInputElement;
+  const expandCanvasCheckbox = document.getElementById('deskew-expand-canvas') as HTMLInputElement;
+
+  const metricsContainer = document.getElementById('deskew-metrics-container') as HTMLDivElement;
+  const downloadBtn = document.getElementById('download-deskewed-pdf-btn') as HTMLButtonElement;
+  const deskewAnotherBtn = document.getElementById('deskew-another-btn') as HTMLButtonElement;
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    if (errorBanner) {
+      errorBanner.classList.add('hidden');
+    }
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  // Toggle Grid
+  let isGridVisible = true;
+  toggleGridBtn?.addEventListener('click', () => {
+    isGridVisible = !isGridVisible;
+    alignmentGrid.style.display = isGridVisible ? 'block' : 'none';
+  });
+
+  // Render Page on Canvas via PDF.js
+  async function renderCurrentPage() {
+    if (!pdfDocProxy) return;
+
+    try {
+      const page = await pdfDocProxy.getPage(currentPageIndex);
+      const viewport = page.getViewport({ scale: 1.5 });
+
+      previewCanvas.width = viewport.width;
+      previewCanvas.height = viewport.height;
+
+      const ctx = previewCanvas.getContext('2d');
+      if (ctx) {
+        await page.render({ canvasContext: ctx, viewport }).promise;
+      }
+
+      pageIndicator.textContent = `Page ${currentPageIndex} of ${totalPageCount}`;
+      const existingAngle = pageAngleMap[currentPageIndex] || currentAngle;
+      setRotationAngle(existingAngle);
+    } catch (err: any) {
+      console.error('Page render error:', err);
+    }
+  }
+
+  // Update Visual Rotation
+  function setRotationAngle(angle: number) {
+    currentAngle = Math.round(angle * 10) / 10;
+    pageAngleMap[currentPageIndex] = currentAngle;
+    angleSlider.value = currentAngle.toString();
+    angleValueDisplay.textContent = `${currentAngle > 0 ? '+' : ''}${currentAngle.toFixed(1)}°`;
+    canvasRotator.style.transform = `rotate(${currentAngle}deg)`;
+  }
+
+  angleSlider?.addEventListener('input', () => {
+    const val = parseFloat(angleSlider.value);
+    setRotationAngle(val);
+  });
+
+  document.querySelectorAll('.angle-preset-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const a = parseFloat(btn.getAttribute('data-angle') || '0');
+      setRotationAngle(a);
+    });
+  });
+
+  // Auto-Detect Skew Angle from Canvas Pixels
+  autoDetectBtn?.addEventListener('click', () => {
+    if (!previewCanvas) return;
+    try {
+      const ctx = previewCanvas.getContext('2d');
+      if (!ctx) return;
+
+      const w = previewCanvas.width;
+      const h = previewCanvas.height;
+
+      // Sample a scaled down version for fast analysis
+      const sampleW = Math.min(300, w);
+      const sampleH = Math.min(400, h);
+
+      const offCanvas = document.createElement('canvas');
+      offCanvas.width = sampleW;
+      offCanvas.height = sampleH;
+      const offCtx = offCanvas.getContext('2d');
+      if (!offCtx) return;
+
+      offCtx.drawImage(previewCanvas, 0, 0, sampleW, sampleH);
+      const imgData = offCtx.getImageData(0, 0, sampleW, sampleH);
+      const data = imgData.data;
+
+      // Extract dark/text pixel coordinates (luminance < 160)
+      const points: [number, number][] = [];
+      const step = 2; // sample every 2nd pixel
+      for (let y = 0; y < sampleH; y += step) {
+        for (let x = 0; x < sampleW; x += step) {
+          const idx = (y * sampleW + x) * 4;
+          const r = data[idx];
+          const g = data[idx + 1];
+          const b = data[idx + 2];
+          const lum = 0.299 * r + 0.587 * g + 0.114 * b;
+          if (lum < 160) {
+            points.push([x, y]);
+          }
+        }
+      }
+
+      if (points.length < 20) {
+        showError('Could not identify sufficient text lines to measure skew angle.');
+        return;
+      }
+
+      const detected = detectSkewAngle(points);
+      detectedBadge.textContent = `Auto-Detected: ${detected > 0 ? '+' : ''}${detected.toFixed(1)}°`;
+      detectedBadge.classList.remove('hidden');
+      setRotationAngle(detected);
+    } catch (err: any) {
+      showError('Failed to analyze skew angle: ' + err.message);
+    }
+  });
+
+  // Page Navigation
+  prevPageBtn?.addEventListener('click', () => {
+    if (currentPageIndex > 1) {
+      currentPageIndex--;
+      renderCurrentPage();
+    }
+  });
+
+  nextPageBtn?.addEventListener('click', () => {
+    if (currentPageIndex < totalPageCount) {
+      currentPageIndex++;
+      renderCurrentPage();
+    }
+  });
+
+  // Load File
+  async function loadFile(file: File) {
+    hideError();
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please select a valid PDF file.');
+      return;
+    }
+
+    try {
+      currentFile = file;
+      fileBuffer = await file.arrayBuffer();
+
+      const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(fileBuffer) });
+      pdfDocProxy = await loadingTask.promise;
+      totalPageCount = pdfDocProxy.numPages;
+      currentPageIndex = 1;
+      pageAngleMap = {};
+
+      fileNameLabel.textContent = file.name;
+      fileMetaLabel.textContent = `${formatBytes(file.size)} • ${totalPageCount} total pages`;
+
+      dropZone.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      progressSection.classList.add('hidden');
+      successSection.classList.add('hidden');
+
+      await renderCurrentPage();
+    } catch (err: any) {
+      showError('Failed to read PDF document: ' + (err?.message || 'Invalid or corrupted file'));
+    }
+  }
+
+  fileInput?.addEventListener('change', (e) => {
+    const files = (e.target as HTMLInputElement).files;
+    if (files && files.length > 0) {
+      loadFile(files[0]);
+    }
+  });
+
+  dropZone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-sky-500', 'bg-sky-50/30');
+  });
+
+  dropZone?.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-sky-500', 'bg-sky-50/30');
+  });
+
+  dropZone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-sky-500', 'bg-sky-50/30');
+    if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+      loadFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    configSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+    pdfDocProxy = null;
+  });
+
+  deskewAnotherBtn?.addEventListener('click', () => {
+    successSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+    pdfDocProxy = null;
+  });
+
+  // Execute Deskew
+  executeBtn?.addEventListener('click', async () => {
+    if (!fileBuffer || !currentFile) {
+      showError('No PDF loaded.');
+      return;
+    }
+
+    try {
+      configSection.classList.add('hidden');
+      progressSection.classList.remove('hidden');
+
+      const applyAll = applyAllCheckbox.checked;
+      const expandCanvas = expandCanvasCheckbox.checked;
+
+      const pageAngles: Record<number, number> = {};
+      if (applyAll) {
+        for (let p = 1; p <= totalPageCount; p++) {
+          pageAngles[p] = currentAngle;
+        }
+      } else {
+        for (let p = 1; p <= totalPageCount; p++) {
+          pageAngles[p] = pageAngleMap[p] !== undefined ? pageAngleMap[p] : 0;
+        }
+      }
+
+      const result = await applyDeskewToPdf(new Uint8Array(fileBuffer), {
+        pageAngles,
+        expandCanvas,
+      });
+
+      deskewedPdfBytes = result.outputBytes;
+
+      metricsContainer.innerHTML = `
+        <div class="flex justify-between py-1 border-b border-slate-200/60">
+          <span class="text-slate-500">Straightened Pages:</span>
+          <span class="font-bold text-slate-800">${result.pageCount} pages</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-200/60">
+          <span class="text-slate-500">Angle Correction Applied:</span>
+          <span class="font-mono font-bold text-sky-700">${currentAngle > 0 ? '+' : ''}${currentAngle.toFixed(1)}°</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-200/60">
+          <span class="text-slate-500">Canvas Mode:</span>
+          <span class="font-semibold text-slate-800">${expandCanvas ? 'Expanded (No Corner Clipping)' : 'Preserve Original Page Dimensions'}</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span class="text-slate-500">Output File Size:</span>
+          <span class="font-bold text-slate-800">${formatBytes(result.outputSize)}</span>
+        </div>
+      `;
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      showError('Deskew processing failed: ' + (err?.message || 'Unknown processing error'));
+    }
+  });
+
+  // Download Trigger
+  downloadBtn?.addEventListener('click', () => {
+    if (!deskewedPdfBytes || !currentFile) return;
+
+    const baseName = currentFile.name.replace(/\.pdf$/i, '');
+    const downloadFileName = `${baseName}-straightened.pdf`;
+
+    const blob = new Blob([deskewedPdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = downloadFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+</script>
