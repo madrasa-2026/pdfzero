@@ -1,0 +1,526 @@
+---
+// src/components/tools/InspectPdfIsland.astro
+---
+
+<div class="w-full max-w-4xl mx-auto">
+  <!-- 1. Dropzone Section -->
+  <div
+    id="inspect-dropzone"
+    class="relative border-2 border-dashed border-slate-700 hover:border-cyan-500 bg-slate-900/90 hover:bg-slate-900 transition-all rounded-3xl p-8 sm:p-12 text-center cursor-pointer shadow-xl group text-white"
+  >
+    <input
+      type="file"
+      id="inspect-file-input"
+      accept="application/pdf"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+    />
+    <div class="flex flex-col items-center justify-center pointer-events-none">
+      <div class="w-16 h-16 rounded-2xl bg-cyan-950/80 border border-cyan-800 text-cyan-400 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:border-cyan-400 transition-all shadow-inner">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          <path d="M11 8v6"></path>
+          <path d="M8 11h6"></path>
+        </svg>
+      </div>
+      <h3 class="text-lg sm:text-xl font-bold text-white mb-2">
+        Drop PDF here for Forensic X-Ray & Object Preflight
+      </h3>
+      <p class="text-xs sm:text-sm text-slate-400 max-w-md mb-4">
+        Deeply inspect embedded font subsets, image color spaces (CMYK vs RGB), incremental save revisions, active JavaScript, and raw decompressed streams.
+      </p>
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-950/60 border border-cyan-800/80 text-cyan-300 text-xs font-semibold">
+        <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+        100% In-Browser Forensic Sandbox • Zero Cloud Leaks • Preflight Audit
+      </div>
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-500 font-mono">
+      <span>Version &amp; Revision Scan</span>
+      <span>•</span>
+      <span>Font Subsets</span>
+      <span>•</span>
+      <span>Prepress CMYK/RGB</span>
+      <span>•</span>
+      <span>Active Payload Detection</span>
+    </div>
+  </div>
+
+  <!-- 2. Loading State -->
+  <div id="inspect-loading" class="hidden bg-slate-900 rounded-3xl border border-slate-800 p-8 sm:p-12 shadow-xl text-center space-y-4 text-white">
+    <div class="w-12 h-12 border-4 border-cyan-900 border-t-cyan-400 rounded-full animate-spin mx-auto"></div>
+    <h3 class="text-base font-bold text-white">
+      Running deep PDF binary inspection...
+    </h3>
+    <p class="text-xs text-slate-400 font-mono">
+      Traversing indirect object database, decompressed streams, and catalog dictionaries.
+    </p>
+  </div>
+
+  <!-- 3. Diagnostic Report Panel -->
+  <div id="inspect-report" class="hidden bg-slate-900 text-slate-200 rounded-3xl border border-slate-800 p-6 sm:p-8 shadow-2xl space-y-6 text-left">
+    <!-- Header Summary Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+      <div>
+        <div class="flex items-center gap-2.5 mb-1.5">
+          <span class="px-2 py-0.5 rounded bg-cyan-950 text-cyan-400 border border-cyan-800 text-[11px] font-mono font-bold" id="badge-pdf-version">
+            %PDF-1.7
+          </span>
+          <h4 id="inspect-filename" class="font-bold text-white text-base truncate max-w-xs sm:max-w-md">
+            specimen.pdf
+          </h4>
+        </div>
+        <div class="flex flex-wrap items-center gap-3 text-xs text-slate-400 font-mono">
+          <span id="meta-filesize">0 KB</span>
+          <span>•</span>
+          <span id="meta-pagecount">0 pages</span>
+          <span>•</span>
+          <span id="meta-objectcount">0 indirect objects</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          id="export-json-btn"
+          class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5 cursor-pointer"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export JSON
+        </button>
+        <button
+          type="button"
+          id="inspect-reset-btn"
+          class="text-xs font-medium text-slate-400 hover:text-white hover:underline cursor-pointer"
+        >
+          New Specimen
+        </button>
+      </div>
+    </div>
+
+    <!-- Security & Revision Status Banners -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <!-- Security Status Card -->
+      <div id="security-status-card" class="p-4 rounded-2xl border flex items-center gap-3.5 bg-emerald-950/40 border-emerald-800/80">
+        <div id="security-status-icon" class="w-9 h-9 rounded-xl bg-emerald-900/60 text-emerald-400 flex items-center justify-center font-bold text-base shrink-0">
+          ✓
+        </div>
+        <div>
+          <div class="text-xs font-bold text-white" id="security-status-title">
+            Clean PDF — No Active Code Found
+          </div>
+          <div class="text-[11px] text-slate-400" id="security-status-desc">
+            No embedded JavaScript, launch triggers, or attachments detected.
+          </div>
+        </div>
+      </div>
+
+      <!-- Revision History Card -->
+      <div id="revision-status-card" class="p-4 rounded-2xl border flex items-center gap-3.5 bg-slate-800/60 border-slate-700">
+        <div class="w-9 h-9 rounded-xl bg-cyan-950 text-cyan-400 border border-cyan-800/60 flex items-center justify-center font-bold text-sm shrink-0">
+          #<span id="badge-revision-num">1</span>
+        </div>
+        <div>
+          <div class="text-xs font-bold text-white" id="revision-status-title">
+            Single-Pass Original PDF
+          </div>
+          <div class="text-[11px] text-slate-400" id="revision-status-desc">
+            Contains 1 trailer block. No incremental updates detected.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Warnings List (Hidden if clean) -->
+    <div id="warnings-container" class="hidden p-4 rounded-2xl bg-rose-950/40 border border-rose-800/80 text-rose-200 text-xs space-y-1">
+      <div class="font-bold flex items-center gap-2 text-rose-300">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+          <line x1="12" y1="9" x2="12" y2="13"></line>
+          <line x1="12" y1="17" x2="12.01" y2="17"></line>
+        </svg>
+        Security & Forensic Alerts Detected:
+      </div>
+      <ul id="warnings-list" class="list-disc list-inside space-y-0.5 text-slate-300 pt-1"></ul>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="flex items-center gap-2 border-b border-slate-800 pb-2 text-xs font-semibold overflow-x-auto">
+      <button type="button" class="inspect-tab px-3 py-1.5 rounded-lg bg-cyan-950 text-cyan-300 border border-cyan-800 cursor-pointer" data-target="tab-security">
+        Forensics &amp; Metadata
+      </button>
+      <button type="button" class="inspect-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white cursor-pointer" data-target="tab-fonts">
+        Fonts &amp; Typography (<span id="tab-font-count">0</span>)
+      </button>
+      <button type="button" class="inspect-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white cursor-pointer" data-target="tab-images">
+        Images &amp; Prepress (<span id="tab-image-count">0</span>)
+      </button>
+      <button type="button" class="inspect-tab px-3 py-1.5 rounded-lg text-slate-400 hover:text-white cursor-pointer" data-target="tab-stream">
+        Page 1 Raw Stream X-Ray
+      </button>
+    </div>
+
+    <!-- Tab 1: Forensics & Metadata Content -->
+    <div id="tab-security" class="tab-pane space-y-4">
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs font-mono">
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+          <span class="text-slate-500 block text-[10px] uppercase">Producer</span>
+          <span class="text-white font-medium truncate block" id="meta-producer">—</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+          <span class="text-slate-500 block text-[10px] uppercase">Creator</span>
+          <span class="text-white font-medium truncate block" id="meta-creator">—</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+          <span class="text-slate-500 block text-[10px] uppercase">Created Date</span>
+          <span class="text-white font-medium truncate block" id="meta-creation-date">—</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+          <span class="text-slate-500 block text-[10px] uppercase">Encrypted</span>
+          <span class="text-white font-medium" id="meta-encrypted">No</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+          <span class="text-slate-500 block text-[10px] uppercase">AcroForm Interactive</span>
+          <span class="text-white font-medium" id="meta-acroform">No</span>
+        </div>
+        <div class="p-3 rounded-xl bg-slate-950 border border-slate-800">
+          <span class="text-slate-500 block text-[10px] uppercase">Digital Signatures</span>
+          <span class="text-white font-medium" id="meta-signatures">No</span>
+        </div>
+      </div>
+
+      <!-- Indirect Object Distribution -->
+      <div class="p-4 rounded-xl bg-slate-950 border border-slate-800">
+        <h5 class="text-xs font-bold text-slate-300 uppercase tracking-wider mb-2 font-mono">
+          Indirect Object Map Distribution
+        </h5>
+        <div id="object-distribution-badges" class="flex flex-wrap gap-2 text-[11px] font-mono"></div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Fonts & Typography Content -->
+    <div id="tab-fonts" class="tab-pane hidden space-y-3">
+      <div class="overflow-x-auto rounded-xl border border-slate-800">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+            <tr>
+              <th class="p-3">Font Name</th>
+              <th class="p-3">Subtype</th>
+              <th class="p-3">Subset Status</th>
+              <th class="p-3">Embedding Status</th>
+            </tr>
+          </thead>
+          <tbody id="fonts-table-body" class="divide-y divide-slate-800 text-slate-300">
+            <tr>
+              <td colspan="4" class="p-4 text-center text-slate-500">No embedded fonts detected.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 3: Images & Prepress Color Spaces -->
+    <div id="tab-images" class="tab-pane hidden space-y-3">
+      <div class="overflow-x-auto rounded-xl border border-slate-800">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] border-b border-slate-800">
+            <tr>
+              <th class="p-3">Dimensions</th>
+              <th class="p-3">Color Space</th>
+              <th class="p-3">Bit Depth</th>
+              <th class="p-3">Compression Filter</th>
+              <th class="p-3">Prepress Status</th>
+            </tr>
+          </thead>
+          <tbody id="images-table-body" class="divide-y divide-slate-800 text-slate-300">
+            <tr>
+              <td colspan="5" class="p-4 text-center text-slate-500">No embedded raster images detected.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Tab 4: Raw Content Stream X-Ray -->
+    <div id="tab-stream" class="tab-pane hidden space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-mono text-slate-400">
+          Page 1 Decompressed PostScript/PDF Drawing Commands:
+        </span>
+        <button
+          type="button"
+          id="copy-stream-btn"
+          class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-cyan-300 text-[11px] font-mono border border-slate-700 transition cursor-pointer"
+        >
+          Copy Stream
+        </button>
+      </div>
+      <div class="p-4 rounded-xl bg-slate-950 border border-slate-800 max-h-72 overflow-y-auto font-mono text-xs text-emerald-400 leading-relaxed whitespace-pre-wrap select-all" id="stream-code-box">
+        No content stream found.
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { inspectPdfDocument, type PdfInspectionReport } from '../../lib/pdf/inspectEngine';
+
+  let currentReport: PdfInspectionReport | null = null;
+  let specimenFileName = 'document.pdf';
+
+  // DOM Elements
+  const dropzone = document.getElementById('inspect-dropzone') as HTMLElement;
+  const fileInput = document.getElementById('inspect-file-input') as HTMLInputElement;
+  const loading = document.getElementById('inspect-loading') as HTMLElement;
+  const reportPanel = document.getElementById('inspect-report') as HTMLElement;
+  const resetBtn = document.getElementById('inspect-reset-btn') as HTMLButtonElement;
+  const exportJsonBtn = document.getElementById('export-json-btn') as HTMLButtonElement;
+  const copyStreamBtn = document.getElementById('copy-stream-btn') as HTMLButtonElement;
+
+  // Header & Meta Elements
+  const filenameEl = document.getElementById('inspect-filename') as HTMLElement;
+  const badgeVersion = document.getElementById('badge-pdf-version') as HTMLElement;
+  const metaFilesize = document.getElementById('meta-filesize') as HTMLElement;
+  const metaPagecount = document.getElementById('meta-pagecount') as HTMLElement;
+  const metaObjectcount = document.getElementById('meta-objectcount') as HTMLElement;
+
+  // Security elements
+  const securityCard = document.getElementById('security-status-card') as HTMLElement;
+  const securityIcon = document.getElementById('security-status-icon') as HTMLElement;
+  const securityTitle = document.getElementById('security-status-title') as HTMLElement;
+  const securityDesc = document.getElementById('security-status-desc') as HTMLElement;
+  const warningsContainer = document.getElementById('warnings-container') as HTMLElement;
+  const warningsList = document.getElementById('warnings-list') as HTMLElement;
+
+  // Revision elements
+  const badgeRevisionNum = document.getElementById('badge-revision-num') as HTMLElement;
+  const revisionTitle = document.getElementById('revision-status-title') as HTMLElement;
+  const revisionDesc = document.getElementById('revision-status-desc') as HTMLElement;
+
+  // Tabs
+  const tabButtons = document.querySelectorAll('.inspect-tab');
+  const tabPanes = document.querySelectorAll('.tab-pane');
+  const tabFontCount = document.getElementById('tab-font-count') as HTMLElement;
+  const tabImageCount = document.getElementById('tab-image-count') as HTMLElement;
+
+  // Tab tables & boxes
+  const metaProducer = document.getElementById('meta-producer') as HTMLElement;
+  const metaCreator = document.getElementById('meta-creator') as HTMLElement;
+  const metaCreationDate = document.getElementById('meta-creation-date') as HTMLElement;
+  const metaEncrypted = document.getElementById('meta-encrypted') as HTMLElement;
+  const metaAcroform = document.getElementById('meta-acroform') as HTMLElement;
+  const metaSignatures = document.getElementById('meta-signatures') as HTMLElement;
+  const objDistBadges = document.getElementById('object-distribution-badges') as HTMLElement;
+  const fontsTableBody = document.getElementById('fonts-table-body') as HTMLElement;
+  const imagesTableBody = document.getElementById('images-table-body') as HTMLElement;
+  const streamCodeBox = document.getElementById('stream-code-box') as HTMLElement;
+
+  // Drag and drop handlers
+  dropzone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('border-cyan-500', 'bg-slate-900');
+  });
+
+  dropzone?.addEventListener('dragleave', () => {
+    dropzone.classList.remove('border-cyan-500');
+  });
+
+  dropzone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('border-cyan-500');
+    if (e.dataTransfer?.files?.[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput?.addEventListener('change', () => {
+    if (fileInput.files?.[0]) {
+      handleFile(fileInput.files[0]);
+    }
+  });
+
+  resetBtn?.addEventListener('click', () => {
+    reportPanel.classList.add('hidden');
+    dropzone.classList.remove('hidden');
+    fileInput.value = '';
+    currentReport = null;
+  });
+
+  // Tab switching
+  tabButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const targetId = (btn as HTMLElement).dataset.target;
+      tabButtons.forEach((b) => {
+        b.classList.remove('bg-cyan-950', 'text-cyan-300', 'border', 'border-cyan-800');
+        b.classList.add('text-slate-400');
+      });
+      btn.classList.add('bg-cyan-950', 'text-cyan-300', 'border', 'border-cyan-800');
+      btn.classList.remove('text-slate-400');
+
+      tabPanes.forEach((p) => p.classList.add('hidden'));
+      document.getElementById(targetId || '')?.classList.remove('hidden');
+    });
+  });
+
+  async function handleFile(file: File) {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      alert('Please upload a valid PDF document.');
+      return;
+    }
+
+    specimenFileName = file.name;
+    dropzone.classList.add('hidden');
+    loading.classList.remove('hidden');
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      currentReport = await inspectPdfDocument(bytes);
+
+      renderReport(currentReport);
+
+      loading.classList.add('hidden');
+      reportPanel.classList.remove('hidden');
+    } catch (err: any) {
+      console.error(err);
+      alert('Failed to inspect PDF: ' + (err.message || err));
+      loading.classList.add('hidden');
+      dropzone.classList.remove('hidden');
+    }
+  }
+
+  function renderReport(r: PdfInspectionReport) {
+    filenameEl.textContent = specimenFileName;
+    badgeVersion.textContent = `%PDF-${r.summary.pdfVersion}`;
+    metaFilesize.textContent = (r.summary.fileSizeBytes / 1024).toFixed(1) + ' KB';
+    metaPagecount.textContent = `${r.summary.pageCount} page${r.summary.pageCount !== 1 ? 's' : ''}`;
+    metaObjectcount.textContent = `${r.summary.totalIndirectObjects} objects`;
+
+    // Security Banner
+    const isClean = r.security.warnings.length === 0 && !r.security.hasJavaScript && !r.security.hasLaunchActions;
+    if (isClean) {
+      securityCard.className = 'p-4 rounded-2xl border flex items-center gap-3.5 bg-emerald-950/40 border-emerald-800/80';
+      securityIcon.className = 'w-9 h-9 rounded-xl bg-emerald-900/60 text-emerald-400 flex items-center justify-center font-bold text-base shrink-0';
+      securityIcon.textContent = '✓';
+      securityTitle.textContent = 'Clean Specimen — Zero Active Code';
+      securityDesc.textContent = 'No embedded JavaScript, launch triggers, or attachments detected.';
+      warningsContainer.classList.add('hidden');
+    } else {
+      securityCard.className = 'p-4 rounded-2xl border flex items-center gap-3.5 bg-rose-950/40 border-rose-800/80';
+      securityIcon.className = 'w-9 h-9 rounded-xl bg-rose-900/60 text-rose-400 flex items-center justify-center font-bold text-base shrink-0';
+      securityIcon.textContent = '!';
+      securityTitle.textContent = 'Active Code or Forensic Flags Found';
+      securityDesc.textContent = 'Review flagged security items below before executing in trusted readers.';
+
+      warningsContainer.classList.remove('hidden');
+      warningsList.innerHTML = '';
+      r.security.warnings.forEach((w) => {
+        const li = document.createElement('li');
+        li.textContent = w;
+        warningsList.appendChild(li);
+      });
+    }
+
+    // Revision Banner
+    badgeRevisionNum.textContent = String(r.summary.revisionCount);
+    if (r.summary.revisionCount > 1) {
+      revisionTitle.textContent = `${r.summary.revisionCount} Incremental Edit Revisions`;
+      revisionDesc.textContent = 'Document was modified/re-saved after creation. Prior versions exist in file history.';
+    } else {
+      revisionTitle.textContent = 'Single-Pass Original PDF';
+      revisionDesc.textContent = 'Contains 1 trailer block. No incremental updates detected.';
+    }
+
+    // Metadata
+    metaProducer.textContent = r.summary.producer || 'Not Specified';
+    metaCreator.textContent = r.summary.creator || 'Not Specified';
+    metaCreationDate.textContent = r.summary.creationDate ? new Date(r.summary.creationDate).toLocaleDateString() : 'Unknown';
+    metaEncrypted.textContent = r.summary.isEncrypted ? 'Yes (Password/Cert)' : 'No';
+    metaAcroform.textContent = r.security.hasAcroForm ? 'Yes (Forms Found)' : 'No';
+    metaSignatures.textContent = r.security.hasSignatures ? 'Yes (Digital Signatures)' : 'No';
+
+    // Object Badges
+    objDistBadges.innerHTML = '';
+    const objKeys = Object.keys(r.objectTypeCounts);
+    if (objKeys.length === 0) {
+      objDistBadges.innerHTML = '<span class="text-slate-500">None parsed.</span>';
+    } else {
+      objKeys.forEach((key) => {
+        const span = document.createElement('span');
+        span.className = 'px-2 py-1 rounded bg-slate-900 border border-slate-800 text-slate-300';
+        span.textContent = `${key}: ${r.objectTypeCounts[key]}`;
+        objDistBadges.appendChild(span);
+      });
+    }
+
+    // Fonts Table
+    tabFontCount.textContent = String(r.fonts.length);
+    if (r.fonts.length === 0) {
+      fontsTableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500">No embedded fonts detected.</td></tr>';
+    } else {
+      fontsTableBody.innerHTML = '';
+      r.fonts.forEach((f) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-3 font-bold text-white">${f.name}</td>
+          <td class="p-3 text-cyan-300">${f.subtype}</td>
+          <td class="p-3">${f.isSubset ? '<span class="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-800 text-[10px]">Subset ([A-Z]{6}+)</span>' : '<span class="text-slate-500">Full Font</span>'}</td>
+          <td class="p-3">${f.isEmbedded ? '<span class="text-emerald-400">Embedded</span>' : '<span class="text-amber-400">System Dependent</span>'}</td>
+        `;
+        fontsTableBody.appendChild(tr);
+      });
+    }
+
+    // Images Table
+    tabImageCount.textContent = String(r.images.length);
+    if (r.images.length === 0) {
+      imagesTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-500">No embedded raster images detected.</td></tr>';
+    } else {
+      imagesTableBody.innerHTML = '';
+      r.images.forEach((img) => {
+        const isCmyk = img.colorSpace.includes('CMYK');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td class="p-3 text-white">${img.width} × ${img.height} px</td>
+          <td class="p-3 ${isCmyk ? 'text-amber-300' : 'text-cyan-300'}">${img.colorSpace}</td>
+          <td class="p-3">${img.bitsPerComponent}-bit</td>
+          <td class="p-3 text-slate-400">${img.filter}</td>
+          <td class="p-3">${isCmyk ? '<span class="px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 text-[10px]">CMYK (Offset Print Ready)</span>' : '<span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 text-[10px]">RGB (Digital / Web)</span>'}</td>
+        `;
+        imagesTableBody.appendChild(tr);
+      });
+    }
+
+    // Stream Code
+    streamCodeBox.textContent = r.page1RawStreamSample || 'No decompressed content stream found on Page 1.';
+  }
+
+  // Copy Stream Handler
+  copyStreamBtn?.addEventListener('click', () => {
+    if (currentReport?.page1RawStreamSample) {
+      navigator.clipboard.writeText(currentReport.page1RawStreamSample);
+      const originalText = copyStreamBtn.textContent;
+      copyStreamBtn.textContent = 'Copied!';
+      setTimeout(() => (copyStreamBtn.textContent = originalText), 2000);
+    }
+  });
+
+  // Export JSON Handler
+  exportJsonBtn?.addEventListener('click', () => {
+    if (!currentReport) return;
+    const jsonStr = JSON.stringify(currentReport, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = specimenFileName.replace(/\.pdf$/i, '') + '-forensic-report.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+</script>
