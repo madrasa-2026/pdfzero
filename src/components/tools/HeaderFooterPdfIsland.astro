@@ -1,0 +1,509 @@
+---
+// HeaderFooterPdfIsland.astro - 100% in-browser PDF Header & Footer Inserter
+---
+
+<div id="headerfooter-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="headerfooter-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Header & Footer Notice</h4>
+      <p id="headerfooter-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-hf-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="headerfooter-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="headerfooter-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-sky-50 group-hover:bg-sky-600 flex items-center justify-center text-sky-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-sky-600 transition">
+      Select PDF to Add Headers & Footers
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your multi-page document here, or click to browse.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF Document
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>6-Slot Precision Stamping</span>
+      <span>•</span>
+      <span>Dynamic Macros</span>
+    </div>
+  </div>
+
+  <!-- 2. Configure Slots Card -->
+  <div id="headerfooter-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="hf-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="hf-file-meta" class="text-xs text-slate-500">Detecting document metadata...</p>
+        </div>
+      </div>
+      <button type="button" id="change-hf-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Macro Inserter Bar -->
+    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-2">
+      <span class="text-xs font-bold text-slate-700">Quick Macro Pills:</span>
+      <div class="flex flex-wrap gap-1.5">
+        <button type="button" class="macro-pill px-2.5 py-1 text-xs font-mono bg-white hover:bg-sky-50 text-sky-700 border border-slate-200 hover:border-sky-300 rounded-lg transition" data-macro="{`{{page}}`}">
+          + &#123;&#123;page&#125;&#125;
+        </button>
+        <button type="button" class="macro-pill px-2.5 py-1 text-xs font-mono bg-white hover:bg-sky-50 text-sky-700 border border-slate-200 hover:border-sky-300 rounded-lg transition" data-macro="{`{{total}}`}">
+          + &#123;&#123;total&#125;&#125;
+        </button>
+        <button type="button" class="macro-pill px-2.5 py-1 text-xs font-mono bg-white hover:bg-sky-50 text-sky-700 border border-slate-200 hover:border-sky-300 rounded-lg transition" data-macro="{`{{date}}`}">
+          + &#123;&#123;date&#125;&#125;
+        </button>
+        <button type="button" class="macro-pill px-2.5 py-1 text-xs font-mono bg-white hover:bg-sky-50 text-sky-700 border border-slate-200 hover:border-sky-300 rounded-lg transition" data-macro="{`{{filename}}`}">
+          + &#123;&#123;filename&#125;&#125;
+        </button>
+      </div>
+    </div>
+
+    <!-- 6-Slot Grid Visual Canvas -->
+    <div class="border-2 border-dashed border-slate-200 rounded-2xl p-5 bg-slate-50/50 space-y-6">
+      <!-- Top Headers Row -->
+      <div>
+        <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-2">
+          Top Running Headers
+        </label>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <span class="block text-[10px] text-slate-400 font-semibold mb-1">Header Left</span>
+            <input
+              type="text"
+              id="hf-header-left"
+              placeholder="e.g. Author / Organization"
+              class="hf-slot-input w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+          </div>
+          <div>
+            <span class="block text-[10px] text-slate-400 font-semibold mb-1 text-center">Header Center</span>
+            <input
+              type="text"
+              id="hf-header-center"
+              placeholder="e.g. Document Title"
+              class="hf-slot-input w-full px-3 py-2 text-xs text-center rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+          </div>
+          <div>
+            <span class="block text-[10px] text-slate-400 font-semibold mb-1 text-right">Header Right</span>
+            <input
+              type="text"
+              id="hf-header-right"
+              placeholder="e.g. &#123;&#123;date&#125;&#125;"
+              class="hf-slot-input w-full px-3 py-2 text-xs text-right rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Center Document Page Representation -->
+      <div class="py-6 px-4 bg-white rounded-xl border border-slate-200 text-center shadow-inner flex items-center justify-center text-xs text-slate-400">
+        <span>--- Existing PDF Page Body (Preserved 100% Vector) ---</span>
+      </div>
+
+      <!-- Bottom Footers Row -->
+      <div>
+        <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-2">
+          Bottom Running Footers
+        </label>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <span class="block text-[10px] text-slate-400 font-semibold mb-1">Footer Left</span>
+            <input
+              type="text"
+              id="hf-footer-left"
+              placeholder="e.g. Confidential"
+              class="hf-slot-input w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+          </div>
+          <div>
+            <span class="block text-[10px] text-slate-400 font-semibold mb-1 text-center">Footer Center</span>
+            <input
+              type="text"
+              id="hf-footer-center"
+              value="Page &#123;&#123;page&#125;&#125; of &#123;&#123;total&#125;&#125;"
+              class="hf-slot-input w-full px-3 py-2 text-xs text-center rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500 font-mono"
+            />
+          </div>
+          <div>
+            <span class="block text-[10px] text-slate-400 font-semibold mb-1 text-right">Footer Right</span>
+            <input
+              type="text"
+              id="hf-footer-right"
+              placeholder="e.g. &#123;&#123;filename&#125;&#125;"
+              class="hf-slot-input w-full px-3 py-2 text-xs text-right rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Publishing Rules & Typography Options Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-4 gap-4 pt-2">
+      <!-- Font Family -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+          Font Family
+        </label>
+        <select
+          id="hf-font-family"
+          class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+        >
+          <option value="helvetica" selected>Helvetica (Clean)</option>
+          <option value="times">Times Roman (Serif)</option>
+          <option value="courier">Courier (Monospace)</option>
+        </select>
+      </div>
+
+      <!-- Font Size -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+          Font Size
+        </label>
+        <select
+          id="hf-font-size"
+          class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+        >
+          <option value="8">8 pt (Fine)</option>
+          <option value="9">9 pt (Small)</option>
+          <option value="10" selected>10 pt (Standard)</option>
+          <option value="11">11 pt (Medium)</option>
+          <option value="12">12 pt (Large)</option>
+        </select>
+      </div>
+
+      <!-- Skip First Page (Cover) -->
+      <div class="flex items-center">
+        <label class="inline-flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100 transition w-full">
+          <input
+            type="checkbox"
+            id="hf-skip-first-page"
+            checked
+            class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer"
+          />
+          <span class="text-xs font-medium text-slate-700">Skip Cover Page</span>
+        </label>
+      </div>
+
+      <!-- Alternating Odd/Even -->
+      <div class="flex items-center">
+        <label class="inline-flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100 transition w-full">
+          <input
+            type="checkbox"
+            id="hf-alternating"
+            class="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500 cursor-pointer"
+          />
+          <span class="text-xs font-medium text-slate-700">Alternating Spreads</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2 flex flex-col sm:flex-row items-center gap-3">
+      <button
+        type="button"
+        id="execute-hf-btn"
+        class="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+        </svg>
+        <span>Stamp Headers & Footers to PDF</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Processing State -->
+  <div id="headerfooter-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-5">
+    <div class="w-16 h-16 mx-auto relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-sky-100 border-t-sky-600 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-sky-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-base font-bold text-slate-900 mb-1">Stamping Headers & Footers...</h3>
+      <p id="hf-progress-text" class="text-xs text-slate-500">
+        Injecting vector typography and calculating text bounds...
+      </p>
+    </div>
+  </div>
+
+  <!-- 4. Success & Download State -->
+  <div id="headerfooter-success-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-lg font-bold text-slate-900 mb-1">Headers & Footers Stamped Successfully!</h3>
+      <p class="text-xs text-slate-500 max-w-md mx-auto">
+        Your document was updated with razor-sharp vector typography.
+      </p>
+    </div>
+
+    <!-- Metrics Details -->
+    <div id="hf-metrics-container" class="max-w-md mx-auto p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-2 text-left">
+      <!-- Injected dynamically -->
+    </div>
+
+    <!-- Download Action -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        id="download-hf-pdf-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Stamped PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="hf-stamp-another-btn"
+        class="w-full sm:w-auto px-5 py-3 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+      >
+        Stamp Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  import { applyHeaderFooter } from '../../lib/pdf/headerFooter';
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let stampedPdfBytes: Uint8Array | null = null;
+  let totalPageCount = 1;
+  let lastFocusedInput: HTMLInputElement | null = null;
+
+  const dropZone = document.getElementById('headerfooter-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('headerfooter-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('headerfooter-config-section') as HTMLDivElement;
+  const progressSection = document.getElementById('headerfooter-progress-section') as HTMLDivElement;
+  const successSection = document.getElementById('headerfooter-success-section') as HTMLDivElement;
+
+  const errorBanner = document.getElementById('headerfooter-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('headerfooter-error-message') as HTMLElement;
+  const dismissErrorBtn = document.getElementById('dismiss-hf-error') as HTMLButtonElement;
+
+  const fileNameLabel = document.getElementById('hf-file-name') as HTMLElement;
+  const fileMetaLabel = document.getElementById('hf-file-meta') as HTMLElement;
+  const changeFileBtn = document.getElementById('change-hf-file-btn') as HTMLButtonElement;
+  const executeBtn = document.getElementById('execute-hf-btn') as HTMLButtonElement;
+
+  const hLeftInput = document.getElementById('hf-header-left') as HTMLInputElement;
+  const hCenterInput = document.getElementById('hf-header-center') as HTMLInputElement;
+  const hRightInput = document.getElementById('hf-header-right') as HTMLInputElement;
+  const fLeftInput = document.getElementById('hf-footer-left') as HTMLInputElement;
+  const fCenterInput = document.getElementById('hf-footer-center') as HTMLInputElement;
+  const fRightInput = document.getElementById('hf-footer-right') as HTMLInputElement;
+
+  const fontFamilySelect = document.getElementById('hf-font-family') as HTMLSelectElement;
+  const fontSizeSelect = document.getElementById('hf-font-size') as HTMLSelectElement;
+  const skipFirstCheckbox = document.getElementById('hf-skip-first-page') as HTMLInputElement;
+  const alternatingCheckbox = document.getElementById('hf-alternating') as HTMLInputElement;
+
+  const macroPills = document.querySelectorAll('.macro-pill');
+  const metricsContainer = document.getElementById('hf-metrics-container') as HTMLDivElement;
+  const downloadBtn = document.getElementById('download-hf-pdf-btn') as HTMLButtonElement;
+  const stampAnotherBtn = document.getElementById('hf-stamp-another-btn') as HTMLButtonElement;
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    if (errorBanner) {
+      errorBanner.classList.add('hidden');
+    }
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  // Track active input for macro pill clicks
+  document.querySelectorAll('.hf-slot-input').forEach((input) => {
+    input.addEventListener('focus', () => {
+      lastFocusedInput = input as HTMLInputElement;
+    });
+  });
+
+  macroPills.forEach((pill) => {
+    pill.addEventListener('click', () => {
+      const macro = pill.getAttribute('data-macro') || '';
+      const target = lastFocusedInput || fCenterInput;
+      if (target) {
+        target.value = target.value ? `${target.value} ${macro}` : macro;
+        target.focus();
+      }
+    });
+  });
+
+  async function handleSelectedFile(file: File) {
+    if (!file || file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please select a valid PDF file.');
+      return;
+    }
+
+    hideError();
+    currentFile = file;
+
+    try {
+      fileBuffer = await file.arrayBuffer();
+      const doc = await PDFDocument.load(new Uint8Array(fileBuffer), { ignoreEncryption: true });
+      totalPageCount = doc.getPageCount();
+
+      if (fileNameLabel) fileNameLabel.textContent = file.name;
+      if (fileMetaLabel) {
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+        fileMetaLabel.textContent = `${totalPageCount} page${totalPageCount === 1 ? '' : 's'} · ${sizeMb} MB`;
+      }
+
+      dropZone.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      successSection.classList.add('hidden');
+    } catch (err: any) {
+      showError(err?.message || 'Failed to parse PDF document.');
+    }
+  }
+
+  fileInput?.addEventListener('change', (e: any) => {
+    if (e.target.files && e.target.files[0]) {
+      handleSelectedFile(e.target.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    currentFile = null;
+    fileBuffer = null;
+    stampedPdfBytes = null;
+    fileInput.value = '';
+    configSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+
+  stampAnotherBtn?.addEventListener('click', () => {
+    currentFile = null;
+    fileBuffer = null;
+    stampedPdfBytes = null;
+    fileInput.value = '';
+    successSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+
+  executeBtn?.addEventListener('click', async () => {
+    if (!fileBuffer || !currentFile) return;
+
+    try {
+      configSection.classList.add('hidden');
+      progressSection.classList.remove('hidden');
+
+      const fontSize = parseInt(fontSizeSelect?.value || '10', 10);
+      const fontFamily = (fontFamilySelect?.value || 'helvetica') as any;
+      const skipFirstPage = skipFirstCheckbox ? skipFirstCheckbox.checked : false;
+      const alternating = alternatingCheckbox ? alternatingCheckbox.checked : false;
+
+      const result = await applyHeaderFooter(new Uint8Array(fileBuffer), {
+        slots: {
+          headerLeft: hLeftInput.value,
+          headerCenter: hCenterInput.value,
+          headerRight: hRightInput.value,
+          footerLeft: fLeftInput.value,
+          footerCenter: fCenterInput.value,
+          footerRight: fRightInput.value,
+        },
+        fontSize,
+        fontFamily,
+        skipFirstPage,
+        alternating,
+        filename: currentFile.name,
+      });
+
+      stampedPdfBytes = result.stampedBytes;
+
+      if (metricsContainer) {
+        metricsContainer.innerHTML = `
+          <div class="flex justify-between py-1 border-b border-slate-200/60">
+            <span class="text-slate-500">Pages Stamped:</span>
+            <span class="font-bold text-slate-800">${result.pagesStamped} of ${result.totalPages}</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-200/60">
+            <span class="text-slate-500">Cover Page:</span>
+            <span class="font-bold text-slate-800">${skipFirstPage ? 'Skipped (Page 1 clean)' : 'Stamped'}</span>
+          </div>
+          <div class="flex justify-between py-1">
+            <span class="text-slate-500">Spreads Mode:</span>
+            <span class="font-bold text-slate-800">${alternating ? 'Alternating Odd/Even' : 'Standard Alignment'}</span>
+          </div>
+        `;
+      }
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      showError(err?.message || 'An error occurred while stamping headers and footers.');
+    }
+  });
+
+  downloadBtn?.addEventListener('click', () => {
+    if (!stampedPdfBytes || !currentFile) return;
+
+    const blob = new Blob([stampedPdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const baseName = currentFile.name.replace(/\.pdf$/i, '');
+    link.href = url;
+    link.download = `${baseName}-headers.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  });
+</script>
