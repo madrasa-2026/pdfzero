@@ -1,0 +1,524 @@
+---
+// BookletPdfIsland.astro - 100% in-browser PDF Booklet & Imposition Duplex Creator
+---
+
+<div id="booklet-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="booklet-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Booklet Creator Notice</h4>
+      <p id="booklet-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-booklet-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="booklet-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="booklet-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-indigo-50 group-hover:bg-indigo-600 flex items-center justify-center text-indigo-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-indigo-600 transition">
+      Select PDF to Create Booklet
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your multi-page PDF here, or click to browse.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose Multi-Page PDF
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Saddle-Stitch Duplex</span>
+      <span>•</span>
+      <span>Zero DPI Loss</span>
+    </div>
+  </div>
+
+  <!-- 2. Configure Booklet Options Card -->
+  <div id="booklet-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="booklet-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="booklet-file-meta" class="text-xs text-slate-500">Reading document structure...</p>
+        </div>
+      </div>
+      <button type="button" id="change-booklet-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Mode Selector -->
+    <div>
+      <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
+        Imposition Layout Mode
+      </label>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <!-- Saddle Stitch -->
+        <label class="cursor-pointer border-2 border-indigo-600 bg-indigo-50/50 rounded-xl p-4 flex flex-col justify-between transition hover:border-indigo-500 relative group booklet-mode-label" data-mode="booklet">
+          <input type="radio" name="booklet-mode" value="booklet" checked class="sr-only" />
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-bold text-sm text-slate-900">Saddle-Stitch Booklet</span>
+            <div class="w-3.5 h-3.5 rounded-full border-2 border-indigo-600 flex items-center justify-center mode-indicator">
+              <div class="w-2 h-2 rounded-full bg-indigo-600"></div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Reorders pages for double-sided printing. Fold and staple sheets down the spine.
+          </p>
+        </label>
+
+        <!-- 2-Up Handout -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-4 flex flex-col justify-between transition hover:border-slate-400 relative group booklet-mode-label" data-mode="2-up">
+          <input type="radio" name="booklet-mode" value="2-up" class="sr-only" />
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-bold text-sm text-slate-900">2-Up Sequential</span>
+            <div class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 flex items-center justify-center mode-indicator">
+              <div class="w-2 h-2 rounded-full bg-transparent"></div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Side-by-side sequential pages (1-2, 3-4). Ideal for two-column reading handouts.
+          </p>
+        </label>
+
+        <!-- 4-Up Compact -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-4 flex flex-col justify-between transition hover:border-slate-400 relative group booklet-mode-label" data-mode="4-up">
+          <input type="radio" name="booklet-mode" value="4-up" class="sr-only" />
+          <div class="flex items-center justify-between mb-2">
+            <span class="font-bold text-sm text-slate-900">4-Up Compact Grid</span>
+            <div class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 flex items-center justify-center mode-indicator">
+              <div class="w-2 h-2 rounded-full bg-transparent"></div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            4 slides or pages per sheet in a 2x2 grid. Saves paper for lecture presentations.
+          </p>
+        </label>
+      </div>
+    </div>
+
+    <!-- Secondary Settings Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+      <!-- Binding Direction -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Binding Direction
+        </label>
+        <select
+          id="booklet-binding-select"
+          class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="ltr" selected>Left-to-Right (Standard)</option>
+          <option value="rtl">Right-to-Left (Manga / Arabic)</option>
+        </select>
+      </div>
+
+      <!-- Center Spine Gutter -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Spine Gutter Margin
+        </label>
+        <select
+          id="booklet-gutter-select"
+          class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        >
+          <option value="0" selected>0 pt (Seamless)</option>
+          <option value="12">12 pt (~4 mm)</option>
+          <option value="24">24 pt (~8 mm Fold Gap)</option>
+        </select>
+      </div>
+
+      <!-- Center Fold Guide -->
+      <div class="flex flex-col justify-end">
+        <label class="inline-flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100 transition">
+          <input
+            type="checkbox"
+            id="booklet-fold-line"
+            checked
+            class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500 cursor-pointer"
+          />
+          <span class="text-xs font-medium text-slate-700">Draw Center Fold Line</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Live Imposition Preview Breakdown -->
+    <div class="p-4 rounded-xl bg-indigo-50/60 border border-indigo-100 space-y-2">
+      <div class="flex items-center justify-between text-indigo-900 font-bold text-xs">
+        <span class="uppercase tracking-wider">Sheet Imposition Sequence</span>
+        <span id="booklet-preview-total-badge" class="font-normal text-indigo-700">4 sheets</span>
+      </div>
+      <div id="booklet-preview-sequence-list" class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono text-slate-700">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2 flex flex-col sm:flex-row items-center gap-3">
+      <button
+        type="button"
+        id="execute-booklet-btn"
+        class="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+        <span>Generate Print-Ready Booklet</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Processing State -->
+  <div id="booklet-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-5">
+    <div class="w-16 h-16 mx-auto relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-indigo-100 border-t-indigo-600 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-indigo-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-base font-bold text-slate-900 mb-1">Imposing Booklet Pages...</h3>
+      <p id="booklet-progress-text" class="text-xs text-slate-500">
+        Embedding vector pages and generating duplex landscape spreads...
+      </p>
+    </div>
+  </div>
+
+  <!-- 4. Success & Download State -->
+  <div id="booklet-success-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-lg font-bold text-slate-900 mb-1">Booklet Imposition Complete!</h3>
+      <p class="text-xs text-slate-500 max-w-md mx-auto">
+        Your document was reordered into print-ready spreads with 100% vector fidelity.
+      </p>
+    </div>
+
+    <!-- Print Instructions Callout -->
+    <div class="max-w-md mx-auto p-4 rounded-xl bg-amber-50 border border-amber-200/90 text-left text-xs text-amber-950 space-y-1.5">
+      <div class="font-bold flex items-center gap-1.5 text-amber-900">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+        </svg>
+        <span>Printer Settings Guide</span>
+      </div>
+      <p class="leading-relaxed">
+        When printing this PDF, turn on <strong>Double-Sided (Duplex)</strong> and choose <strong>Flip on Short Edge</strong>. Fold the printed sheets down the center crease line and staple!
+      </p>
+    </div>
+
+    <!-- Metrics Details -->
+    <div id="booklet-metrics-container" class="max-w-md mx-auto p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-2 text-left">
+      <!-- Injected dynamically -->
+    </div>
+
+    <!-- Download Action -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        id="download-booklet-pdf-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-500 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Booklet PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="convert-another-booklet-btn"
+        class="w-full sm:w-auto px-5 py-3 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+      >
+        Impose Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  import {
+    createBookletPdf,
+    calculateSaddleStitchOrder,
+    calculate2UpOrder,
+    type BookletMode,
+    type BindingDirection
+  } from '../../lib/pdf/booklet';
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let imposedPdfBytes: Uint8Array | null = null;
+  let detectedPageCount = 0;
+  let selectedMode: BookletMode = 'booklet';
+
+  const dropZone = document.getElementById('booklet-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('booklet-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('booklet-config-section') as HTMLDivElement;
+  const progressSection = document.getElementById('booklet-progress-section') as HTMLDivElement;
+  const successSection = document.getElementById('booklet-success-section') as HTMLDivElement;
+
+  const errorBanner = document.getElementById('booklet-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('booklet-error-message') as HTMLElement;
+  const dismissErrorBtn = document.getElementById('dismiss-booklet-error') as HTMLButtonElement;
+
+  const fileNameLabel = document.getElementById('booklet-file-name') as HTMLElement;
+  const fileMetaLabel = document.getElementById('booklet-file-meta') as HTMLElement;
+  const changeFileBtn = document.getElementById('change-booklet-file-btn') as HTMLButtonElement;
+  const executeBtn = document.getElementById('execute-booklet-btn') as HTMLButtonElement;
+
+  const bindingSelect = document.getElementById('booklet-binding-select') as HTMLSelectElement;
+  const gutterSelect = document.getElementById('booklet-gutter-select') as HTMLSelectElement;
+  const foldLineCheckbox = document.getElementById('booklet-fold-line') as HTMLInputElement;
+
+  const sequenceList = document.getElementById('booklet-preview-sequence-list') as HTMLDivElement;
+  const totalBadge = document.getElementById('booklet-preview-total-badge') as HTMLElement;
+  const metricsContainer = document.getElementById('booklet-metrics-container') as HTMLDivElement;
+  const downloadBtn = document.getElementById('download-booklet-pdf-btn') as HTMLButtonElement;
+  const convertAnotherBtn = document.getElementById('convert-another-booklet-btn') as HTMLButtonElement;
+  const modeLabels = document.querySelectorAll('.booklet-mode-label');
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    if (errorBanner) {
+      errorBanner.classList.add('hidden');
+    }
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  function updatePreviewSequence() {
+    if (!sequenceList || detectedPageCount === 0) return;
+
+    const binding = (bindingSelect?.value || 'ltr') as BindingDirection;
+
+    if (selectedMode === 'booklet') {
+      const { pairs, paddedCount } = calculateSaddleStitchOrder(detectedPageCount, binding);
+      const sheetCount = paddedCount / 4;
+      if (totalBadge) totalBadge.textContent = `${sheetCount} physical sheet${sheetCount === 1 ? '' : 's'} (${paddedCount} booklet pages)`;
+
+      const previewPairs = pairs.slice(0, 6);
+      sequenceList.innerHTML = previewPairs
+        .map((p) => {
+          const leftStr = p.leftPage ? `Page ${p.leftPage}` : `Blank`;
+          const rightStr = p.rightPage ? `Page ${p.rightPage}` : `Blank`;
+          const sideLabel = p.side === 'front' ? 'Front' : 'Back';
+          return `<div class="p-2 bg-white rounded-lg border border-indigo-100 flex justify-between">
+            <span class="text-indigo-800 font-semibold">Sheet ${p.sheetIndex} (${sideLabel}):</span>
+            <span>[${leftStr}] | [${rightStr}]</span>
+          </div>`;
+        })
+        .join('');
+    } else if (selectedMode === '2-up') {
+      const { pairs, paddedCount } = calculate2UpOrder(detectedPageCount, binding);
+      if (totalBadge) totalBadge.textContent = `${pairs.length} spread${pairs.length === 1 ? '' : 's'}`;
+
+      const previewPairs = pairs.slice(0, 6);
+      sequenceList.innerHTML = previewPairs
+        .map((p) => {
+          const leftStr = p.leftPage ? `Page ${p.leftPage}` : `Blank`;
+          const rightStr = p.rightPage ? `Page ${p.rightPage}` : `Blank`;
+          return `<div class="p-2 bg-white rounded-lg border border-indigo-100 flex justify-between">
+            <span class="text-indigo-800 font-semibold">Spread ${p.sheetIndex}:</span>
+            <span>[${leftStr}] | [${rightStr}]</span>
+          </div>`;
+        })
+        .join('');
+    } else {
+      const sheets = Math.ceil(detectedPageCount / 4);
+      if (totalBadge) totalBadge.textContent = `${sheets} sheet${sheets === 1 ? '' : 's'} (4-Up)`;
+      sequenceList.innerHTML = `
+        <div class="p-2 bg-white rounded-lg border border-indigo-100 col-span-full">
+          Arranges up to 4 slides/pages in a 2x2 grid per landscape sheet.
+        </div>
+      `;
+    }
+  }
+
+  modeLabels.forEach((label) => {
+    label.addEventListener('click', () => {
+      const mode = (label.getAttribute('data-mode') || 'booklet') as BookletMode;
+      selectedMode = mode;
+
+      modeLabels.forEach((other) => {
+        other.classList.remove('border-indigo-600', 'bg-indigo-50/50');
+        other.classList.add('border-slate-200', 'bg-white');
+        const dot = other.querySelector('.mode-indicator div');
+        if (dot) dot.classList.replace('bg-indigo-600', 'bg-transparent');
+        const circle = other.querySelector('.mode-indicator');
+        if (circle) circle.classList.replace('border-indigo-600', 'border-slate-300');
+      });
+
+      label.classList.remove('border-slate-200', 'bg-white');
+      label.classList.add('border-indigo-600', 'bg-indigo-50/50');
+      const activeDot = label.querySelector('.mode-indicator div');
+      if (activeDot) activeDot.classList.replace('bg-transparent', 'bg-indigo-600');
+      const activeCircle = label.querySelector('.mode-indicator');
+      if (activeCircle) activeCircle.classList.replace('border-slate-300', 'border-indigo-600');
+
+      updatePreviewSequence();
+    });
+  });
+
+  bindingSelect?.addEventListener('change', updatePreviewSequence);
+
+  async function handleSelectedFile(file: File) {
+    if (!file || file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please select a valid PDF file.');
+      return;
+    }
+
+    hideError();
+    currentFile = file;
+
+    try {
+      fileBuffer = await file.arrayBuffer();
+      const doc = await PDFDocument.load(new Uint8Array(fileBuffer), { ignoreEncryption: true });
+      detectedPageCount = doc.getPageCount();
+
+      if (fileNameLabel) fileNameLabel.textContent = file.name;
+      if (fileMetaLabel) {
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+        fileMetaLabel.textContent = `${detectedPageCount} page${detectedPageCount === 1 ? '' : 's'} · ${sizeMb} MB`;
+      }
+
+      updatePreviewSequence();
+
+      dropZone.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      successSection.classList.add('hidden');
+    } catch (err: any) {
+      showError(err?.message || 'Failed to parse PDF document. It may be corrupt or encrypted.');
+    }
+  }
+
+  fileInput?.addEventListener('change', (e: any) => {
+    if (e.target.files && e.target.files[0]) {
+      handleSelectedFile(e.target.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    currentFile = null;
+    fileBuffer = null;
+    imposedPdfBytes = null;
+    detectedPageCount = 0;
+    fileInput.value = '';
+    configSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+
+  convertAnotherBtn?.addEventListener('click', () => {
+    currentFile = null;
+    fileBuffer = null;
+    imposedPdfBytes = null;
+    detectedPageCount = 0;
+    fileInput.value = '';
+    successSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+
+  executeBtn?.addEventListener('click', async () => {
+    if (!fileBuffer || !currentFile) return;
+
+    try {
+      configSection.classList.add('hidden');
+      progressSection.classList.remove('hidden');
+
+      const binding = (bindingSelect?.value || 'ltr') as BindingDirection;
+      const gutter = parseInt(gutterSelect?.value || '0', 10);
+      const drawFoldLine = foldLineCheckbox ? foldLineCheckbox.checked : true;
+
+      const result = await createBookletPdf(new Uint8Array(fileBuffer), {
+        mode: selectedMode,
+        binding,
+        gutter,
+        drawFoldLine,
+      });
+
+      imposedPdfBytes = result.imposedBytes;
+
+      if (metricsContainer) {
+        metricsContainer.innerHTML = `
+          <div class="flex justify-between py-1 border-b border-slate-200/60">
+            <span class="text-slate-500">Original Pages:</span>
+            <span class="font-bold text-slate-800">${result.originalPageCount}</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-200/60">
+            <span class="text-slate-500">Padded Booklet Pages:</span>
+            <span class="font-bold text-slate-800">${result.paddedPageCount}</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-200/60">
+            <span class="text-slate-500">Physical Sheets / Sides:</span>
+            <span class="font-bold text-slate-800">${result.sheetsGenerated}</span>
+          </div>
+          <div class="flex justify-between py-1">
+            <span class="text-slate-500">Layout Mode:</span>
+            <span class="font-bold text-slate-800 capitalize">${selectedMode}</span>
+          </div>
+        `;
+      }
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      showError(err?.message || 'An error occurred during booklet imposition.');
+    }
+  });
+
+  downloadBtn?.addEventListener('click', () => {
+    if (!imposedPdfBytes || !currentFile) return;
+
+    const blob = new Blob([imposedPdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const baseName = currentFile.name.replace(/\.pdf$/i, '');
+    link.href = url;
+    link.download = `${baseName}-booklet.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  });
+</script>
