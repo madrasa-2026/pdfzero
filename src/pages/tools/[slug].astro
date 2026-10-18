@@ -33,6 +33,7 @@ import SplitByBookmarksIsland from '../../components/tools/SplitByBookmarksIslan
 import DeskewPdfIsland from '../../components/tools/DeskewPdfIsland.astro';
 import ReaderPdfIsland from '../../components/tools/ReaderPdfIsland.astro';
 import DarkModePdfIsland from '../../components/tools/DarkModePdfIsland.astro';
+import OverlayPdfIsland from '../../components/tools/OverlayPdfIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -219,6 +220,8 @@ const relatedToolCards = allTools
       <ReaderPdfIsland />
     ) : tool.slug === 'dark-mode-pdf' ? (
       <DarkModePdfIsland />
+    ) : tool.slug === 'overlay-pdf' ? (
+      <OverlayPdfIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}

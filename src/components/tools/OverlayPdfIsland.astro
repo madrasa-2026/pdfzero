@@ -1,0 +1,472 @@
+---
+// OverlayPdfIsland.astro - 100% in-browser PDF Page Overlay & Letterhead Stamper
+---
+
+<div id="overlay-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="overlay-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Overlay Notice</h4>
+      <p id="overlay-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-overlay-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Dual File Selection Section -->
+  <div id="overlay-files-section" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+    <!-- File 1: Main Document -->
+    <div
+      id="main-pdf-dropzone"
+      class="relative rounded-2xl border-2 border-dashed border-slate-200 hover:border-slate-400 bg-white shadow-sm p-6 text-center transition cursor-pointer group flex flex-col items-center justify-center min-h-[200px]"
+    >
+      <input
+        type="file"
+        id="main-pdf-input"
+        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+        accept=".pdf,application/pdf"
+      />
+      <div class="w-10 h-10 rounded-xl bg-slate-100 group-hover:bg-slate-900 group-hover:text-white text-slate-700 flex items-center justify-center mb-3 transition shadow-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+      </div>
+      <h4 class="font-bold text-sm text-slate-800 mb-1">1. Main Document (Target PDF)</h4>
+      <p id="main-pdf-name" class="text-xs text-slate-500 mb-2">Upload contract, invoice, or report</p>
+      <span class="inline-block px-3 py-1 bg-slate-100 group-hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold">
+        Choose Main File
+      </span>
+    </div>
+
+    <!-- File 2: Overlay / Letterhead Template -->
+    <div
+      id="template-pdf-dropzone"
+      class="relative rounded-2xl border-2 border-dashed border-slate-200 hover:border-slate-400 bg-white shadow-sm p-6 text-center transition cursor-pointer group flex flex-col items-center justify-center min-h-[200px]"
+    >
+      <input
+        type="file"
+        id="template-pdf-input"
+        class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+        accept=".pdf,application/pdf"
+      />
+      <div class="w-10 h-10 rounded-xl bg-amber-100 group-hover:bg-amber-600 group-hover:text-white text-amber-700 flex items-center justify-center mb-3 transition shadow-sm">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        </svg>
+      </div>
+      <h4 class="font-bold text-sm text-slate-800 mb-1">2. Stationery / Stamp (Template PDF)</h4>
+      <p id="template-pdf-name" class="text-xs text-slate-500 mb-2">Upload letterhead, background, or seal</p>
+      <span class="inline-block px-3 py-1 bg-amber-50 group-hover:bg-amber-100 text-amber-800 rounded-lg text-xs font-semibold">
+        Choose Letterhead / Stamp
+      </span>
+    </div>
+  </div>
+
+  <!-- 2. Overlay Configuration Options -->
+  <div id="overlay-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left mt-6">
+    <!-- Layer Type Selection -->
+    <div>
+      <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+        Compositing Layer Mode
+      </label>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <!-- Underlay (Background) -->
+        <label class="cursor-pointer border-2 border-slate-900 bg-slate-50 rounded-xl p-4 flex flex-col justify-between transition group overlay-layer-label" data-layer="underlay">
+          <input type="radio" name="overlay-layer" value="underlay" checked class="sr-only" />
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+              <span>📄 Underlay (Background)</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-900 text-white">Letterhead</span>
+            </span>
+            <div class="w-3.5 h-3.5 rounded-full border-2 border-slate-900 flex items-center justify-center layer-indicator">
+              <div class="w-2 h-2 rounded-full bg-slate-900"></div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Renders template BEHIND document content. Ideal for company letterhead stationery, legal margins, or background textures.
+          </p>
+        </label>
+
+        <!-- Overlay (Foreground) -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-4 flex flex-col justify-between transition group overlay-layer-label" data-layer="overlay">
+          <input type="radio" name="overlay-layer" value="overlay" class="sr-only" />
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-bold text-sm text-slate-900 flex items-center gap-1.5">
+              <span>🔏 Overlay (Foreground)</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-100 text-amber-800">Stamps</span>
+            </span>
+            <div class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 flex items-center justify-center layer-indicator">
+              <div class="w-2 h-2 rounded-full bg-transparent"></div>
+            </div>
+          </div>
+          <p class="text-xs text-slate-500 leading-relaxed">
+            Stamps template ON TOP of document content. Ideal for "CONFIDENTIAL", "APPROVED", or watermark seals.
+          </p>
+        </label>
+      </div>
+    </div>
+
+    <!-- Page Target Selection -->
+    <div>
+      <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+        Apply To Pages
+      </label>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+        <label class="cursor-pointer border border-slate-200 rounded-xl p-3 text-center transition hover:border-slate-400 overlay-target-label bg-white" data-target="first">
+          <input type="radio" name="overlay-target" value="first" checked class="sr-only" />
+          <span class="block font-bold text-xs text-slate-800 mb-0.5">First Page Only</span>
+          <span class="block text-[11px] text-slate-400">Cover / Letterhead</span>
+        </label>
+        <label class="cursor-pointer border border-slate-200 rounded-xl p-3 text-center transition hover:border-slate-400 overlay-target-label bg-white" data-target="all">
+          <input type="radio" name="overlay-target" value="all" class="sr-only" />
+          <span class="block font-bold text-xs text-slate-800 mb-0.5">All Pages</span>
+          <span class="block text-[11px] text-slate-400">Every single page</span>
+        </label>
+        <label class="cursor-pointer border border-slate-200 rounded-xl p-3 text-center transition hover:border-slate-400 overlay-target-label bg-white" data-target="odd">
+          <input type="radio" name="overlay-target" value="odd" class="sr-only" />
+          <span class="block font-bold text-xs text-slate-800 mb-0.5">Odd Pages</span>
+          <span class="block text-[11px] text-slate-400">Pages 1, 3, 5...</span>
+        </label>
+        <label class="cursor-pointer border border-slate-200 rounded-xl p-3 text-center transition hover:border-slate-400 overlay-target-label bg-white" data-target="even">
+          <input type="radio" name="overlay-target" value="even" class="sr-only" />
+          <span class="block font-bold text-xs text-slate-800 mb-0.5">Even Pages</span>
+          <span class="block text-[11px] text-slate-400">Pages 2, 4, 6...</span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Opacity Slider -->
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <label for="overlay-opacity-slider" class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+          Template Opacity
+        </label>
+        <span id="opacity-readout" class="text-xs font-mono font-bold text-slate-800">100%</span>
+      </div>
+      <input
+        type="range"
+        id="overlay-opacity-slider"
+        min="10"
+        max="100"
+        value="100"
+        class="w-full accent-slate-900 cursor-pointer"
+      />
+      <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+        <span>10% (Faint Watermark)</span>
+        <span>50% (Semi-transparent)</span>
+        <span>100% (Solid Letterhead)</span>
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2">
+      <button
+        type="button"
+        id="start-overlay-btn"
+        class="w-full py-3.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm rounded-xl shadow-md transition flex items-center justify-center gap-2"
+      >
+        <span>Apply Overlay & Composite PDF</span>
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Progress Card -->
+  <div id="overlay-processing-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 sm:p-12 shadow-sm text-center mt-6">
+    <div class="w-12 h-12 border-4 border-slate-200 border-t-slate-900 rounded-full animate-spin mx-auto mb-4"></div>
+    <h3 class="text-lg font-bold text-slate-800 mb-1">Compositing PDF Layers...</h3>
+    <p class="text-xs text-slate-500 max-w-sm mx-auto">
+      Embedding template Form XObjects and prepending vector stream layers...
+    </p>
+  </div>
+
+  <!-- 4. Success State -->
+  <div id="overlay-success-section" class="hidden bg-white rounded-2xl border border-emerald-200 p-8 sm:p-10 shadow-sm text-center space-y-6 mt-6">
+    <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-xl font-bold text-slate-900 mb-1">PDF Composited Successfully!</h3>
+      <p class="text-xs text-slate-500">Processed 100% in-browser with zero cloud uploads.</p>
+    </div>
+
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-xl mx-auto text-left">
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+        <span class="block text-[10px] font-mono uppercase text-slate-400">Layer</span>
+        <span id="overlay-stat-layer" class="text-xs font-bold text-slate-800 capitalize">Underlay</span>
+      </div>
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+        <span class="block text-[10px] font-mono uppercase text-slate-400">Pages Stamped</span>
+        <span id="overlay-stat-pages" class="text-xs font-bold text-slate-800">1</span>
+      </div>
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+        <span class="block text-[10px] font-mono uppercase text-slate-400">Opacity</span>
+        <span id="overlay-stat-opacity" class="text-xs font-bold text-slate-800">100%</span>
+      </div>
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+        <span class="block text-[10px] font-mono uppercase text-slate-400">Output Size</span>
+        <span id="overlay-stat-size" class="text-xs font-bold text-slate-800">0 KB</span>
+      </div>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        id="download-overlay-pdf-btn"
+        class="w-full sm:w-auto px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl shadow-button flex items-center justify-center gap-2 transition"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Stamped PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="restart-overlay-btn"
+        class="w-full sm:w-auto px-5 py-3 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl transition"
+      >
+        Composite Another PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let mainPdfBytes: Uint8Array | null = null;
+  let templatePdfBytes: Uint8Array | null = null;
+  let mainFileName = 'document.pdf';
+  let processedBlobUrl: string | null = null;
+
+  const mainInput = document.getElementById('main-pdf-input') as HTMLInputElement | null;
+  const templateInput = document.getElementById('template-pdf-input') as HTMLInputElement | null;
+  const mainDropzone = document.getElementById('main-pdf-dropzone');
+  const templateDropzone = document.getElementById('template-pdf-dropzone');
+  const mainNameEl = document.getElementById('main-pdf-name');
+  const templateNameEl = document.getElementById('template-pdf-name');
+
+  const filesSection = document.getElementById('overlay-files-section');
+  const configSection = document.getElementById('overlay-config-section');
+  const processingSection = document.getElementById('overlay-processing-section');
+  const successSection = document.getElementById('overlay-success-section');
+
+  const errorBanner = document.getElementById('overlay-error-banner');
+  const errorMessage = document.getElementById('overlay-error-message');
+  const dismissErrorBtn = document.getElementById('dismiss-overlay-error');
+
+  const opacitySlider = document.getElementById('overlay-opacity-slider') as HTMLInputElement | null;
+  const opacityReadout = document.getElementById('opacity-readout');
+  const startBtn = document.getElementById('start-overlay-btn');
+  const downloadBtn = document.getElementById('download-overlay-pdf-btn');
+  const restartBtn = document.getElementById('restart-overlay-btn');
+
+  const layerLabels = document.querySelectorAll('.overlay-layer-label');
+  const targetLabels = document.querySelectorAll('.overlay-target-label');
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    errorBanner?.classList.add('hidden');
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  function checkBothFilesSelected() {
+    if (mainPdfBytes && templatePdfBytes) {
+      configSection?.classList.remove('hidden');
+    }
+  }
+
+  mainInput?.addEventListener('change', async (e) => {
+    hideError();
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      const file = target.files[0];
+      mainFileName = file.name;
+      try {
+        const buffer = await file.arrayBuffer();
+        mainPdfBytes = new Uint8Array(buffer);
+        if (mainNameEl) {
+          mainNameEl.textContent = `✓ ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+          mainNameEl.classList.add('text-emerald-600', 'font-semibold');
+        }
+        mainDropzone?.classList.add('border-emerald-300', 'bg-emerald-50/20');
+        checkBothFilesSelected();
+      } catch {
+        showError('Unable to read selected main PDF document.');
+      }
+    }
+  });
+
+  templateInput?.addEventListener('change', async (e) => {
+    hideError();
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      const file = target.files[0];
+      try {
+        const buffer = await file.arrayBuffer();
+        templatePdfBytes = new Uint8Array(buffer);
+        if (templateNameEl) {
+          templateNameEl.textContent = `✓ ${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+          templateNameEl.classList.add('text-emerald-600', 'font-semibold');
+        }
+        templateDropzone?.classList.add('border-emerald-300', 'bg-emerald-50/20');
+        checkBothFilesSelected();
+      } catch {
+        showError('Unable to read selected stationery / stamp template PDF.');
+      }
+    }
+  });
+
+  // Layer toggle handler
+  layerLabels.forEach((label) => {
+    label.addEventListener('click', () => {
+      layerLabels.forEach((l) => {
+        l.classList.remove('border-slate-900', 'bg-slate-50');
+        l.classList.add('border-slate-200', 'bg-white');
+        const ind = l.querySelector('.layer-indicator > div');
+        if (ind) {
+          ind.classList.remove('bg-slate-900');
+          ind.classList.add('bg-transparent');
+        }
+      });
+      label.classList.remove('border-slate-200', 'bg-white');
+      label.classList.add('border-slate-900', 'bg-slate-50');
+      const activeInd = label.querySelector('.layer-indicator > div');
+      if (activeInd) {
+        activeInd.classList.remove('bg-transparent');
+        activeInd.classList.add('bg-slate-900');
+      }
+      const radio = label.querySelector('input[type="radio"]') as HTMLInputElement | null;
+      if (radio) {
+        radio.checked = true;
+        // Default opacity recommendation based on layer
+        if (radio.value === 'underlay' && opacitySlider && opacityReadout) {
+          opacitySlider.value = '100';
+          opacityReadout.textContent = '100%';
+        } else if (radio.value === 'overlay' && opacitySlider && opacityReadout) {
+          opacitySlider.value = '60';
+          opacityReadout.textContent = '60%';
+        }
+      }
+    });
+  });
+
+  // Target toggle handler
+  targetLabels.forEach((label) => {
+    label.addEventListener('click', () => {
+      targetLabels.forEach((l) => {
+        l.classList.remove('border-slate-900', 'bg-slate-50');
+        l.classList.add('border-slate-200', 'bg-white');
+      });
+      label.classList.remove('border-slate-200', 'bg-white');
+      label.classList.add('border-slate-900', 'bg-slate-50');
+      const radio = label.querySelector('input[type="radio"]') as HTMLInputElement | null;
+      if (radio) radio.checked = true;
+    });
+  });
+
+  // Opacity slider handler
+  opacitySlider?.addEventListener('input', () => {
+    if (opacityReadout) opacityReadout.textContent = `${opacitySlider.value}%`;
+  });
+
+  startBtn?.addEventListener('click', async () => {
+    if (!mainPdfBytes || !templatePdfBytes) {
+      showError('Please select both a main PDF document and a template letterhead/stamp PDF.');
+      return;
+    }
+
+    hideError();
+    configSection?.classList.add('hidden');
+    filesSection?.classList.add('hidden');
+    processingSection?.classList.remove('hidden');
+
+    const selectedLayer = (document.querySelector('input[name="overlay-layer"]:checked') as HTMLInputElement | null)?.value || 'underlay';
+    const selectedTarget = (document.querySelector('input[name="overlay-target"]:checked') as HTMLInputElement | null)?.value || 'first';
+    const opacityVal = opacitySlider ? parseInt(opacitySlider.value, 10) / 100 : 1.0;
+
+    try {
+      const { applyPdfOverlay } = await import('../../lib/pdf/overlay');
+      const result = await applyPdfOverlay(mainPdfBytes, templatePdfBytes, {
+        layer: selectedLayer as any,
+        target: selectedTarget as any,
+        opacity: opacityVal,
+      });
+
+      processingSection?.classList.add('hidden');
+      successSection?.classList.remove('hidden');
+
+      const statLayer = document.getElementById('overlay-stat-layer');
+      const statPages = document.getElementById('overlay-stat-pages');
+      const statOpacity = document.getElementById('overlay-stat-opacity');
+      const statSize = document.getElementById('overlay-stat-size');
+
+      if (statLayer) statLayer.textContent = result.layer;
+      if (statPages) statPages.textContent = result.pagesModified.toString();
+      if (statOpacity) statOpacity.textContent = `${Math.round(opacityVal * 100)}%`;
+      if (statSize) statSize.textContent = `${(result.outputSize / 1024).toFixed(1)} KB`;
+
+      if (processedBlobUrl) URL.revokeObjectURL(processedBlobUrl);
+      const blob = new Blob([result.outputBytes], { type: 'application/pdf' });
+      processedBlobUrl = URL.createObjectURL(blob);
+    } catch (err: any) {
+      processingSection?.classList.add('hidden');
+      configSection?.classList.remove('hidden');
+      filesSection?.classList.remove('hidden');
+      showError(`Compositing failed: ${err?.message || 'Unknown error occurred during PDF overlay.'}`);
+    }
+  });
+
+  downloadBtn?.addEventListener('click', () => {
+    if (!processedBlobUrl) return;
+    const a = document.createElement('a');
+    a.href = processedBlobUrl;
+    const baseName = mainFileName.replace(/\.pdf$/i, '');
+    a.download = `${baseName}-overlaid.pdf`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+
+  restartBtn?.addEventListener('click', () => {
+    if (processedBlobUrl) {
+      URL.revokeObjectURL(processedBlobUrl);
+      processedBlobUrl = null;
+    }
+    mainPdfBytes = null;
+    templatePdfBytes = null;
+    if (mainNameEl) {
+      mainNameEl.textContent = 'Upload contract, invoice, or report';
+      mainNameEl.classList.remove('text-emerald-600', 'font-semibold');
+    }
+    if (templateNameEl) {
+      templateNameEl.textContent = 'Upload letterhead, background, or seal';
+      templateNameEl.classList.remove('text-emerald-600', 'font-semibold');
+    }
+    mainDropzone?.classList.remove('border-emerald-300', 'bg-emerald-50/20');
+    templateDropzone?.classList.remove('border-emerald-300', 'bg-emerald-50/20');
+    if (mainInput) mainInput.value = '';
+    if (templateInput) templateInput.value = '';
+
+    successSection?.classList.add('hidden');
+    configSection?.classList.add('hidden');
+    filesSection?.classList.remove('hidden');
+  });
+</script>
