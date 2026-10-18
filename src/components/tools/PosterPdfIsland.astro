@@ -1,0 +1,536 @@
+---
+// PosterPdfIsland.astro - 100% In-Browser PDF Poster Maker & Multi-Sheet Tiler
+---
+
+<div id="poster-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="poster-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Poster Maker Notice</h4>
+      <p id="poster-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-poster-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="poster-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="poster-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-rose-50 group-hover:bg-rose-600 flex items-center justify-center text-rose-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 11a1 1 0 011-1h14a1 1 0 011 1v8a1 1 0 01-1 1H5a1 1 0 01-1-1v-8z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-rose-600 transition">
+      Select PDF to Print as Giant Poster
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop any design, chart, map, or sewing pattern to tile across regular paper.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF File
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Tile on Home Printers</span>
+      <span>•</span>
+      <span>Overlap Glue Tabs</span>
+      <span>•</span>
+      <span>Infinite Vector Zoom</span>
+    </div>
+  </div>
+
+  <!-- 2. Configuration Panel -->
+  <div id="poster-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="poster-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="poster-file-meta" class="text-xs text-slate-500">Checking dimensions...</p>
+        </div>
+      </div>
+      <button type="button" id="change-poster-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Grid Layout Selector -->
+    <div>
+      <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
+        Poster Grid Dimensions
+      </label>
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <!-- 2x2 -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3.5 text-center transition hover:border-rose-500 poster-grid-card" data-cols="2" data-rows="2">
+          <input type="radio" name="poster-grid" value="2x2" class="sr-only" />
+          <div class="text-base font-extrabold text-slate-800 mb-0.5">2 × 2 Grid</div>
+          <div class="text-[11px] text-slate-500">4 Sheets (~41 × 58 cm)</div>
+        </label>
+
+        <!-- 3x3 (Default) -->
+        <label class="cursor-pointer border-2 border-rose-600 bg-rose-50/50 rounded-xl p-3.5 text-center transition hover:border-rose-500 poster-grid-card" data-cols="3" data-rows="3">
+          <input type="radio" name="poster-grid" value="3x3" checked class="sr-only" />
+          <div class="text-base font-extrabold text-slate-800 mb-0.5">3 × 3 Grid</div>
+          <div class="text-[11px] text-slate-500">9 Sheets (~61 × 87 cm)</div>
+        </label>
+
+        <!-- 4x4 -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3.5 text-center transition hover:border-rose-500 poster-grid-card" data-cols="4" data-rows="4">
+          <input type="radio" name="poster-grid" value="4x4" class="sr-only" />
+          <div class="text-base font-extrabold text-slate-800 mb-0.5">4 × 4 Grid</div>
+          <div class="text-[11px] text-slate-500">16 Sheets (~82 × 116 cm)</div>
+        </label>
+
+        <!-- Custom -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3.5 text-center transition hover:border-rose-500 poster-grid-card" data-cols="custom" data-rows="custom">
+          <input type="radio" name="poster-grid" value="custom" class="sr-only" />
+          <div class="text-base font-extrabold text-slate-800 mb-0.5">Custom Size</div>
+          <div class="text-[11px] text-slate-500">Specify Cols & Rows</div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Custom Stepper (Shown when Custom is selected) -->
+    <div id="custom-grid-stepper" class="hidden p-4 bg-slate-50 rounded-xl border border-slate-200/80 flex items-center justify-center gap-6 text-xs">
+      <div class="flex items-center gap-2">
+        <label for="custom-cols-input" class="font-bold text-slate-700">Columns (Width):</label>
+        <input
+          type="number"
+          id="custom-cols-input"
+          value="3"
+          min="1"
+          max="8"
+          class="w-16 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-slate-900 font-bold text-center"
+        />
+      </div>
+      <span class="text-slate-400 font-bold">×</span>
+      <div class="flex items-center gap-2">
+        <label for="custom-rows-input" class="font-bold text-slate-700">Rows (Height):</label>
+        <input
+          type="number"
+          id="custom-rows-input"
+          value="3"
+          min="1"
+          max="8"
+          class="w-16 bg-white border border-slate-300 rounded-lg px-2.5 py-1 text-slate-900 font-bold text-center"
+        />
+      </div>
+    </div>
+
+    <!-- Paper Size & Overlap Margin -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+      <!-- Paper Size -->
+      <div>
+        <label for="poster-paper-size" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Target Paper Size
+        </label>
+        <select
+          id="poster-paper-size"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white"
+        >
+          <option value="a4" selected>A4 (210 × 297 mm)</option>
+          <option value="letter">US Letter (8.5 × 11 in)</option>
+          <option value="a3">A3 (297 × 420 mm)</option>
+        </select>
+      </div>
+
+      <!-- Sheet Orientation -->
+      <div>
+        <label for="poster-orientation" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Sheet Orientation
+        </label>
+        <select
+          id="poster-orientation"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white"
+        >
+          <option value="portrait" selected>Portrait Sheets</option>
+          <option value="landscape">Landscape Sheets</option>
+        </select>
+      </div>
+
+      <!-- Glue Overlap Margin -->
+      <div>
+        <label for="poster-overlap" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Glue Overlap Margin
+        </label>
+        <select
+          id="poster-overlap"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:bg-white"
+        >
+          <option value="0">None (0 mm / Edge-to-Edge)</option>
+          <option value="36" selected>Standard (12.7 mm / 0.5 in)</option>
+          <option value="72">Wide (25.4 mm / 1.0 in)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Guides & Toggles -->
+    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <label class="flex items-center gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          id="poster-cut-lines-check"
+          checked
+          class="w-4 h-4 text-rose-600 rounded border-slate-300 focus:ring-rose-500"
+        />
+        <div>
+          <span class="text-xs font-bold text-slate-800 block">Dashed Trimmer Cut Lines</span>
+          <span class="text-[11px] text-slate-500">Marks exact overlap seam to trim with scissors or knife</span>
+        </div>
+      </label>
+
+      <label class="flex items-center gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          id="poster-tile-numbers-check"
+          checked
+          class="w-4 h-4 text-rose-600 rounded border-slate-300 focus:ring-rose-500"
+        />
+        <div>
+          <span class="text-xs font-bold text-slate-800 block">Assembly Numbering Badges</span>
+          <span class="text-[11px] text-slate-500">Prints coordinates e.g. [Tile 2,1] at corner of each sheet</span>
+        </div>
+      </label>
+    </div>
+
+    <!-- Live Assembled Dimensions Card -->
+    <div class="p-4 bg-rose-50/70 rounded-xl border border-rose-100 flex items-center justify-between text-xs text-rose-950">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-rose-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+        </svg>
+        <span id="poster-dimension-text">Assembled Size: Calculating...</span>
+      </div>
+      <span class="font-bold text-rose-600" id="poster-sheet-count-badge">9 Sheets Required</span>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2 flex flex-col sm:flex-row gap-3">
+      <button
+        type="button"
+        id="run-poster-btn"
+        class="flex-1 py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/20 active:scale-[0.99] transition flex items-center justify-center gap-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 11a1 1 0 011-1h14a1 1 0 011 1v8a1 1 0 01-1 1H5a1 1 0 01-1-1v-8z" />
+        </svg>
+        Tile & Download Poster PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Progress State -->
+  <div id="poster-progress-card" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-4">
+    <div class="w-12 h-12 mx-auto rounded-full bg-rose-50 border-2 border-rose-600 border-t-transparent animate-spin"></div>
+    <h3 class="text-base font-bold text-slate-800">Tiling High-Resolution Poster Pages...</h3>
+    <p id="poster-progress-status" class="text-xs text-slate-500">Calculating tile matrices, offset boundaries, and trimmer lines...</p>
+  </div>
+
+  <!-- 4. Success View -->
+  <div id="poster-success-card" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-xl font-bold text-slate-900 mb-1">Printable Poster PDF Ready!</h3>
+      <p id="poster-success-stats" class="text-xs text-slate-600">
+        Tiled across 9 sheets. Assembled physical poster: 61 cm × 87 cm.
+      </p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <a
+        id="poster-download-link"
+        download="poster-tiled.pdf"
+        class="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-rose-600 hover:bg-rose-700 shadow-md shadow-rose-600/20 active:scale-[0.99] transition inline-flex items-center justify-center gap-2 cursor-pointer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Download Poster PDF
+      </a>
+
+      <button
+        type="button"
+        id="poster-reset-btn"
+        class="w-full sm:w-auto px-5 py-3 rounded-xl font-semibold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
+      >
+        Make Another Poster
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  import {
+    tilePosterPdf,
+    type PosterPaperSize,
+    type SheetOrientation,
+  } from '../../lib/pdf/posterEngine';
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let detectedPageCount = 0;
+  let activeCols = 3;
+  let activeRows = 3;
+  let generatedBlobUrl: string | null = null;
+
+  // DOM Elements
+  const dropZone = document.getElementById('poster-drop-zone')!;
+  const fileInput = document.getElementById('poster-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('poster-config-section')!;
+  const progressCard = document.getElementById('poster-progress-card')!;
+  const successCard = document.getElementById('poster-success-card')!;
+  const errorBanner = document.getElementById('poster-error-banner')!;
+  const errorMessage = document.getElementById('poster-error-message')!;
+  const dismissErrorBtn = document.getElementById('dismiss-poster-error')!;
+
+  const fileNameEl = document.getElementById('poster-file-name')!;
+  const fileMetaEl = document.getElementById('poster-file-meta')!;
+  const changeFileBtn = document.getElementById('change-poster-file-btn')!;
+
+  const gridCards = document.querySelectorAll<HTMLElement>('.poster-grid-card');
+  const customStepper = document.getElementById('custom-grid-stepper')!;
+  const customColsInput = document.getElementById('custom-cols-input') as HTMLInputElement;
+  const customRowsInput = document.getElementById('custom-rows-input') as HTMLInputElement;
+
+  const paperSizeSelect = document.getElementById('poster-paper-size') as HTMLSelectElement;
+  const orientationSelect = document.getElementById('poster-orientation') as HTMLSelectElement;
+  const overlapSelect = document.getElementById('poster-overlap') as HTMLSelectElement;
+  const cutLinesCheck = document.getElementById('poster-cut-lines-check') as HTMLInputElement;
+  const tileNumbersCheck = document.getElementById('poster-tile-numbers-check') as HTMLInputElement;
+
+  const dimensionText = document.getElementById('poster-dimension-text')!;
+  const sheetCountBadge = document.getElementById('poster-sheet-count-badge')!;
+  const runBtn = document.getElementById('run-poster-btn')!;
+
+  const successStats = document.getElementById('poster-success-stats')!;
+  const downloadLink = document.getElementById('poster-download-link') as HTMLAnchorElement;
+  const resetBtn = document.getElementById('poster-reset-btn')!;
+
+  function showError(msg: string) {
+    errorMessage.textContent = msg;
+    errorBanner.classList.remove('hidden');
+    progressCard.classList.add('hidden');
+  }
+
+  function hideError() {
+    errorBanner.classList.add('hidden');
+  }
+
+  dismissErrorBtn.addEventListener('click', hideError);
+
+  // Setup Grid Cards
+  gridCards.forEach((card) => {
+    card.addEventListener('click', () => {
+      gridCards.forEach((c) => {
+        c.classList.remove('border-rose-600', 'bg-rose-50/50');
+        c.classList.add('border-slate-200', 'bg-white');
+      });
+      card.classList.remove('border-slate-200', 'bg-white');
+      card.classList.add('border-rose-600', 'bg-rose-50/50');
+
+      const colsAttr = card.dataset.cols;
+      const rowsAttr = card.dataset.rows;
+
+      if (colsAttr === 'custom') {
+        customStepper.classList.remove('hidden');
+        activeCols = parseInt(customColsInput.value, 10) || 3;
+        activeRows = parseInt(customRowsInput.value, 10) || 3;
+      } else {
+        customStepper.classList.add('hidden');
+        activeCols = parseInt(colsAttr || '3', 10);
+        activeRows = parseInt(rowsAttr || '3', 10);
+      }
+      updateDimensionsForecast();
+    });
+  });
+
+  [customColsInput, customRowsInput].forEach((input) => {
+    input.addEventListener('input', () => {
+      activeCols = Math.max(1, Math.min(8, parseInt(customColsInput.value, 10) || 1));
+      activeRows = Math.max(1, Math.min(8, parseInt(customRowsInput.value, 10) || 1));
+      updateDimensionsForecast();
+    });
+  });
+
+  function updateDimensionsForecast() {
+    const paper = paperSizeSelect.value;
+    const isLandscape = orientationSelect.value === 'landscape';
+    const overlap = parseInt(overlapSelect.value, 10);
+
+    let sw = 595.28;
+    let sh = 841.89;
+    if (paper === 'letter') { sw = 612.0; sh = 792.0; }
+    else if (paper === 'a3') { sw = 841.89; sh = 1190.55; }
+
+    const sheetW = isLandscape ? Math.max(sw, sh) : Math.min(sw, sh);
+    const sheetH = isLandscape ? Math.min(sw, sh) : Math.max(sw, sh);
+
+    const totalW = activeCols * sheetW - (activeCols - 1) * overlap;
+    const totalH = activeRows * sheetH - (activeRows - 1) * overlap;
+
+    const ptToMm = 25.4 / 72;
+    const ptToIn = 1 / 72;
+
+    const widthCm = ((totalW * ptToMm) / 10).toFixed(1);
+    const heightCm = ((totalH * ptToMm) / 10).toFixed(1);
+    const widthIn = (totalW * ptToIn).toFixed(1);
+    const heightIn = (totalH * ptToIn).toFixed(1);
+
+    const totalSheets = activeCols * activeRows;
+    dimensionText.textContent = `Assembled Poster: ${widthCm} cm × ${heightCm} cm (${widthIn}" × ${heightIn}")`;
+    sheetCountBadge.textContent = `${totalSheets} Sheet${totalSheets === 1 ? '' : 's'} Required`;
+  }
+
+  [paperSizeSelect, orientationSelect, overlapSelect].forEach((el) => {
+    el.addEventListener('change', updateDimensionsForecast);
+  });
+
+  // Handle PDF Upload
+  async function handleFile(file: File) {
+    if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please select a valid PDF file.');
+      return;
+    }
+
+    hideError();
+    currentFile = file;
+    fileNameEl.textContent = file.name;
+    fileMetaEl.textContent = 'Reading page dimensions...';
+
+    dropZone.classList.add('hidden');
+    configSection.classList.remove('hidden');
+
+    try {
+      fileBuffer = await file.arrayBuffer();
+      const testDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
+      detectedPageCount = testDoc.getPageCount();
+
+      const p1 = testDoc.getPage(0);
+      const { width, height } = p1.getSize();
+      fileMetaEl.textContent = `${detectedPageCount} page${detectedPageCount === 1 ? '' : 's'} • ${Math.round(width)} × ${Math.round(height)} pt • ${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+
+      updateDimensionsForecast();
+    } catch (err: any) {
+      showError(err.message || 'Failed to read PDF document.');
+      configSection.classList.add('hidden');
+      dropZone.classList.remove('hidden');
+    }
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files[0]) {
+      handleFile(target.files[0]);
+    }
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-rose-500', 'bg-rose-50/20');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-rose-500', 'bg-rose-50/20');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-rose-500', 'bg-rose-50/20');
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  changeFileBtn.addEventListener('click', () => {
+    configSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+  });
+
+  resetBtn.addEventListener('click', () => {
+    successCard.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+    if (generatedBlobUrl) {
+      URL.revokeObjectURL(generatedBlobUrl);
+      generatedBlobUrl = null;
+    }
+  });
+
+  // Execute Poster Tiling
+  runBtn.addEventListener('click', async () => {
+    if (!fileBuffer || !currentFile) {
+      showError('Please upload a PDF document first.');
+      return;
+    }
+
+    hideError();
+    configSection.classList.add('hidden');
+    progressCard.classList.remove('hidden');
+
+    try {
+      const result = await tilePosterPdf(new Uint8Array(fileBuffer), {
+        columns: activeCols,
+        rows: activeRows,
+        paperSize: paperSizeSelect.value as PosterPaperSize,
+        orientation: orientationSelect.value as SheetOrientation,
+        overlap: parseInt(overlapSelect.value, 10),
+        showCutLines: cutLinesCheck.checked,
+        showTileNumbers: tileNumbersCheck.checked,
+      });
+
+      const blob = new Blob([result.pdfBytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' });
+      if (generatedBlobUrl) {
+        URL.revokeObjectURL(generatedBlobUrl);
+      }
+      generatedBlobUrl = URL.createObjectURL(blob);
+
+      downloadLink.href = generatedBlobUrl;
+      const baseName = currentFile.name.replace(/\.pdf$/i, '');
+      downloadLink.download = `${baseName}-${result.columns}x${result.rows}-poster.pdf`;
+
+      const widthCm = (result.posterDimensionsMm.width / 10).toFixed(1);
+      const heightCm = (result.posterDimensionsMm.height / 10).toFixed(1);
+      successStats.textContent = `Tiled across ${result.totalSheets} sheets. Assembled physical poster: ${widthCm} cm × ${heightCm} cm (${result.posterDimensionsInches.width}" × ${result.posterDimensionsInches.height}").`;
+
+      progressCard.classList.add('hidden');
+      successCard.classList.remove('hidden');
+    } catch (err: any) {
+      showError(err.message || 'Failed to tile poster.');
+      progressCard.classList.add('hidden');
+      configSection.classList.remove('hidden');
+    }
+  });
+</script>
