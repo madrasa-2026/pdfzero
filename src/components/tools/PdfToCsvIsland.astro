@@ -1,0 +1,325 @@
+---
+// PdfToCsvIsland.astro - 100% in-browser PDF to CSV / Excel Table Extractor
+---
+
+<div id="csv-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="csv-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Table Extraction Notice</h4>
+      <p id="csv-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-csv-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="csv-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="csv-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-emerald-50 text-emerald-600 group-hover:bg-emerald-600 group-hover:text-white flex items-center justify-center shadow-sm group-hover:scale-105 transition duration-200">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-slate-900 transition">
+      Select PDF to Extract Tables into CSV
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your bank statement, invoice, or financial report here.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF Document
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Excel & Sheets Compatible</span>
+      <span>•</span>
+      <span>Zero Server Uploads</span>
+    </div>
+  </div>
+
+  <!-- 2. Processing State -->
+  <div id="csv-processing-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 sm:p-12 shadow-sm text-center">
+    <div class="w-12 h-12 border-4 border-slate-200 border-t-slate-900 rounded-full animate-spin mx-auto mb-4"></div>
+    <h3 class="text-lg font-bold text-slate-800 mb-1">Analyzing Spatial Text Coordinates...</h3>
+    <p class="text-xs text-slate-500 max-w-sm mx-auto">
+      Clustering horizontal baselines into rows and detecting column boundaries in local browser memory...
+    </p>
+  </div>
+
+  <!-- 3. Success & Table Preview State -->
+  <div id="csv-results-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- Header Summary -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-100 gap-3">
+      <div>
+        <h4 id="csv-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">statement.pdf</h4>
+        <p id="csv-summary-meta" class="text-xs text-slate-500">Extracted table data ready for export</p>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          id="copy-clipboard-btn"
+          class="px-3.5 py-2 border border-slate-200 hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-xl transition flex items-center gap-1.5 shadow-sm"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+          </svg>
+          <span id="copy-btn-text">Copy to Clipboard</span>
+        </button>
+
+        <button
+          type="button"
+          id="download-csv-btn"
+          class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-button flex items-center gap-1.5 transition"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+          </svg>
+          <span>Download CSV</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Bar -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+        <span class="block text-[10px] font-mono uppercase text-slate-400">Total Rows</span>
+        <span id="stat-row-count" class="text-sm font-bold text-slate-800">0</span>
+      </div>
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+        <span class="block text-[10px] font-mono uppercase text-slate-400">Columns</span>
+        <span id="stat-col-count" class="text-sm font-bold text-slate-800">0</span>
+      </div>
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+        <span class="block text-[10px] font-mono uppercase text-slate-400">Pages Analyzed</span>
+        <span id="stat-page-count" class="text-sm font-bold text-slate-800">0</span>
+      </div>
+      <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+        <span class="block text-[10px] font-mono uppercase text-slate-400">Format</span>
+        <span class="text-sm font-bold text-slate-800">RFC 4180 CSV</span>
+      </div>
+    </div>
+
+    <!-- Table Preview Card -->
+    <div>
+      <div class="flex items-center justify-between mb-2">
+        <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+          Interactive Table Preview (First 25 Rows)
+        </h5>
+        <span class="text-[11px] text-slate-400 font-mono">Scroll horizontally for wide tables</span>
+      </div>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-200 max-h-96 shadow-inner bg-slate-50/50">
+        <table class="w-full text-left text-xs border-collapse" id="csv-preview-table">
+          <!-- Dynamically populated -->
+        </table>
+      </div>
+    </div>
+
+    <!-- Bottom Actions -->
+    <div class="pt-2 flex items-center justify-between">
+      <button
+        type="button"
+        id="restart-csv-btn"
+        class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline"
+      >
+        ← Extract Another PDF Document
+      </button>
+
+      <span class="text-[11px] text-slate-400 font-mono">100% in-browser client processing</span>
+    </div>
+  </div>
+</div>
+
+<script>
+  let generatedCsvText = '';
+  let originalPdfName = 'table.pdf';
+  let processedBlobUrl: string | null = null;
+
+  const dropZone = document.getElementById('csv-drop-zone');
+  const fileInput = document.getElementById('csv-file-input') as HTMLInputElement | null;
+  const processingSection = document.getElementById('csv-processing-section');
+  const resultsSection = document.getElementById('csv-results-section');
+
+  const errorBanner = document.getElementById('csv-error-banner');
+  const errorMessage = document.getElementById('csv-error-message');
+  const dismissErrorBtn = document.getElementById('dismiss-csv-error');
+
+  const fileNameEl = document.getElementById('csv-file-name');
+  const summaryMetaEl = document.getElementById('csv-summary-meta');
+  const statRowCount = document.getElementById('stat-row-count');
+  const statColCount = document.getElementById('stat-col-count');
+  const statPageCount = document.getElementById('stat-page-count');
+  const previewTable = document.getElementById('csv-preview-table');
+
+  const downloadBtn = document.getElementById('download-csv-btn');
+  const copyBtn = document.getElementById('copy-clipboard-btn');
+  const copyText = document.getElementById('copy-btn-text');
+  const restartBtn = document.getElementById('restart-csv-btn');
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    errorBanner?.classList.add('hidden');
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  function renderTablePreview(grid: string[][]) {
+    if (!previewTable) return;
+    previewTable.innerHTML = '';
+
+    if (grid.length === 0) {
+      previewTable.innerHTML = `<tr><td class="p-4 text-center text-slate-400">No tabular data detected.</td></tr>`;
+      return;
+    }
+
+    const thead = document.createElement('thead');
+    const headerRow = document.createElement('tr');
+    headerRow.className = 'bg-slate-100 border-b border-slate-200 text-slate-700 font-bold sticky top-0';
+
+    const headerCells = grid[0];
+    headerCells.forEach((c) => {
+      const th = document.createElement('th');
+      th.className = 'px-3 py-2.5 border-r border-slate-200 last:border-r-0 whitespace-nowrap text-slate-800';
+      th.textContent = c || '-';
+      headerRow.appendChild(th);
+    });
+    thead.appendChild(headerRow);
+    previewTable.appendChild(thead);
+
+    const tbody = document.createElement('tbody');
+    const rowsToRender = grid.slice(1, 26); // First 25 data rows
+
+    rowsToRender.forEach((row, rIdx) => {
+      const tr = document.createElement('tr');
+      tr.className = rIdx % 2 === 0 ? 'bg-white hover:bg-slate-50/80' : 'bg-slate-50/40 hover:bg-slate-50/80';
+
+      row.forEach((cell) => {
+        const td = document.createElement('td');
+        td.className = 'px-3 py-2 border-r border-b border-slate-200/80 last:border-r-0 text-slate-700 whitespace-nowrap font-mono text-[11px]';
+        td.textContent = cell || '';
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+
+    previewTable.appendChild(tbody);
+  }
+
+  async function handleFile(file: File) {
+    hideError();
+    if (!file.name.toLowerCase().endsWith('.pdf') && file.type !== 'application/pdf') {
+      showError('Please upload a valid PDF document.');
+      return;
+    }
+
+    originalPdfName = file.name;
+    dropZone?.classList.add('hidden');
+    processingSection?.classList.remove('hidden');
+
+    try {
+      const buffer = await file.arrayBuffer();
+      const pdfBytes = new Uint8Array(buffer);
+
+      const { extractTablesFromPdf } = await import('../../lib/pdf/tableExtractor');
+      const result = await extractTablesFromPdf(pdfBytes);
+
+      generatedCsvText = result.csv;
+
+      processingSection?.classList.add('hidden');
+      resultsSection?.classList.remove('hidden');
+
+      if (fileNameEl) fileNameEl.textContent = file.name;
+      if (summaryMetaEl) {
+        summaryMetaEl.textContent = `Analyzed ${(file.size / 1024).toFixed(1)} KB across ${result.pageCount} page(s)`;
+      }
+
+      const totalCols = result.tables.length > 0 ? Math.max(...result.tables.map((t) => t.colCount)) : 0;
+      if (statRowCount) statRowCount.textContent = result.rowCount.toString();
+      if (statColCount) statColCount.textContent = totalCols.toString();
+      if (statPageCount) statPageCount.textContent = result.pageCount.toString();
+
+      // Render interactive preview
+      const previewGrid = result.tables.length > 0 ? result.tables[0].grid : [];
+      renderTablePreview(previewGrid);
+
+      // Create download Blob URL
+      if (processedBlobUrl) URL.revokeObjectURL(processedBlobUrl);
+      const blob = new Blob([result.csv], { type: 'text/csv;charset=utf-8;' });
+      processedBlobUrl = URL.createObjectURL(blob);
+    } catch (err: any) {
+      processingSection?.classList.add('hidden');
+      dropZone?.classList.remove('hidden');
+      showError(`Table extraction failed: ${err?.message || 'Could not parse text coordinates.'}`);
+    }
+  }
+
+  fileInput?.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      handleFile(target.files[0]);
+    }
+  });
+
+  downloadBtn?.addEventListener('click', () => {
+    if (!processedBlobUrl) return;
+    const a = document.createElement('a');
+    a.href = processedBlobUrl;
+    const baseName = originalPdfName.replace(/\.pdf$/i, '');
+    a.download = `${baseName}-table.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  });
+
+  copyBtn?.addEventListener('click', async () => {
+    if (!generatedCsvText) return;
+    try {
+      // Copy tab-delimited text so it pastes cleanly into Excel / Google Sheets
+      const tabDelimited = generatedCsvText.replace(/,/g, '\t');
+      await navigator.clipboard.writeText(tabDelimited);
+      if (copyText) copyText.textContent = 'Copied to Clipboard!';
+      setTimeout(() => {
+        if (copyText) copyText.textContent = 'Copy to Clipboard';
+      }, 2500);
+    } catch {
+      showError('Clipboard permission denied by browser.');
+    }
+  });
+
+  restartBtn?.addEventListener('click', () => {
+    if (processedBlobUrl) {
+      URL.revokeObjectURL(processedBlobUrl);
+      processedBlobUrl = null;
+    }
+    generatedCsvText = '';
+    resultsSection?.classList.add('hidden');
+    dropZone?.classList.remove('hidden');
+    if (fileInput) fileInput.value = '';
+  });
+</script>

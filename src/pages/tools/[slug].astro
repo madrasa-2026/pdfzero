@@ -34,6 +34,7 @@ import DeskewPdfIsland from '../../components/tools/DeskewPdfIsland.astro';
 import ReaderPdfIsland from '../../components/tools/ReaderPdfIsland.astro';
 import DarkModePdfIsland from '../../components/tools/DarkModePdfIsland.astro';
 import OverlayPdfIsland from '../../components/tools/OverlayPdfIsland.astro';
+import PdfToCsvIsland from '../../components/tools/PdfToCsvIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -222,6 +223,8 @@ const relatedToolCards = allTools
       <DarkModePdfIsland />
     ) : tool.slug === 'overlay-pdf' ? (
       <OverlayPdfIsland />
+    ) : tool.slug === 'pdf-to-csv' ? (
+      <PdfToCsvIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}
