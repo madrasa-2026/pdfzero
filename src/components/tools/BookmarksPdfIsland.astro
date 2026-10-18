@@ -1,0 +1,522 @@
+---
+// BookmarksPdfIsland.astro - 100% in-browser PDF Table of Contents & Bookmarks Editor
+---
+
+<div id="bookmarks-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="bookmarks-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Bookmarks Notice</h4>
+      <p id="bookmarks-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-bookmarks-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="bookmarks-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="bookmarks-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-violet-50 group-hover:bg-violet-600 flex items-center justify-center text-violet-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-violet-600 transition">
+      Select PDF to Edit Table of Contents & Bookmarks
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your document here, or click to browse.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF Document
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Nested Outline Tree</span>
+      <span>•</span>
+      <span>Auto-Sidebar Flag</span>
+    </div>
+  </div>
+
+  <!-- 2. Configure & Edit Bookmarks Card -->
+  <div id="bookmarks-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-violet-50 text-violet-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="bookmarks-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="bookmarks-file-meta" class="text-xs text-slate-500">Scanning existing bookmarks...</p>
+        </div>
+      </div>
+      <button type="button" id="change-bookmarks-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Bookmarks Tree Editor -->
+    <div>
+      <div class="flex items-center justify-between mb-3">
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+          Table of Contents Outlines
+        </label>
+        <span class="text-xs text-slate-500" id="bookmarks-count-badge">0 items</span>
+      </div>
+
+      <!-- Tree Items Container -->
+      <div id="bookmarks-tree-list" class="space-y-2 mb-4 max-h-96 overflow-y-auto p-1">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Helper / Add Item Actions -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-2">
+        <button
+          type="button"
+          id="add-bookmark-btn"
+          class="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-violet-700 bg-violet-50 hover:bg-violet-100 border border-violet-200 rounded-xl transition"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+          </svg>
+          <span>Add Bookmark</span>
+        </button>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            id="clear-all-bookmarks-btn"
+            class="px-3 py-1.5 text-xs text-slate-500 hover:text-red-600 hover:underline transition"
+          >
+            Clear All
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2 flex flex-col sm:flex-row items-center gap-3">
+      <button
+        type="button"
+        id="execute-bookmarks-btn"
+        class="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+        </svg>
+        <span>Save Table of Contents to PDF</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Processing State -->
+  <div id="bookmarks-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-5">
+    <div class="w-16 h-16 mx-auto relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-violet-100 border-t-violet-600 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-violet-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-base font-bold text-slate-900 mb-1">Generating Outlines Tree...</h3>
+      <p id="bookmarks-progress-text" class="text-xs text-slate-500">
+        Linking destination pages and configuring sidebar navigation flag...
+      </p>
+    </div>
+  </div>
+
+  <!-- 4. Success & Download State -->
+  <div id="bookmarks-success-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-lg font-bold text-slate-900 mb-1">Bookmarks Saved Successfully!</h3>
+      <p class="text-xs text-slate-500 max-w-md mx-auto">
+        Your PDF now includes an interactive, clickable Table of Contents that automatically opens in reader sidebars.
+      </p>
+    </div>
+
+    <!-- Metrics Details -->
+    <div id="bookmarks-metrics-container" class="max-w-md mx-auto p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-2 text-left">
+      <!-- Injected dynamically -->
+    </div>
+
+    <!-- Download Action -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        id="download-bookmarked-pdf-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-violet-600 hover:bg-violet-500 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Bookmarked PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="edit-another-bookmarks-btn"
+        class="w-full sm:w-auto px-5 py-3 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+      >
+        Edit Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import {
+    extractBookmarks,
+    applyBookmarks,
+    type BookmarkItem,
+  } from '../../lib/pdf/bookmarks';
+
+  interface FlatItem {
+    id: string;
+    title: string;
+    pageNumber: number;
+    level: number; // 0 = root, 1 = child, 2 = subchild
+  }
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let bookmarkedPdfBytes: Uint8Array | null = null;
+  let totalPageCount = 1;
+  let flatItems: FlatItem[] = [];
+
+  const dropZone = document.getElementById('bookmarks-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('bookmarks-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('bookmarks-config-section') as HTMLDivElement;
+  const progressSection = document.getElementById('bookmarks-progress-section') as HTMLDivElement;
+  const successSection = document.getElementById('bookmarks-success-section') as HTMLDivElement;
+
+  const errorBanner = document.getElementById('bookmarks-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('bookmarks-error-message') as HTMLElement;
+  const dismissErrorBtn = document.getElementById('dismiss-bookmarks-error') as HTMLButtonElement;
+
+  const fileNameLabel = document.getElementById('bookmarks-file-name') as HTMLElement;
+  const fileMetaLabel = document.getElementById('bookmarks-file-meta') as HTMLElement;
+  const countBadge = document.getElementById('bookmarks-count-badge') as HTMLElement;
+  const changeFileBtn = document.getElementById('change-bookmarks-file-btn') as HTMLButtonElement;
+  const executeBtn = document.getElementById('execute-bookmarks-btn') as HTMLButtonElement;
+  const addBookmarkBtn = document.getElementById('add-bookmark-btn') as HTMLButtonElement;
+  const clearAllBtn = document.getElementById('clear-all-bookmarks-btn') as HTMLButtonElement;
+
+  const treeList = document.getElementById('bookmarks-tree-list') as HTMLDivElement;
+  const metricsContainer = document.getElementById('bookmarks-metrics-container') as HTMLDivElement;
+  const downloadBtn = document.getElementById('download-bookmarked-pdf-btn') as HTMLButtonElement;
+  const editAnotherBtn = document.getElementById('edit-another-bookmarks-btn') as HTMLButtonElement;
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    if (errorBanner) {
+      errorBanner.classList.add('hidden');
+    }
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  function flattenHierarchy(items: BookmarkItem[], level = 0): FlatItem[] {
+    const list: FlatItem[] = [];
+    for (const item of items) {
+      list.push({
+        id: Math.random().toString(36).substring(2, 9),
+        title: item.title,
+        pageNumber: item.pageNumber,
+        level,
+      });
+      if (item.children && item.children.length > 0) {
+        list.push(...flattenHierarchy(item.children, level + 1));
+      }
+    }
+    return list;
+  }
+
+  function unflattenHierarchy(flat: FlatItem[]): BookmarkItem[] {
+    const root: BookmarkItem[] = [];
+    const stack: { node: BookmarkItem; level: number }[] = [];
+
+    for (const item of flat) {
+      const node: BookmarkItem = {
+        title: item.title || 'Untitled',
+        pageNumber: Math.max(1, Math.min(totalPageCount, item.pageNumber || 1)),
+      };
+
+      while (stack.length > 0 && stack[stack.length - 1].level >= item.level) {
+        stack.pop();
+      }
+
+      if (stack.length === 0) {
+        root.push(node);
+      } else {
+        const parent = stack[stack.length - 1].node;
+        if (!parent.children) parent.children = [];
+        parent.children.push(node);
+      }
+
+      stack.push({ node, level: item.level });
+    }
+
+    return root;
+  }
+
+  function renderTree() {
+    if (!treeList) return;
+    if (countBadge) countBadge.textContent = `${flatItems.length} item${flatItems.length === 1 ? '' : 's'}`;
+
+    if (flatItems.length === 0) {
+      treeList.innerHTML = `
+        <div class="p-6 text-center text-xs text-slate-400 bg-slate-50 border border-dashed border-slate-200 rounded-xl">
+          No bookmarks in document. Click "+ Add Bookmark" to create a Table of Contents.
+        </div>
+      `;
+      return;
+    }
+
+    treeList.innerHTML = flatItems
+      .map((item, idx) => {
+        const indentClass = item.level === 1 ? 'ml-6 border-l-2 border-violet-300 pl-2' : item.level >= 2 ? 'ml-12 border-l-2 border-violet-400 pl-2' : '';
+        return `
+          <div class="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200/90 rounded-xl ${indentClass}" data-index="${idx}">
+            <div class="flex items-center gap-1">
+              <button type="button" class="outdent-btn p-1 text-slate-400 hover:text-violet-600 rounded disabled:opacity-30" ${item.level === 0 ? 'disabled' : ''} title="Outdent (Promote)">
+                ←
+              </button>
+              <button type="button" class="indent-btn p-1 text-slate-400 hover:text-violet-600 rounded disabled:opacity-30" ${idx === 0 || item.level >= 3 ? 'disabled' : ''} title="Indent (Nest)">
+                →
+              </button>
+            </div>
+
+            <input
+              type="text"
+              class="bookmark-title-input flex-1 px-3 py-1.5 text-xs rounded-lg border border-slate-200 bg-white font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500"
+              value="${escapeAttr(item.title)}"
+              placeholder="Bookmark Title (e.g. Chapter 1)"
+            />
+
+            <div class="flex items-center gap-1.5">
+              <span class="text-[11px] text-slate-500 font-semibold">Page:</span>
+              <input
+                type="number"
+                min="1"
+                max="${totalPageCount}"
+                class="bookmark-page-input w-16 px-2 py-1.5 text-xs font-mono text-center rounded-lg border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-violet-500"
+                value="${item.pageNumber}"
+              />
+            </div>
+
+            <button type="button" class="delete-bookmark-btn p-1.5 text-slate-400 hover:text-red-600 rounded-lg transition" title="Delete">
+              ✕
+            </button>
+          </div>
+        `;
+      })
+      .join('');
+
+    // Attach listeners
+    treeList.querySelectorAll('.bookmark-title-input').forEach((input, i) => {
+      input.addEventListener('input', (e: any) => {
+        flatItems[i].title = e.target.value;
+      });
+    });
+
+    treeList.querySelectorAll('.bookmark-page-input').forEach((input, i) => {
+      input.addEventListener('change', (e: any) => {
+        const val = parseInt(e.target.value, 10);
+        if (!isNaN(val)) {
+          flatItems[i].pageNumber = Math.max(1, Math.min(totalPageCount, val));
+        }
+      });
+    });
+
+    treeList.querySelectorAll('.indent-btn').forEach((btn, i) => {
+      btn.addEventListener('click', () => {
+        if (i > 0 && flatItems[i].level < 3) {
+          flatItems[i].level++;
+          renderTree();
+        }
+      });
+    });
+
+    treeList.querySelectorAll('.outdent-btn').forEach((btn, i) => {
+      btn.addEventListener('click', () => {
+        if (flatItems[i].level > 0) {
+          flatItems[i].level--;
+          renderTree();
+        }
+      });
+    });
+
+    treeList.querySelectorAll('.delete-bookmark-btn').forEach((btn, i) => {
+      btn.addEventListener('click', () => {
+        flatItems.splice(i, 1);
+        renderTree();
+      });
+    });
+  }
+
+  function escapeAttr(str: string): string {
+    return str.replace(/"/g, '&quot;');
+  }
+
+  addBookmarkBtn?.addEventListener('click', () => {
+    const nextNum = flatItems.length > 0 ? Math.min(totalPageCount, flatItems[flatItems.length - 1].pageNumber + 1) : 1;
+    flatItems.push({
+      id: Math.random().toString(36).substring(2, 9),
+      title: `Chapter ${flatItems.length + 1}`,
+      pageNumber: nextNum,
+      level: 0,
+    });
+    renderTree();
+  });
+
+  clearAllBtn?.addEventListener('click', () => {
+    flatItems = [];
+    renderTree();
+  });
+
+  async function handleSelectedFile(file: File) {
+    if (!file || file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please select a valid PDF file.');
+      return;
+    }
+
+    hideError();
+    currentFile = file;
+
+    try {
+      fileBuffer = await file.arrayBuffer();
+      const extracted = await extractBookmarks(new Uint8Array(fileBuffer));
+      totalPageCount = extracted.pageCount;
+
+      if (fileNameLabel) fileNameLabel.textContent = file.name;
+      if (fileMetaLabel) {
+        const sizeMb = (file.size / (1024 * 1024)).toFixed(2);
+        fileMetaLabel.textContent = `${totalPageCount} page${totalPageCount === 1 ? '' : 's'} · ${sizeMb} MB · ${extracted.hasBookmarks ? `${extracted.bookmarks.length} existing outlines` : 'No outlines'}`;
+      }
+
+      if (extracted.hasBookmarks) {
+        flatItems = flattenHierarchy(extracted.bookmarks);
+      } else {
+        flatItems = [
+          { id: '1', title: 'Cover / Title', pageNumber: 1, level: 0 },
+        ];
+      }
+
+      renderTree();
+
+      dropZone.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      successSection.classList.add('hidden');
+    } catch (err: any) {
+      showError(err?.message || 'Failed to parse PDF document.');
+    }
+  }
+
+  fileInput?.addEventListener('change', (e: any) => {
+    if (e.target.files && e.target.files[0]) {
+      handleSelectedFile(e.target.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    currentFile = null;
+    fileBuffer = null;
+    bookmarkedPdfBytes = null;
+    fileInput.value = '';
+    configSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+
+  editAnotherBtn?.addEventListener('click', () => {
+    currentFile = null;
+    fileBuffer = null;
+    bookmarkedPdfBytes = null;
+    fileInput.value = '';
+    successSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+  });
+
+  executeBtn?.addEventListener('click', async () => {
+    if (!fileBuffer || !currentFile) return;
+
+    try {
+      configSection.classList.add('hidden');
+      progressSection.classList.remove('hidden');
+
+      const tree = unflattenHierarchy(flatItems);
+      const output = await applyBookmarks(new Uint8Array(fileBuffer), tree);
+      bookmarkedPdfBytes = output;
+
+      if (metricsContainer) {
+        metricsContainer.innerHTML = `
+          <div class="flex justify-between py-1 border-b border-slate-200/60">
+            <span class="text-slate-500">Bookmarks Generated:</span>
+            <span class="font-bold text-slate-800">${flatItems.length} items</span>
+          </div>
+          <div class="flex justify-between py-1 border-b border-slate-200/60">
+            <span class="text-slate-500">Sidebar Mode:</span>
+            <span class="font-bold text-violet-700 font-mono">/PageMode /UseOutlines (Auto-open)</span>
+          </div>
+          <div class="flex justify-between py-1">
+            <span class="text-slate-500">Document Pages:</span>
+            <span class="font-bold text-slate-800">${totalPageCount}</span>
+          </div>
+        `;
+      }
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      showError(err?.message || 'Failed to write bookmarks to PDF.');
+    }
+  });
+
+  downloadBtn?.addEventListener('click', () => {
+    if (!bookmarkedPdfBytes || !currentFile) return;
+
+    const blob = new Blob([bookmarkedPdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const baseName = currentFile.name.replace(/\.pdf$/i, '');
+    link.href = url;
+    link.download = `${baseName}-bookmarked.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 10000);
+  });
+</script>
