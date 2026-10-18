@@ -1,0 +1,502 @@
+---
+// MetadataPdfIsland.astro - 100% In-Browser PDF Metadata Editor & Deep Sanitizer
+---
+
+<div id="metadata-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="metadata-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Metadata Notice</h4>
+      <p id="metadata-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-metadata-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="metadata-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="metadata-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-sky-50 group-hover:bg-sky-600 flex items-center justify-center text-sky-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-sky-600 transition">
+      Select PDF to Inspect & Sanitize Metadata
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your PDF document here, or click to browse.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF Document
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Wipe Author & XMP Packets</span>
+      <span>•</span>
+      <span>Zero Server Uploads</span>
+    </div>
+  </div>
+
+  <!-- 2. Configure & Inspect Metadata Card -->
+  <div id="metadata-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="meta-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="meta-file-meta" class="text-xs text-slate-500">Detecting document metadata...</p>
+        </div>
+      </div>
+      <button type="button" id="change-meta-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Forensic Badges Bar -->
+    <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold text-slate-700">Forensic Scan:</span>
+        <span id="xmp-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-200 text-slate-700">
+          Scanning XMP...
+        </span>
+        <span id="tags-count-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-sky-100 text-sky-800">
+          0 Detected Tags
+        </span>
+      </div>
+
+      <div class="text-[11px] text-slate-500">
+        Private local inspection
+      </div>
+    </div>
+
+    <!-- One-Click Deep Sanitize Banner Toggle -->
+    <div class="p-4 rounded-xl border-2 border-emerald-500/40 bg-emerald-50/40 flex items-start sm:items-center justify-between gap-4">
+      <div class="flex items-start gap-3">
+        <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center flex-shrink-0 mt-0.5 sm:mt-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </div>
+        <div>
+          <h5 class="text-sm font-bold text-emerald-950">One-Click Deep Sanitize (Anonymize Document)</h5>
+          <p class="text-xs text-emerald-800 leading-relaxed">
+            Permanently purge all author identities, titles, software signatures, timestamps, and delete the hidden XMP stream for blind peer-review or legal privacy.
+          </p>
+        </div>
+      </div>
+
+      <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+        <input type="checkbox" id="deep-sanitize-toggle" checked class="sr-only peer" />
+        <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-600"></div>
+      </label>
+    </div>
+
+    <!-- Manual Metadata Form (Disabled when deep sanitize is active) -->
+    <div id="manual-meta-form" class="space-y-4 opacity-50 pointer-events-none transition duration-200">
+      <div class="flex items-center justify-between">
+        <h5 class="text-xs font-bold text-slate-700 uppercase tracking-wider">Document Metadata Attributes</h5>
+        <span class="text-[11px] text-slate-400">Turn off Deep Sanitize to edit individual fields</span>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Document Title</label>
+          <input type="text" id="meta-title-input" placeholder="e.g. Annual Executive Report 2026" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500" />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Author / Organization</label>
+          <input type="text" id="meta-author-input" placeholder="e.g. Jane Doe, ACME Corp" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500" />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Subject / Summary</label>
+          <input type="text" id="meta-subject-input" placeholder="e.g. Financial audit and forecasting" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500" />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Keywords (Comma-separated)</label>
+          <input type="text" id="meta-keywords-input" placeholder="e.g. audit, finance, report, confidential" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500" />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Application Producer</label>
+          <input type="text" id="meta-producer-input" placeholder="e.g. Acrobat Distiller / AirPDF" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500" />
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Authoring Creator</label>
+          <input type="text" id="meta-creator-input" placeholder="e.g. Microsoft Word / InDesign" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500" />
+        </div>
+      </div>
+
+      <!-- Timestamps Option -->
+      <div class="pt-2">
+        <label class="block text-[11px] font-bold text-slate-600 mb-1.5">Document Timestamps Option</label>
+        <select id="meta-timestamp-select" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+          <option value="wipe" selected>Wipe all Creation & Modification dates (Maximum privacy)</option>
+          <option value="update">Update Modification Date to right now</option>
+          <option value="preserve">Preserve original document timestamps</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2 flex flex-col sm:flex-row items-center gap-3">
+      <button
+        type="button"
+        id="execute-metadata-btn"
+        class="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+        </svg>
+        <span id="execute-btn-label">Deep Sanitize & Purge Metadata</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Processing State -->
+  <div id="metadata-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-5">
+    <div class="w-16 h-16 mx-auto relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-emerald-100 border-t-emerald-600 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-emerald-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-base font-bold text-slate-900 mb-1">Sanitizing Document Metadata...</h3>
+      <p id="meta-progress-text" class="text-xs text-slate-500">
+        Purging hidden identifiers and deleting catalog XMP streams...
+      </p>
+    </div>
+  </div>
+
+  <!-- 4. Success & Download State -->
+  <div id="metadata-success-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-lg font-bold text-slate-900 mb-1">PDF Metadata Processed Successfully!</h3>
+      <p class="text-xs text-slate-500 max-w-md mx-auto">
+        Your document has been cleaned and saved with vector sharpness.
+      </p>
+    </div>
+
+    <!-- Metrics Details -->
+    <div id="metadata-metrics-container" class="max-w-md mx-auto p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-2 text-left">
+      <!-- Injected dynamically -->
+    </div>
+
+    <!-- Download Action -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        id="download-sanitized-pdf-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-500 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Sanitized PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="meta-sanitize-another-btn"
+        class="w-full sm:w-auto px-5 py-3 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+      >
+        Sanitize Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { readPdfMetadata, updatePdfMetadata, type PdfMetadata } from '../../lib/pdf/metadata';
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let sanitizedPdfBytes: Uint8Array | null = null;
+  let detectedMetadata: PdfMetadata | null = null;
+
+  const dropZone = document.getElementById('metadata-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('metadata-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('metadata-config-section') as HTMLDivElement;
+  const progressSection = document.getElementById('metadata-progress-section') as HTMLDivElement;
+  const successSection = document.getElementById('metadata-success-section') as HTMLDivElement;
+
+  const errorBanner = document.getElementById('metadata-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('metadata-error-message') as HTMLElement;
+  const dismissErrorBtn = document.getElementById('dismiss-metadata-error') as HTMLButtonElement;
+
+  const fileNameLabel = document.getElementById('meta-file-name') as HTMLElement;
+  const fileMetaLabel = document.getElementById('meta-file-meta') as HTMLElement;
+  const changeFileBtn = document.getElementById('change-meta-file-btn') as HTMLButtonElement;
+  const executeBtn = document.getElementById('execute-metadata-btn') as HTMLButtonElement;
+  const executeBtnLabel = document.getElementById('execute-btn-label') as HTMLElement;
+
+  const xmpBadge = document.getElementById('xmp-badge') as HTMLElement;
+  const tagsCountBadge = document.getElementById('tags-count-badge') as HTMLElement;
+  const deepSanitizeToggle = document.getElementById('deep-sanitize-toggle') as HTMLInputElement;
+  const manualMetaForm = document.getElementById('manual-meta-form') as HTMLDivElement;
+
+  const titleInput = document.getElementById('meta-title-input') as HTMLInputElement;
+  const authorInput = document.getElementById('meta-author-input') as HTMLInputElement;
+  const subjectInput = document.getElementById('meta-subject-input') as HTMLInputElement;
+  const keywordsInput = document.getElementById('meta-keywords-input') as HTMLInputElement;
+  const producerInput = document.getElementById('meta-producer-input') as HTMLInputElement;
+  const creatorInput = document.getElementById('meta-creator-input') as HTMLInputElement;
+  const timestampSelect = document.getElementById('meta-timestamp-select') as HTMLSelectElement;
+
+  const metricsContainer = document.getElementById('metadata-metrics-container') as HTMLDivElement;
+  const downloadBtn = document.getElementById('download-sanitized-pdf-btn') as HTMLButtonElement;
+  const sanitizeAnotherBtn = document.getElementById('meta-sanitize-another-btn') as HTMLButtonElement;
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    if (errorBanner) {
+      errorBanner.classList.add('hidden');
+    }
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  // Toggle Deep Sanitize vs Manual
+  deepSanitizeToggle?.addEventListener('change', () => {
+    const isDeep = deepSanitizeToggle.checked;
+    if (isDeep) {
+      manualMetaForm.classList.add('opacity-50', 'pointer-events-none');
+      executeBtnLabel.textContent = 'Deep Sanitize & Purge Metadata';
+    } else {
+      manualMetaForm.classList.remove('opacity-50', 'pointer-events-none');
+      executeBtnLabel.textContent = 'Save Updated Metadata';
+    }
+  });
+
+  // Load File and Read Metadata
+  async function loadFile(file: File) {
+    hideError();
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please upload a valid PDF document.');
+      return;
+    }
+
+    try {
+      currentFile = file;
+      fileBuffer = await file.arrayBuffer();
+
+      const meta = await readPdfMetadata(new Uint8Array(fileBuffer));
+      detectedMetadata = meta;
+
+      fileNameLabel.textContent = file.name;
+      fileMetaLabel.textContent = `${formatBytes(file.size)}`;
+
+      // Count detected tags
+      let detectedCount = 0;
+      if (meta.title) detectedCount++;
+      if (meta.author) detectedCount++;
+      if (meta.subject) detectedCount++;
+      if (meta.keywords && meta.keywords.length > 0) detectedCount++;
+      if (meta.producer) detectedCount++;
+      if (meta.creator) detectedCount++;
+      if (meta.creationDate) detectedCount++;
+
+      tagsCountBadge.textContent = `${detectedCount} Metadata Tag${detectedCount === 1 ? '' : 's'}`;
+
+      if (meta.hasXmpMetadata) {
+        xmpBadge.textContent = 'XMP Stream: Detected (Hidden XML)';
+        xmpBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800';
+      } else {
+        xmpBadge.textContent = 'XMP Stream: None';
+        xmpBadge.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600';
+      }
+
+      // Populate input fields
+      titleInput.value = meta.title || '';
+      authorInput.value = meta.author || '';
+      subjectInput.value = meta.subject || '';
+      keywordsInput.value = (meta.keywords || []).join(', ');
+      producerInput.value = meta.producer || '';
+      creatorInput.value = meta.creator || '';
+
+      dropZone.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      progressSection.classList.add('hidden');
+      successSection.classList.add('hidden');
+    } catch (err: any) {
+      showError('Failed to inspect PDF: ' + (err?.message || 'Corrupted or unsupported file'));
+    }
+  }
+
+  fileInput?.addEventListener('change', (e) => {
+    const files = (e.target as HTMLInputElement).files;
+    if (files && files.length > 0) {
+      loadFile(files[0]);
+    }
+  });
+
+  dropZone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-emerald-500', 'bg-emerald-50/30');
+  });
+
+  dropZone?.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-emerald-500', 'bg-emerald-50/30');
+  });
+
+  dropZone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-emerald-500', 'bg-emerald-50/30');
+    if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+      loadFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    configSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+  });
+
+  sanitizeAnotherBtn?.addEventListener('click', () => {
+    successSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+  });
+
+  // Execute Sanitization
+  executeBtn?.addEventListener('click', async () => {
+    if (!fileBuffer || !currentFile) {
+      showError('No PDF document loaded.');
+      return;
+    }
+
+    try {
+      configSection.classList.add('hidden');
+      progressSection.classList.remove('hidden');
+
+      const isDeep = deepSanitizeToggle.checked;
+      let result;
+
+      if (isDeep) {
+        result = await updatePdfMetadata(new Uint8Array(fileBuffer), {
+          deepSanitize: true,
+        });
+      } else {
+        const keywords = keywordsInput.value
+          .split(/[,;\s]+/)
+          .map((k) => k.trim())
+          .filter(Boolean);
+
+        const timeMode = timestampSelect.value;
+        const wipeDates = timeMode === 'wipe';
+        const updateModificationDate = timeMode === 'update';
+
+        result = await updatePdfMetadata(new Uint8Array(fileBuffer), {
+          deepSanitize: false,
+          title: titleInput.value,
+          author: authorInput.value,
+          subject: subjectInput.value,
+          keywords,
+          producer: producerInput.value,
+          creator: creatorInput.value,
+          wipeDates,
+          updateModificationDate,
+        });
+      }
+
+      sanitizedPdfBytes = result.outputBytes;
+
+      metricsContainer.innerHTML = `
+        <div class="flex justify-between py-1 border-b border-slate-200/60">
+          <span class="text-slate-500">Operation Mode:</span>
+          <span class="font-bold text-slate-800">${isDeep ? 'One-Click Deep Sanitization' : 'Custom Metadata Update'}</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-200/60">
+          <span class="text-slate-500">Hidden Tags Purged:</span>
+          <span class="font-bold text-emerald-700">${result.removedFieldsCount} tags</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-200/60">
+          <span class="text-slate-500">XMP Packet Purged:</span>
+          <span class="font-bold ${result.xmpPurged ? 'text-emerald-700' : 'text-slate-600'}">${result.xmpPurged ? 'Yes (Scrubbed from catalog)' : 'None detected'}</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span class="text-slate-500">Clean File Size:</span>
+          <span class="font-bold text-slate-800">${formatBytes(result.outputSize)}</span>
+        </div>
+      `;
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      showError('Metadata processing failed: ' + (err?.message || 'Unknown processing error'));
+    }
+  });
+
+  // Download Action
+  downloadBtn?.addEventListener('click', () => {
+    if (!sanitizedPdfBytes || !currentFile) return;
+
+    const baseName = currentFile.name.replace(/\.pdf$/i, '');
+    const isDeep = deepSanitizeToggle.checked;
+    const downloadFileName = `${baseName}-${isDeep ? 'sanitized' : 'updated-meta'}.pdf`;
+
+    const blob = new Blob([sanitizedPdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = downloadFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+</script>
