@@ -1,0 +1,525 @@
+---
+// ReaderPdfIsland.astro - 100% In-Browser PDF Text-to-Speech (TTS) Audio Reader
+---
+
+<div id="reader-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="reader-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Audio Reader Notice</h4>
+      <p id="reader-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-reader-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="reader-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="reader-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-sky-50 group-hover:bg-sky-600 flex items-center justify-center text-sky-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-sky-600 transition">
+      Select PDF to Listen Aloud (Text-to-Speech)
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your textbook, research paper, or article here.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF Document
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Synchronized Sentence Highlighting</span>
+      <span>•</span>
+      <span>Natural System Voices</span>
+    </div>
+  </div>
+
+  <!-- 2. Text Extraction Progress State -->
+  <div id="reader-loading-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-5">
+    <div class="w-16 h-16 mx-auto relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-sky-100 border-t-sky-600 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-sky-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 100-6 3 3 0 000 6z" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-base font-bold text-slate-900 mb-1">Parsing Document Text...</h3>
+      <p id="reader-loading-text" class="text-xs text-slate-500">
+        Structuring pages and segmenting sentence boundaries...
+      </p>
+    </div>
+  </div>
+
+  <!-- 3. Audio Player & Reader Workspace -->
+  <div id="reader-workspace" class="hidden space-y-5 text-left">
+    <!-- Sticky Audio Control Dock -->
+    <div class="sticky top-4 z-30 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200/90 shadow-lg p-4 sm:p-5 space-y-3">
+      <!-- Top Row: File Name & Change File -->
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100 text-xs">
+        <div class="flex items-center gap-2 truncate">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span id="reader-doc-name" class="font-bold text-slate-900 truncate max-w-xs sm:max-w-md">document.pdf</span>
+          <span id="reader-doc-meta" class="text-slate-400 text-[11px]">• 0 words</span>
+        </div>
+        <button type="button" id="change-reader-file-btn" class="text-xs text-slate-500 hover:text-slate-800 hover:underline">
+          Change File
+        </button>
+      </div>
+
+      <!-- Center Controls Row -->
+      <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+        <!-- Play / Pause & Skip Buttons -->
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            id="reader-prev-sentence-btn"
+            class="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+            title="Previous Sentence"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0019 16V8a1 1 0 00-1.6-.8l-5.334 4zM4.066 11.2a1 1 0 000 1.6l5.334 4A1 1 0 0011 16V8a1 1 0 00-1.6-.8l-5.334 4z" />
+            </svg>
+          </button>
+
+          <button
+            type="button"
+            id="reader-play-pause-btn"
+            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-sm text-white bg-sky-600 hover:bg-sky-500 shadow-button transition"
+          >
+            <svg id="play-icon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-current" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
+            </svg>
+            <svg id="pause-icon" xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 fill-current hidden" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zM7 8a1 1 0 012 0v4a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+            </svg>
+            <span id="play-pause-text">Play Audio</span>
+          </button>
+
+          <button
+            type="button"
+            id="reader-next-sentence-btn"
+            class="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+            title="Next Sentence"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.933 12.8a1 1 0 000-1.6L6.6 7.2A1 1 0 005 8v8a1 1 0 001.6.8l5.333-4zM19.933 12.8a1 1 0 000-1.6l-5.333-4A1 1 0 0013 8v8a1 1 0 001.6.8l5.333-4z" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Voice & Speed Settings -->
+        <div class="flex items-center gap-2">
+          <!-- Voice Selector -->
+          <select
+            id="reader-voice-select"
+            class="max-w-[160px] sm:max-w-[210px] px-2.5 py-1.5 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+          >
+            <option value="">Default System Voice</option>
+          </select>
+
+          <!-- Speed Selector -->
+          <select
+            id="reader-speed-select"
+            class="px-2.5 py-1.5 text-xs font-bold rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+          >
+            <option value="0.75">0.75x</option>
+            <option value="1.0" selected>1.0x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="1.75">1.75x</option>
+            <option value="2.0">2.0x</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Progress Track Indicator -->
+      <div class="flex items-center justify-between text-[11px] text-slate-500 pt-1">
+        <span id="reading-position-label">Sentence 1 of 0</span>
+        <span class="text-slate-400">Click any sentence below to jump playback</span>
+      </div>
+    </div>
+
+    <!-- Document Reading Pane -->
+    <div id="reader-text-container" class="bg-white rounded-2xl border border-slate-200 p-6 sm:p-10 shadow-sm space-y-8 leading-relaxed max-h-[600px] overflow-y-auto">
+      <!-- Injected dynamically -->
+    </div>
+  </div>
+</div>
+
+<script>
+  import * as pdfjsLib from 'pdfjs-dist';
+  import {
+    buildDocumentSpeechData,
+    type DocumentSpeechData,
+    type ReaderSentence,
+  } from '../../lib/pdf/reader';
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let speechData: DocumentSpeechData | null = null;
+  let currentSentenceIndex = 0;
+  let isPlaying = false;
+  let isPaused = false;
+  let availableVoices: SpeechSynthesisVoice[] = [];
+  let currentUtterance: SpeechSynthesisUtterance | null = null;
+
+  const dropZone = document.getElementById('reader-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('reader-file-input') as HTMLInputElement;
+  const loadingSection = document.getElementById('reader-loading-section') as HTMLDivElement;
+  const loadingText = document.getElementById('reader-loading-text') as HTMLElement;
+  const workspaceSection = document.getElementById('reader-workspace') as HTMLDivElement;
+
+  const errorBanner = document.getElementById('reader-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('reader-error-message') as HTMLElement;
+  const dismissErrorBtn = document.getElementById('dismiss-reader-error') as HTMLButtonElement;
+
+  const docNameLabel = document.getElementById('reader-doc-name') as HTMLElement;
+  const docMetaLabel = document.getElementById('reader-doc-meta') as HTMLElement;
+  const changeFileBtn = document.getElementById('change-reader-file-btn') as HTMLButtonElement;
+
+  const playPauseBtn = document.getElementById('reader-play-pause-btn') as HTMLButtonElement;
+  const playIcon = document.getElementById('play-icon') as HTMLElement;
+  const pauseIcon = document.getElementById('pause-icon') as HTMLElement;
+  const playPauseText = document.getElementById('play-pause-text') as HTMLElement;
+
+  const prevSentenceBtn = document.getElementById('reader-prev-sentence-btn') as HTMLButtonElement;
+  const nextSentenceBtn = document.getElementById('reader-next-sentence-btn') as HTMLButtonElement;
+  const voiceSelect = document.getElementById('reader-voice-select') as HTMLSelectElement;
+  const speedSelect = document.getElementById('reader-speed-select') as HTMLSelectElement;
+  const positionLabel = document.getElementById('reading-position-label') as HTMLElement;
+  const textContainer = document.getElementById('reader-text-container') as HTMLDivElement;
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    if (errorBanner) {
+      errorBanner.classList.add('hidden');
+    }
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  // Populate Voices Dropdown
+  function populateVoices() {
+    if (!('speechSynthesis' in window)) {
+      showError('Web Speech Synthesis is not supported in this browser.');
+      return;
+    }
+
+    availableVoices = window.speechSynthesis.getVoices();
+    voiceSelect.innerHTML = '';
+
+    availableVoices.forEach((voice, index) => {
+      const option = document.createElement('option');
+      option.value = index.toString();
+      option.textContent = `${voice.name} (${voice.lang})`;
+      if (voice.default || voice.lang.startsWith('en')) {
+        option.selected = true;
+      }
+      voiceSelect.appendChild(option);
+    });
+  }
+
+  if ('speechSynthesis' in window) {
+    populateVoices();
+    window.speechSynthesis.onvoiceschanged = populateVoices;
+  }
+
+  // Highlight active sentence and scroll into view
+  function highlightSentence(index: number) {
+    document.querySelectorAll('.reader-sentence').forEach((el) => {
+      el.className = 'reader-sentence cursor-pointer hover:bg-sky-50 px-0.5 rounded transition';
+    });
+
+    const activeEl = document.getElementById(`sent-${index}`);
+    if (activeEl) {
+      activeEl.className = 'reader-sentence cursor-pointer bg-amber-100 text-amber-950 font-medium px-1 rounded shadow-sm border-b-2 border-amber-400 transition';
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+
+    if (speechData) {
+      positionLabel.textContent = `Sentence ${index + 1} of ${speechData.totalSentences}`;
+    }
+  }
+
+  // Play a single sentence at index
+  function playSentenceAtIndex(index: number) {
+    if (!speechData || index >= speechData.totalSentences) {
+      stopAudio();
+      return;
+    }
+
+    currentSentenceIndex = index;
+    highlightSentence(index);
+
+    const sentence = speechData.allSentences[index];
+    window.speechSynthesis.cancel();
+
+    currentUtterance = new SpeechSynthesisUtterance(sentence.text);
+
+    // Apply voice
+    const selectedVoiceIdx = parseInt(voiceSelect.value, 10);
+    if (!isNaN(selectedVoiceIdx) && availableVoices[selectedVoiceIdx]) {
+      currentUtterance.voice = availableVoices[selectedVoiceIdx];
+    }
+
+    // Apply speed
+    currentUtterance.rate = parseFloat(speedSelect.value) || 1.0;
+
+    currentUtterance.onend = () => {
+      if (isPlaying) {
+        playSentenceAtIndex(currentSentenceIndex + 1);
+      }
+    };
+
+    currentUtterance.onerror = (e) => {
+      console.warn('Speech synthesis error:', e);
+      if (isPlaying) {
+        playSentenceAtIndex(currentSentenceIndex + 1);
+      }
+    };
+
+    window.speechSynthesis.speak(currentUtterance);
+  }
+
+  function startAudio() {
+    isPlaying = true;
+    isPaused = false;
+    playIcon.classList.add('hidden');
+    pauseIcon.classList.remove('hidden');
+    playPauseText.textContent = 'Pause';
+    playSentenceAtIndex(currentSentenceIndex);
+  }
+
+  function pauseAudio() {
+    isPlaying = false;
+    isPaused = true;
+    window.speechSynthesis.pause();
+    playIcon.classList.remove('hidden');
+    pauseIcon.classList.add('hidden');
+    playPauseText.textContent = 'Resume';
+  }
+
+  function resumeAudio() {
+    isPlaying = true;
+    isPaused = false;
+    window.speechSynthesis.resume();
+    playIcon.classList.add('hidden');
+    pauseIcon.classList.remove('hidden');
+    playPauseText.textContent = 'Pause';
+  }
+
+  function stopAudio() {
+    isPlaying = false;
+    isPaused = false;
+    window.speechSynthesis.cancel();
+    playIcon.classList.remove('hidden');
+    pauseIcon.classList.add('hidden');
+    playPauseText.textContent = 'Play Audio';
+  }
+
+  playPauseBtn?.addEventListener('click', () => {
+    if (isPlaying) {
+      pauseAudio();
+    } else if (isPaused) {
+      resumeAudio();
+    } else {
+      startAudio();
+    }
+  });
+
+  prevSentenceBtn?.addEventListener('click', () => {
+    if (currentSentenceIndex > 0) {
+      playSentenceAtIndex(currentSentenceIndex - 1);
+    }
+  });
+
+  nextSentenceBtn?.addEventListener('click', () => {
+    if (speechData && currentSentenceIndex < speechData.totalSentences - 1) {
+      playSentenceAtIndex(currentSentenceIndex + 1);
+    }
+  });
+
+  speedSelect?.addEventListener('change', () => {
+    if (isPlaying) {
+      playSentenceAtIndex(currentSentenceIndex);
+    }
+  });
+
+  voiceSelect?.addEventListener('change', () => {
+    if (isPlaying) {
+      playSentenceAtIndex(currentSentenceIndex);
+    }
+  });
+
+  // Render Document Text Viewport
+  function renderDocumentText(data: DocumentSpeechData) {
+    textContainer.innerHTML = '';
+
+    data.pages.forEach((page) => {
+      const pageWrapper = document.createElement('div');
+      pageWrapper.className = 'space-y-4';
+
+      const pageHeading = document.createElement('div');
+      pageHeading.className = 'flex items-center justify-between pb-2 border-b border-slate-100 text-xs font-mono font-bold text-slate-400 uppercase tracking-widest';
+      pageHeading.textContent = `Page ${page.pageNumber}`;
+      pageWrapper.appendChild(pageHeading);
+
+      const paragraph = document.createElement('p');
+      paragraph.className = 'text-slate-800 text-sm sm:text-base leading-relaxed';
+
+      page.sentences.forEach((s) => {
+        const span = document.createElement('span');
+        span.id = `sent-${s.sentenceIndex}`;
+        span.className = 'reader-sentence cursor-pointer hover:bg-sky-50 px-0.5 rounded transition';
+        span.textContent = s.text + ' ';
+        span.setAttribute('data-index', s.sentenceIndex.toString());
+
+        span.addEventListener('click', () => {
+          playSentenceAtIndex(s.sentenceIndex);
+          if (!isPlaying) {
+            isPlaying = true;
+            isPaused = false;
+            playIcon.classList.add('hidden');
+            pauseIcon.classList.remove('hidden');
+            playPauseText.textContent = 'Pause';
+          }
+        });
+
+        paragraph.appendChild(span);
+      });
+
+      pageWrapper.appendChild(paragraph);
+      textContainer.appendChild(pageWrapper);
+    });
+  }
+
+  // Load and Parse PDF Text
+  async function loadFile(file: File) {
+    hideError();
+    stopAudio();
+
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please upload a valid PDF file.');
+      return;
+    }
+
+    try {
+      currentFile = file;
+      fileBuffer = await file.arrayBuffer();
+
+      dropZone.classList.add('hidden');
+      loadingSection.classList.remove('hidden');
+      workspaceSection.classList.add('hidden');
+
+      const loadingTask = pdfjsLib.getDocument({ data: new Uint8Array(fileBuffer) });
+      const doc = await loadingTask.promise;
+      const totalPages = doc.numPages;
+
+      const pagesText: { pageNumber: number; text: string }[] = [];
+
+      for (let p = 1; p <= totalPages; p++) {
+        loadingText.textContent = `Extracting text from page ${p} of ${totalPages}...`;
+        const page = await doc.getPage(p);
+        const textContent = await page.getTextContent();
+        const pageStr = textContent.items
+          .map((item: any) => item.str || '')
+          .join(' ');
+        pagesText.push({ pageNumber: p, text: pageStr });
+      }
+
+      speechData = buildDocumentSpeechData(pagesText);
+      currentSentenceIndex = 0;
+
+      if (speechData.totalSentences === 0) {
+        showError('No readable text could be found in this PDF (it may be a scanned image). Use our free OCR tool to make it readable!');
+        loadingSection.classList.add('hidden');
+        dropZone.classList.remove('hidden');
+        return;
+      }
+
+      docNameLabel.textContent = file.name;
+      docMetaLabel.textContent = `• ${totalPages} page${totalPages > 1 ? 's' : ''} • ${speechData.totalWords.toLocaleString()} words`;
+      positionLabel.textContent = `Sentence 1 of ${speechData.totalSentences}`;
+
+      renderDocumentText(speechData);
+
+      loadingSection.classList.add('hidden');
+      workspaceSection.classList.remove('hidden');
+    } catch (err: any) {
+      loadingSection.classList.add('hidden');
+      dropZone.classList.remove('hidden');
+      showError('Failed to read PDF text: ' + (err?.message || 'Invalid or encrypted file'));
+    }
+  }
+
+  fileInput?.addEventListener('change', (e) => {
+    const files = (e.target as HTMLInputElement).files;
+    if (files && files.length > 0) {
+      loadFile(files[0]);
+    }
+  });
+
+  dropZone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-sky-500', 'bg-sky-50/30');
+  });
+
+  dropZone?.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-sky-500', 'bg-sky-50/30');
+  });
+
+  dropZone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-sky-500', 'bg-sky-50/30');
+    if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+      loadFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    stopAudio();
+    workspaceSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+    speechData = null;
+  });
+</script>
