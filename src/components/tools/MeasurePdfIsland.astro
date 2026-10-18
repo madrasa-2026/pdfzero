@@ -1,0 +1,831 @@
+---
+// MeasurePdfIsland.astro - 100% In-Browser PDF Blueprint Measurement & Architectural Scale Calibrator
+---
+
+<div id="measure-island-app" class="w-full max-w-6xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="measure-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Measurement Tool Notice</h4>
+      <p id="measure-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-measure-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="measure-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="measure-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-blue-50 group-hover:bg-blue-600 flex items-center justify-center text-blue-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-blue-600 transition">
+      Select Blueprint or Floor Plan PDF
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop architectural drawings, CAD plans, or schematics here.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose Blueprint PDF
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Scale Calibration</span>
+      <span>•</span>
+      <span>Linear, Perimeter & Area Takeoffs</span>
+      <span>•</span>
+      <span>CSV & PDF Export</span>
+    </div>
+  </div>
+
+  <!-- 2. Interactive Measurement Workspace -->
+  <div id="measure-workspace" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden text-left">
+    <!-- Top Control Bar -->
+    <div class="p-4 bg-slate-900 text-white flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span class="font-bold text-sm truncate max-w-xs" id="measure-doc-title">blueprint.pdf</span>
+        <div class="flex items-center gap-1.5 text-xs text-slate-300 bg-slate-800 px-2.5 py-1 rounded-lg">
+          <button type="button" id="prev-page-btn" class="hover:text-white disabled:opacity-40">◀</button>
+          <span>Page <span id="current-page-num">1</span> of <span id="total-page-num">1</span></span>
+          <button type="button" id="next-page-btn" class="hover:text-white disabled:opacity-40">▶</button>
+        </div>
+      </div>
+
+      <!-- Scale Badge & Calibration Button -->
+      <div class="flex items-center gap-2">
+        <span id="scale-badge" class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+          Uncalibrated (1 pt = 1 px)
+        </span>
+        <button
+          type="button"
+          id="calibrate-btn"
+          class="px-3 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-lg transition active:scale-95 shadow-sm"
+        >
+          Calibrate Scale
+        </button>
+      </div>
+
+      <!-- Export Actions -->
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          id="export-csv-btn"
+          class="px-3 py-1 bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs rounded-lg border border-slate-700 transition"
+        >
+          Export CSV Takeoff
+        </button>
+        <button
+          type="button"
+          id="export-pdf-btn"
+          class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm transition active:scale-95"
+        >
+          Download Annotated PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Mode Selector & Instructions Strip -->
+    <div class="px-4 py-2.5 bg-slate-50 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-1.5">
+        <span class="font-bold text-slate-700 mr-1">Tool:</span>
+        <button
+          type="button"
+          data-tool="distance"
+          class="tool-btn px-3 py-1.5 rounded-lg font-bold bg-blue-600 text-white shadow-sm"
+        >
+          Linear Distance
+        </button>
+        <button
+          type="button"
+          data-tool="perimeter"
+          class="tool-btn px-3 py-1.5 rounded-lg font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+        >
+          Perimeter Path
+        </button>
+        <button
+          type="button"
+          data-tool="area"
+          class="tool-btn px-3 py-1.5 rounded-lg font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100"
+        >
+          Polygon Area
+        </button>
+        <button
+          type="button"
+          id="clear-measurements-btn"
+          class="ml-2 px-2.5 py-1.5 rounded-lg text-slate-500 hover:text-red-600 hover:bg-red-50 transition"
+        >
+          Clear All
+        </button>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <span id="canvas-instruction-text" class="text-slate-500 italic">
+          Click two points to measure distance
+        </span>
+        <span id="mouse-coords-display" class="font-mono text-[11px] text-slate-400">X: 0, Y: 0</span>
+      </div>
+    </div>
+
+    <!-- Calibration Input Modal Strip (Shown when calibrating) -->
+    <div id="calibration-input-bar" class="hidden p-3 bg-amber-50 border-b border-amber-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div class="flex items-center gap-2">
+        <span class="font-bold text-amber-900">Step 2: Enter Known Real Distance:</span>
+        <input
+          type="number"
+          id="cal-distance-input"
+          value="10"
+          min="0.01"
+          step="0.1"
+          class="w-20 bg-white border border-amber-300 rounded px-2 py-1 text-slate-900 font-bold focus:ring-1 focus:ring-amber-500"
+        />
+        <select
+          id="cal-unit-select"
+          class="bg-white border border-amber-300 rounded px-2 py-1 text-slate-900 font-bold focus:ring-1 focus:ring-amber-500"
+        >
+          <option value="m" selected>Meters (m)</option>
+          <option value="cm">Centimeters (cm)</option>
+          <option value="mm">Millimeters (mm)</option>
+          <option value="ft">Feet (ft)</option>
+          <option value="in">Inches (in)</option>
+        </select>
+        <button
+          type="button"
+          id="apply-calibration-btn"
+          class="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded shadow-sm"
+        >
+          Apply Scale
+        </button>
+        <button
+          type="button"
+          id="cancel-calibration-btn"
+          class="px-2 py-1 text-slate-600 hover:text-slate-900"
+        >
+          Cancel
+        </button>
+      </div>
+      <span class="text-amber-800 text-[11px]">Click two reference points on drawing (e.g. scale bar or door)</span>
+    </div>
+
+    <!-- Interactive Canvas Viewport -->
+    <div class="relative w-full overflow-auto bg-slate-100 flex items-center justify-center p-4 min-h-[500px]">
+      <div id="canvas-container" class="relative shadow-lg border border-slate-300 bg-white cursor-crosshair">
+        <!-- Base PDF Canvas -->
+        <canvas id="pdf-render-canvas" class="block"></canvas>
+        <!-- Overlay Interactive Drawing Canvas -->
+        <canvas id="overlay-draw-canvas" class="absolute inset-0 block"></canvas>
+      </div>
+    </div>
+
+    <!-- Takeoff Measurements Summary Drawer -->
+    <div class="p-4 bg-white border-t border-slate-200">
+      <div class="flex items-center justify-between mb-2">
+        <h4 class="font-bold text-xs uppercase tracking-wider text-slate-700">Takeoff Measurements List</h4>
+        <div class="text-xs text-slate-500 flex items-center gap-4">
+          <span>Total Distance: <strong id="total-distance-sum" class="text-slate-900">0.00</strong></span>
+          <span>Total Area: <strong id="total-area-sum" class="text-slate-900">0.00</strong></span>
+        </div>
+      </div>
+
+      <div class="max-h-48 overflow-y-auto border border-slate-100 rounded-xl">
+        <table class="w-full text-left text-xs text-slate-700">
+          <thead class="bg-slate-50 text-[11px] font-bold text-slate-500 uppercase border-b border-slate-100">
+            <tr>
+              <th class="p-2.5">ID</th>
+              <th class="p-2.5">Label</th>
+              <th class="p-2.5">Type</th>
+              <th class="p-2.5">Measured Dimension</th>
+              <th class="p-2.5 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="takeoff-table-body" class="divide-y divide-slate-100">
+            <tr>
+              <td colspan="5" class="p-4 text-center text-slate-400">No measurements yet. Click two points on the drawing to measure.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import * as pdfjsLib from 'pdfjs-dist';
+  import {
+    calculateDistance,
+    calculatePathLength,
+    calculatePolygonArea,
+    calibrateScale,
+    formatMeasurementValue,
+    burnMeasurementsToPdf,
+    exportTakeoffCsv,
+    type MeasurementUnit,
+    type MeasurementType,
+    type Point2D,
+    type CalibrationConfig,
+    type MeasurementItem,
+  } from '../../lib/pdf/measureEngine';
+
+  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let pdfDocProxy: any = null;
+  let currentPage = 1;
+  let totalPages = 1;
+
+  let activeTool: 'distance' | 'perimeter' | 'area' | 'calibrate' = 'distance';
+  let isCalibrating = false;
+  let calibrationPoints: Point2D[] = [];
+  let currentCalibration: CalibrationConfig = {
+    scaleRatio: 1,
+    unit: 'm',
+    isCalibrated: false,
+  };
+
+  let measurements: MeasurementItem[] = [];
+  let activePoints: Point2D[] = [];
+  let currentMousePos: Point2D | null = null;
+
+  // DOM Elements
+  const dropZone = document.getElementById('measure-drop-zone')!;
+  const fileInput = document.getElementById('measure-file-input') as HTMLInputElement;
+  const workspace = document.getElementById('measure-workspace')!;
+  const errorBanner = document.getElementById('measure-error-banner')!;
+  const errorMessage = document.getElementById('measure-error-message')!;
+  const dismissErrorBtn = document.getElementById('dismiss-measure-error')!;
+
+  const docTitleEl = document.getElementById('measure-doc-title')!;
+  const currentPageNumEl = document.getElementById('current-page-num')!;
+  const totalPageNumEl = document.getElementById('total-page-num')!;
+  const prevPageBtn = document.getElementById('prev-page-btn') as HTMLButtonElement;
+  const nextPageBtn = document.getElementById('next-page-btn') as HTMLButtonElement;
+  const scaleBadge = document.getElementById('scale-badge')!;
+  const calibrateBtn = document.getElementById('calibrate-btn')!;
+  const calibrationInputBar = document.getElementById('calibration-input-bar')!;
+  const calDistanceInput = document.getElementById('cal-distance-input') as HTMLInputElement;
+  const calUnitSelect = document.getElementById('cal-unit-select') as HTMLSelectElement;
+  const applyCalibrationBtn = document.getElementById('apply-calibration-btn')!;
+  const cancelCalibrationBtn = document.getElementById('cancel-calibration-btn')!;
+
+  const toolBtns = document.querySelectorAll<HTMLButtonElement>('.tool-btn');
+  const instructionText = document.getElementById('canvas-instruction-text')!;
+  const mouseCoordsDisplay = document.getElementById('mouse-coords-display')!;
+  const clearMeasurementsBtn = document.getElementById('clear-measurements-btn')!;
+
+  const canvasContainer = document.getElementById('canvas-container')!;
+  const pdfCanvas = document.getElementById('pdf-render-canvas') as HTMLCanvasElement;
+  const overlayCanvas = document.getElementById('overlay-draw-canvas') as HTMLCanvasElement;
+  const overlayCtx = overlayCanvas.getContext('2d')!;
+
+  const exportCsvBtn = document.getElementById('export-csv-btn')!;
+  const exportPdfBtn = document.getElementById('export-pdf-btn')!;
+  const takeoffTableBody = document.getElementById('takeoff-table-body')!;
+  const totalDistanceSum = document.getElementById('total-distance-sum')!;
+  const totalAreaSum = document.getElementById('total-area-sum')!;
+
+  function showError(msg: string) {
+    errorMessage.textContent = msg;
+    errorBanner.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBanner.classList.add('hidden');
+  }
+
+  dismissErrorBtn.addEventListener('click', hideError);
+
+  // Tool Switching
+  toolBtns.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      toolBtns.forEach((b) => {
+        b.classList.remove('bg-blue-600', 'text-white', 'shadow-sm');
+        b.classList.add('bg-white', 'border', 'border-slate-200', 'text-slate-700');
+      });
+      btn.classList.remove('bg-white', 'border', 'border-slate-200', 'text-slate-700');
+      btn.classList.add('bg-blue-600', 'text-white', 'shadow-sm');
+
+      activeTool = btn.dataset.tool as any;
+      activePoints = [];
+      updateInstruction();
+      redrawOverlay();
+    });
+  });
+
+  function updateInstruction() {
+    if (isCalibrating) {
+      if (calibrationPoints.length === 0) {
+        instructionText.textContent = 'Calibration: Click First Reference Point on scale bar or wall';
+      } else if (calibrationPoints.length === 1) {
+        instructionText.textContent = 'Calibration: Click Second Reference Point to define length';
+      } else {
+        instructionText.textContent = 'Calibration: Enter known distance in toolbar above';
+      }
+      return;
+    }
+
+    if (activeTool === 'distance') {
+      instructionText.textContent = activePoints.length === 0
+        ? 'Click first point to start linear measurement'
+        : 'Click second point to finish distance';
+    } else if (activeTool === 'perimeter') {
+      instructionText.textContent = activePoints.length === 0
+        ? 'Click vertices along wall/perimeter. Double click to finish'
+        : `Clicked ${activePoints.length} points. Click next point or double click to finish`;
+    } else if (activeTool === 'area') {
+      instructionText.textContent = activePoints.length === 0
+        ? 'Click corner points of room. Double click to close polygon'
+        : `Room vertices: ${activePoints.length}. Click next corner or double click to close`;
+    }
+  }
+
+  // Calibration Controls
+  calibrateBtn.addEventListener('click', () => {
+    isCalibrating = true;
+    calibrationPoints = [];
+    calibrationInputBar.classList.remove('hidden');
+    updateInstruction();
+    redrawOverlay();
+  });
+
+  cancelCalibrationBtn.addEventListener('click', () => {
+    isCalibrating = false;
+    calibrationPoints = [];
+    calibrationInputBar.classList.add('hidden');
+    updateInstruction();
+    redrawOverlay();
+  });
+
+  applyCalibrationBtn.addEventListener('click', () => {
+    if (calibrationPoints.length < 2) {
+      showError('Please click two points on the drawing first.');
+      return;
+    }
+
+    const dist = parseFloat(calDistanceInput.value);
+    if (isNaN(dist) || dist <= 0) {
+      showError('Please enter a valid positive distance.');
+      return;
+    }
+
+    const unit = calUnitSelect.value as MeasurementUnit;
+    currentCalibration = calibrateScale(calibrationPoints[0], calibrationPoints[1], dist, unit);
+
+    scaleBadge.textContent = `Scale: 1 pt = ${currentCalibration.scaleRatio.toFixed(4)} ${unit}`;
+    scaleBadge.classList.remove('bg-amber-500/20', 'text-amber-300', 'border-amber-500/30');
+    scaleBadge.classList.add('bg-emerald-500/20', 'text-emerald-300', 'border-emerald-500/30');
+
+    // Recompute real values of existing measurements
+    measurements.forEach((m) => {
+      if (m.type === 'area') {
+        m.realValue = m.rawPointsValue * currentCalibration.scaleRatio * currentCalibration.scaleRatio;
+        m.formattedString = formatMeasurementValue(m.realValue, unit, true);
+      } else {
+        m.realValue = m.rawPointsValue * currentCalibration.scaleRatio;
+        m.formattedString = formatMeasurementValue(m.realValue, unit, false);
+      }
+    });
+
+    isCalibrating = false;
+    calibrationPoints = [];
+    calibrationInputBar.classList.add('hidden');
+    updateInstruction();
+    updateTable();
+    redrawOverlay();
+  });
+
+  // Render PDF Page to Canvas
+  async function renderPage(pageNum: number) {
+    if (!pdfDocProxy) return;
+
+    const page = await pdfDocProxy.getPage(pageNum);
+    const viewport = page.getViewport({ scale: 1.5 }); // High-DPI viewport
+
+    pdfCanvas.width = viewport.width;
+    pdfCanvas.height = viewport.height;
+    overlayCanvas.width = viewport.width;
+    overlayCanvas.height = viewport.height;
+
+    canvasContainer.style.width = `${viewport.width}px`;
+    canvasContainer.style.height = `${viewport.height}px`;
+
+    const ctx = pdfCanvas.getContext('2d')!;
+    await page.render({ canvasContext: ctx, viewport }).promise;
+
+    currentPage = pageNum;
+    currentPageNumEl.textContent = String(currentPage);
+    prevPageBtn.disabled = currentPage <= 1;
+    nextPageBtn.disabled = currentPage >= totalPages;
+
+    redrawOverlay();
+  }
+
+  prevPageBtn.addEventListener('click', () => {
+    if (currentPage > 1) renderPage(currentPage - 1);
+  });
+
+  nextPageBtn.addEventListener('click', () => {
+    if (currentPage < totalPages) renderPage(currentPage + 1);
+  });
+
+  // Canvas Mouse Coordinates & Interaction
+  function getCanvasPos(e: MouseEvent): Point2D {
+    const rect = overlayCanvas.getBoundingClientRect();
+    const scaleX = overlayCanvas.width / rect.width;
+    const scaleY = overlayCanvas.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY,
+    };
+  }
+
+  overlayCanvas.addEventListener('mousemove', (e) => {
+    const pos = getCanvasPos(e);
+    currentMousePos = pos;
+    mouseCoordsDisplay.textContent = `X: ${Math.round(pos.x)}, Y: ${Math.round(pos.y)}`;
+    redrawOverlay();
+  });
+
+  overlayCanvas.addEventListener('mouseleave', () => {
+    currentMousePos = null;
+    redrawOverlay();
+  });
+
+  overlayCanvas.addEventListener('click', (e) => {
+    const pos = getCanvasPos(e);
+
+    // Calibration Mode
+    if (isCalibrating) {
+      if (calibrationPoints.length < 2) {
+        calibrationPoints.push(pos);
+        updateInstruction();
+        redrawOverlay();
+      }
+      return;
+    }
+
+    // Normal Tools
+    if (activeTool === 'distance') {
+      if (activePoints.length === 0) {
+        activePoints.push(pos);
+      } else {
+        activePoints.push(pos);
+        const rawPts = calculateDistance(activePoints[0], activePoints[1]);
+        const real = rawPts * currentCalibration.scaleRatio;
+        const formatted = formatMeasurementValue(real, currentCalibration.unit, false);
+
+        measurements.push({
+          id: `D${measurements.length + 1}`,
+          label: `Distance ${measurements.length + 1}`,
+          type: 'distance',
+          points: [...activePoints],
+          rawPointsValue: rawPts,
+          realValue: real,
+          formattedString: formatted,
+          color: '#2563eb',
+        });
+
+        activePoints = [];
+        updateTable();
+      }
+    } else if (activeTool === 'perimeter' || activeTool === 'area') {
+      activePoints.push(pos);
+    }
+
+    updateInstruction();
+    redrawOverlay();
+  });
+
+  overlayCanvas.addEventListener('dblclick', () => {
+    if (activeTool === 'perimeter' && activePoints.length >= 2) {
+      const rawPts = calculatePathLength(activePoints, false);
+      const real = rawPts * currentCalibration.scaleRatio;
+      const formatted = formatMeasurementValue(real, currentCalibration.unit, false);
+
+      measurements.push({
+        id: `P${measurements.length + 1}`,
+        label: `Perimeter ${measurements.length + 1}`,
+        type: 'perimeter',
+        points: [...activePoints],
+        rawPointsValue: rawPts,
+        realValue: real,
+        formattedString: formatted,
+        color: '#7c3aed',
+      });
+
+      activePoints = [];
+      updateTable();
+      updateInstruction();
+      redrawOverlay();
+    } else if (activeTool === 'area' && activePoints.length >= 3) {
+      const rawPts = calculatePolygonArea(activePoints);
+      const real = rawPts * currentCalibration.scaleRatio * currentCalibration.scaleRatio;
+      const formatted = formatMeasurementValue(real, currentCalibration.unit, true);
+
+      measurements.push({
+        id: `A${measurements.length + 1}`,
+        label: `Area ${measurements.length + 1}`,
+        type: 'area',
+        points: [...activePoints],
+        rawPointsValue: rawPts,
+        realValue: real,
+        formattedString: formatted,
+        color: '#059669',
+      });
+
+      activePoints = [];
+      updateTable();
+      updateInstruction();
+      redrawOverlay();
+    }
+  });
+
+  // Redraw Interactive Overlay
+  function redrawOverlay() {
+    overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
+
+    // 1. Draw existing committed measurements
+    for (const m of measurements) {
+      overlayCtx.strokeStyle = m.color;
+      overlayCtx.fillStyle = m.color;
+      overlayCtx.lineWidth = 2;
+
+      if (m.type === 'distance' && m.points.length === 2) {
+        const [p1, p2] = m.points;
+        overlayCtx.beginPath();
+        overlayCtx.moveTo(p1.x, p1.y);
+        overlayCtx.lineTo(p2.x, p2.y);
+        overlayCtx.stroke();
+
+        // End circles
+        overlayCtx.beginPath();
+        overlayCtx.arc(p1.x, p1.y, 4, 0, Math.PI * 2);
+        overlayCtx.arc(p2.x, p2.y, 4, 0, Math.PI * 2);
+        overlayCtx.fill();
+
+        // Center badge
+        const midX = (p1.x + p2.x) / 2;
+        const midY = (p1.y + p2.y) / 2;
+        drawBadge(midX, midY, m.formattedString, m.color);
+      } else if (m.type === 'perimeter') {
+        overlayCtx.beginPath();
+        overlayCtx.moveTo(m.points[0].x, m.points[0].y);
+        for (let i = 1; i < m.points.length; i++) {
+          overlayCtx.lineTo(m.points[i].x, m.points[i].y);
+        }
+        overlayCtx.stroke();
+
+        m.points.forEach((pt) => {
+          overlayCtx.beginPath();
+          overlayCtx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+          overlayCtx.fill();
+        });
+
+        const last = m.points[m.points.length - 1];
+        drawBadge(last.x + 10, last.y, m.formattedString, m.color);
+      } else if (m.type === 'area') {
+        overlayCtx.fillStyle = `${m.color}22`; // faint fill
+        overlayCtx.beginPath();
+        overlayCtx.moveTo(m.points[0].x, m.points[0].y);
+        for (let i = 1; i < m.points.length; i++) {
+          overlayCtx.lineTo(m.points[i].x, m.points[i].y);
+        }
+        overlayCtx.closePath();
+        overlayCtx.fill();
+        overlayCtx.stroke();
+
+        let sX = 0, sY = 0;
+        m.points.forEach((p) => { sX += p.x; sY += p.y; });
+        drawBadge(sX / m.points.length, sY / m.points.length, m.formattedString, m.color);
+      }
+    }
+
+    // 2. Draw calibration reference line
+    if (isCalibrating && calibrationPoints.length > 0) {
+      overlayCtx.strokeStyle = '#f59e0b';
+      overlayCtx.fillStyle = '#f59e0b';
+      overlayCtx.lineWidth = 2.5;
+
+      const p1 = calibrationPoints[0];
+      const p2 = calibrationPoints.length > 1 ? calibrationPoints[1] : currentMousePos || p1;
+
+      overlayCtx.beginPath();
+      overlayCtx.moveTo(p1.x, p1.y);
+      overlayCtx.lineTo(p2.x, p2.y);
+      overlayCtx.stroke();
+
+      overlayCtx.beginPath();
+      overlayCtx.arc(p1.x, p1.y, 5, 0, Math.PI * 2);
+      overlayCtx.arc(p2.x, p2.y, 5, 0, Math.PI * 2);
+      overlayCtx.fill();
+    }
+
+    // 3. Draw active rubberband line in progress
+    if (!isCalibrating && activePoints.length > 0 && currentMousePos) {
+      overlayCtx.strokeStyle = '#3b82f6';
+      overlayCtx.fillStyle = '#3b82f6';
+      overlayCtx.lineWidth = 2;
+      overlayCtx.setLineDash([4, 4]);
+
+      const lastPt = activePoints[activePoints.length - 1];
+      overlayCtx.beginPath();
+      overlayCtx.moveTo(lastPt.x, lastPt.y);
+      overlayCtx.lineTo(currentMousePos.x, currentMousePos.y);
+      overlayCtx.stroke();
+      overlayCtx.setLineDash([]); // reset
+
+      // Draw anchor dots for active points
+      activePoints.forEach((pt) => {
+        overlayCtx.beginPath();
+        overlayCtx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+        overlayCtx.fill();
+      });
+    }
+  }
+
+  function drawBadge(x: number, y: number, text: string, color: string) {
+    overlayCtx.font = 'bold 11px sans-serif';
+    const textWidth = overlayCtx.measureText(text).width;
+
+    overlayCtx.fillStyle = '#ffffff';
+    overlayCtx.strokeStyle = color;
+    overlayCtx.lineWidth = 1;
+    overlayCtx.beginPath();
+    overlayCtx.roundRect(x - textWidth / 2 - 4, y - 8, textWidth + 8, 16, 4);
+    overlayCtx.fill();
+    overlayCtx.stroke();
+
+    overlayCtx.fillStyle = color;
+    overlayCtx.fillText(text, x - textWidth / 2, y + 4);
+  }
+
+  // Update Takeoff Table
+  function updateTable() {
+    if (measurements.length === 0) {
+      takeoffTableBody.innerHTML = '<tr><td colspan="5" class="p-4 text-center text-slate-400">No measurements yet. Click two points on the drawing to measure.</td></tr>';
+      totalDistanceSum.textContent = '0.00';
+      totalAreaSum.textContent = '0.00';
+      return;
+    }
+
+    let distSum = 0;
+    let areaSum = 0;
+
+    takeoffTableBody.innerHTML = '';
+    measurements.forEach((m, idx) => {
+      if (m.type === 'area') {
+        areaSum += m.realValue;
+      } else {
+        distSum += m.realValue;
+      }
+
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-slate-50 transition';
+      tr.innerHTML = `
+        <td class="p-2.5 font-bold font-mono text-[11px]">${m.id}</td>
+        <td class="p-2.5 font-medium">${m.label}</td>
+        <td class="p-2.5 uppercase font-mono text-[10px] text-slate-500">${m.type}</td>
+        <td class="p-2.5 font-bold text-slate-900">${m.formattedString}</td>
+        <td class="p-2.5 text-right">
+          <button type="button" class="del-m-btn text-red-500 hover:text-red-700 font-bold text-xs" data-idx="${idx}">Delete</button>
+        </td>
+      `;
+      takeoffTableBody.appendChild(tr);
+    });
+
+    totalDistanceSum.textContent = formatMeasurementValue(distSum, currentCalibration.unit, false);
+    totalAreaSum.textContent = formatMeasurementValue(areaSum, currentCalibration.unit, true);
+
+    document.querySelectorAll<HTMLButtonElement>('.del-m-btn').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        const idx = parseInt((e.target as HTMLElement).dataset.idx || '0', 10);
+        measurements.splice(idx, 1);
+        updateTable();
+        redrawOverlay();
+      });
+    });
+  }
+
+  clearMeasurementsBtn.addEventListener('click', () => {
+    measurements = [];
+    activePoints = [];
+    updateTable();
+    redrawOverlay();
+  });
+
+  // Handle PDF Document Load
+  async function handleFile(file: File) {
+    if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please upload a valid PDF blueprint or drawing.');
+      return;
+    }
+
+    hideError();
+    currentFile = file;
+    docTitleEl.textContent = file.name;
+
+    dropZone.classList.add('hidden');
+    workspace.classList.remove('hidden');
+
+    try {
+      fileBuffer = await file.arrayBuffer();
+      pdfDocProxy = await pdfjsLib.getDocument({ data: new Uint8Array(fileBuffer) }).promise;
+      totalPages = pdfDocProxy.numPages;
+      totalPageNumEl.textContent = String(totalPages);
+
+      renderPage(1);
+    } catch (err: any) {
+      showError(err.message || 'Failed to render PDF document.');
+      workspace.classList.add('hidden');
+      dropZone.classList.remove('hidden');
+    }
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files[0]) {
+      handleFile(target.files[0]);
+    }
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-blue-500', 'bg-blue-50/20');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-blue-500', 'bg-blue-50/20');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-blue-500', 'bg-blue-50/20');
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  // Export CSV Takeoff
+  exportCsvBtn.addEventListener('click', () => {
+    if (measurements.length === 0) {
+      showError('No measurements to export. Add measurements first.');
+      return;
+    }
+
+    const csvContent = exportTakeoffCsv(measurements, currentCalibration);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${currentFile?.name.replace(/\.pdf$/i, '') || 'takeoff'}-measurements.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  });
+
+  // Export Annotated PDF
+  exportPdfBtn.addEventListener('click', async () => {
+    if (!fileBuffer || measurements.length === 0) {
+      showError('No measurements to burn onto the PDF. Add measurements first.');
+      return;
+    }
+
+    try {
+      const annotated = await burnMeasurementsToPdf(
+        new Uint8Array(fileBuffer),
+        currentPage - 1,
+        measurements,
+        overlayCanvas.width,
+        overlayCanvas.height
+      );
+
+      const blob = new Blob([annotated as Uint8Array<ArrayBuffer>], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${currentFile?.name.replace(/\.pdf$/i, '') || 'document'}-measured.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      showError(err.message || 'Failed to generate annotated PDF.');
+    }
+  });
+</script>

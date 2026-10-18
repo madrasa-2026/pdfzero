@@ -37,6 +37,7 @@ import OverlayPdfIsland from '../../components/tools/OverlayPdfIsland.astro';
 import PdfToCsvIsland from '../../components/tools/PdfToCsvIsland.astro';
 import NupPdfIsland from '../../components/tools/NupPdfIsland.astro';
 import SignPkcsPdfIsland from '../../components/tools/SignPkcsPdfIsland.astro';
+import MeasurePdfIsland from '../../components/tools/MeasurePdfIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -231,6 +232,8 @@ const relatedToolCards = allTools
       <NupPdfIsland />
     ) : tool.slug === 'sign-pkcs-pdf' ? (
       <SignPkcsPdfIsland />
+    ) : tool.slug === 'measure-pdf' ? (
+      <MeasurePdfIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}
