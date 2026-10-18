@@ -7,11 +7,11 @@ const tools = await getCollection('tools');
 const sortedTools = tools.sort((a, b) => (a.data.order || 100) - (b.data.order || 100));
 
 const categories = [
-  { id: 'all', name: 'All Tools' },
-  { id: 'organize', name: 'Organize' },
-  { id: 'optimize', name: 'Optimize' },
-  { id: 'security', name: 'Security' },
-  { id: 'convert', name: 'Convert' },
+  { id: 'all', name: 'All Tools', count: tools.length },
+  { id: 'organize', name: 'Organize', count: tools.filter((t) => t.data.category === 'organize').length },
+  { id: 'optimize', name: 'Optimize', count: tools.filter((t) => t.data.category === 'optimize').length },
+  { id: 'security', name: 'Security', count: tools.filter((t) => t.data.category === 'security').length },
+  { id: 'convert', name: 'Convert', count: tools.filter((t) => t.data.category === 'convert').length },
 ];
 
 const categoryIcons: Record<string, string> = {
@@ -29,6 +29,19 @@ const categoryIcons: Record<string, string> = {
   edit: 'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z',
   wrench: 'M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z',
   sparkles: 'M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z',
+  contrast: 'M12 3v18a9 9 0 100-18z',
+  'book-open': 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
+  columns: 'M9 4.5v15m6-15v15m-10.5-15h15a1.5 1.5 0 011.5 1.5v12a1.5 1.5 0 01-1.5 1.5h-15a1.5 1.5 0 01-1.5-1.5v-12a1.5 1.5 0 011.5-1.5z',
+  scissors: 'M14.121 14.121L19 19m-7-7l7-7m-7 7l-2.879 2.879a3 3 0 11-4.242-4.242 3 3 0 014.242 0zM12 12L9.121 9.121a3 3 0 10-4.242 4.242 3 3 0 004.242 0z',
+  bookmark: 'M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z',
+  layout: 'M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 11a1 1 0 011-1h14a1 1 0 011 1v8a1 1 0 01-1 1H5a1 1 0 01-1-1v-8z',
+  maximize: 'M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5',
+  shield: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z',
+  zap: 'M13 10V3L4 14h7v7l9-11h-7z',
+  'refresh-cw': 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15',
+  'volume-2': 'M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 4.663 12 5.109 12 6v12c0 .891-1.077 1.337-1.707.707L5.586 15z',
+  moon: 'M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z',
+  layers: 'M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10',
 };
 
 const siteSchema = {
@@ -97,27 +110,57 @@ const siteSchema = {
 
   <!-- Tools Directory Section -->
   <section id="tools" class="py-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex flex-col md:flex-row items-center justify-between gap-4 mb-8">
+    <div class="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6">
       <div>
-        <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-[-0.025em]">Tools Directory</h2>
-        <p class="text-xs sm:text-sm text-slate-500 mt-1">Select a utility below to begin processing documents client-side.</p>
+        <div class="flex items-center gap-2.5 mb-1">
+          <h2 class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-[-0.025em]">Tools Directory</h2>
+          <span class="px-2.5 py-0.5 rounded-full text-xs font-mono font-bold bg-slate-900 text-white shadow-sm">
+            {sortedTools.length} Free Tools
+          </span>
+        </div>
+        <p class="text-xs sm:text-sm text-slate-500">100% private, client-side WebAssembly utilities. Zero cloud uploads.</p>
       </div>
 
-      <!-- Category Filter Segmented Control -->
+      <!-- Live Search Box -->
+      <div class="relative w-full md:w-80">
+        <input
+          type="text"
+          id="tools-search-input"
+          placeholder="Filter tools by keyword (e.g. ocr, dark, bates)..."
+          class="w-full pl-9 pr-8 py-2.5 bg-white border border-slate-200/90 rounded-xl text-xs font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-slate-900 focus:border-slate-900 shadow-sm transition"
+        />
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-slate-400 absolute left-3 top-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <button type="button" id="clear-search-btn" class="hidden absolute right-3 top-2.5 text-xs text-slate-400 hover:text-slate-700 font-bold p-0.5">
+          ✕
+        </button>
+      </div>
+    </div>
+
+    <!-- Category Filter Bar with Counts -->
+    <div class="flex flex-wrap items-center justify-between gap-3 mb-8 pb-4 border-b border-slate-100">
       <div class="flex flex-wrap items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200" id="category-filter-bar">
         {categories.map((cat, idx) => (
           <button
             type="button"
             data-category-filter={cat.id}
-            class={`category-filter-btn px-3.5 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer select-none ${
+            class={`category-filter-btn px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer select-none flex items-center gap-1.5 ${
               idx === 0
                 ? 'bg-slate-900 text-white shadow-sm'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
             }`}
           >
-            {cat.name}
+            <span>{cat.name}</span>
+            <span class={`cat-badge text-[10px] font-mono px-1.5 py-0.5 rounded-md ${idx === 0 ? 'bg-slate-700 text-white' : 'bg-slate-200 text-slate-600'}`}>
+              {cat.count}
+            </span>
           </button>
         ))}
+      </div>
+
+      <div class="text-xs text-slate-400 font-mono" id="tools-counter">
+        Showing <span id="tools-showing-count" class="font-bold text-slate-700">{sortedTools.length}</span> of {sortedTools.length} tools
       </div>
     </div>
 
@@ -127,6 +170,7 @@ const siteSchema = {
         <a
           href={`/tools/${tool.slug}`}
           data-tool-category={tool.data.category}
+          data-tool-search={`${tool.data.title} ${tool.data.shortDescription} ${tool.slug} ${(tool.data.keywords || []).join(' ')}`.toLowerCase()}
           class="group tool-card relative flex flex-col justify-between bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-panel-hover hover:border-slate-300 transition-all duration-200"
         >
           <div>
@@ -158,6 +202,20 @@ const siteSchema = {
           </div>
         </a>
       ))}
+    </div>
+
+    <!-- Empty State for Search / Filter -->
+    <div id="no-tools-match" class="hidden text-center py-16 bg-white rounded-2xl border border-slate-200 p-8 my-6">
+      <div class="w-12 h-12 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+      </div>
+      <h3 class="text-base font-bold text-slate-800 mb-1">No matching PDF tools found</h3>
+      <p class="text-xs text-slate-500 mb-4">Try searching with another keyword or pick a different category.</p>
+      <button type="button" id="reset-filter-btn" class="px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-lg hover:bg-slate-800 transition">
+        Reset Search & Filters
+      </button>
     </div>
   </section>
 
@@ -223,29 +281,122 @@ const siteSchema = {
     document.addEventListener('DOMContentLoaded', () => {
       const buttons = document.querySelectorAll('.category-filter-btn');
       const cards = document.querySelectorAll('.tool-card');
+      const searchInput = document.getElementById('tools-search-input');
+      const clearBtn = document.getElementById('clear-search-btn');
+      const resetBtn = document.getElementById('reset-filter-btn');
+      const showingCountEl = document.getElementById('tools-showing-count');
+      const noMatchEl = document.getElementById('no-tools-match');
 
+      let currentCategory = 'all';
+      let currentQuery = '';
+
+      function filterTools() {
+        let visibleCount = 0;
+
+        cards.forEach((card) => {
+          const cardCat = card.getAttribute('data-tool-category');
+          const searchData = card.getAttribute('data-tool-search') || '';
+
+          const matchesCat = currentCategory === 'all' || cardCat === currentCategory;
+          const matchesQuery = !currentQuery || searchData.includes(currentQuery);
+
+          if (matchesCat && matchesQuery) {
+            card.style.display = 'flex';
+            visibleCount++;
+          } else {
+            card.style.display = 'none';
+          }
+        });
+
+        if (showingCountEl) {
+          showingCountEl.textContent = visibleCount.toString();
+        }
+
+        if (noMatchEl) {
+          if (visibleCount === 0) {
+            noMatchEl.classList.remove('hidden');
+          } else {
+            noMatchEl.classList.add('hidden');
+          }
+        }
+      }
+
+      // Category filter buttons
       buttons.forEach((btn) => {
         btn.addEventListener('click', () => {
-          const selected = btn.getAttribute('data-category-filter');
+          currentCategory = btn.getAttribute('data-category-filter') || 'all';
 
-          // Update active button state
           buttons.forEach((b) => {
             b.classList.remove('bg-slate-900', 'text-white', 'shadow-sm');
             b.classList.add('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-200/60');
-          });
-          btn.classList.add('bg-slate-900', 'text-white', 'shadow-sm');
-          btn.classList.remove('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-200/60');
-
-          // Filter tool cards
-          cards.forEach((card) => {
-            const cardCat = card.getAttribute('data-tool-category');
-            if (selected === 'all' || cardCat === selected) {
-              card.style.display = 'flex';
-            } else {
-              card.style.display = 'none';
+            const badge = b.querySelector('.cat-badge');
+            if (badge) {
+              badge.classList.remove('bg-slate-700', 'text-white');
+              badge.classList.add('bg-slate-200', 'text-slate-600');
             }
           });
+
+          btn.classList.add('bg-slate-900', 'text-white', 'shadow-sm');
+          btn.classList.remove('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-200/60');
+          const activeBadge = btn.querySelector('.cat-badge');
+          if (activeBadge) {
+            activeBadge.classList.remove('bg-slate-200', 'text-slate-600');
+            activeBadge.classList.add('bg-slate-700', 'text-white');
+          }
+
+          filterTools();
         });
+      });
+
+      // Search input listener
+      searchInput?.addEventListener('input', (e) => {
+        currentQuery = (e.target.value || '').trim().toLowerCase();
+        if (clearBtn) {
+          if (currentQuery.length > 0) {
+            clearBtn.classList.remove('hidden');
+          } else {
+            clearBtn.classList.add('hidden');
+          }
+        }
+        filterTools();
+      });
+
+      // Clear search button
+      clearBtn?.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        currentQuery = '';
+        clearBtn.classList.add('hidden');
+        filterTools();
+      });
+
+      // Reset all filters button
+      resetBtn?.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        currentQuery = '';
+        clearBtn?.classList.add('hidden');
+        currentCategory = 'all';
+
+        buttons.forEach((b) => {
+          const isAll = b.getAttribute('data-category-filter') === 'all';
+          const badge = b.querySelector('.cat-badge');
+          if (isAll) {
+            b.classList.add('bg-slate-900', 'text-white', 'shadow-sm');
+            b.classList.remove('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-200/60');
+            if (badge) {
+              badge.classList.remove('bg-slate-200', 'text-slate-600');
+              badge.classList.add('bg-slate-700', 'text-white');
+            }
+          } else {
+            b.classList.remove('bg-slate-900', 'text-white', 'shadow-sm');
+            b.classList.add('text-slate-600', 'hover:text-slate-900', 'hover:bg-slate-200/60');
+            if (badge) {
+              badge.classList.remove('bg-slate-700', 'text-white');
+              badge.classList.add('bg-slate-200', 'text-slate-600');
+            }
+          }
+        });
+
+        filterTools();
       });
     });
   </script>
