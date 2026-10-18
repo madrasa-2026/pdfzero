@@ -1,0 +1,899 @@
+---
+// src/components/tools/FormCreatorPdfIsland.astro
+---
+
+<div class="w-full max-w-5xl mx-auto">
+  <!-- 1. Dropzone Section -->
+  <div
+    id="form-dropzone"
+    class="relative border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-white/80 hover:bg-indigo-50/20 transition-all rounded-3xl p-8 sm:p-12 text-center cursor-pointer shadow-sm group"
+  >
+    <input
+      type="file"
+      id="form-file-input"
+      accept="application/pdf"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+    />
+    <div class="flex flex-col items-center justify-center pointer-events-none">
+      <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-indigo-100 transition-all shadow-inner">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+        </svg>
+      </div>
+      <h3 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">
+        Drop any PDF to make it an interactive fillable form
+      </h3>
+      <p class="text-xs sm:text-sm text-slate-500 max-w-md mb-4">
+        Add text fields, checkboxes, and dropdowns to flat scans, leases, or job applications with native ISO 32000-1 AcroForm standards.
+      </p>
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold">
+        <svg class="w-4 h-4 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        100% Client-Side • Smart Auto-Detect • Fills in Chrome, Adobe &amp; Apple Preview
+      </div>
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>Zero Upload</span>
+      <span>•</span>
+      <span>Text Fields</span>
+      <span>•</span>
+      <span>Checkboxes</span>
+      <span>•</span>
+      <span>Dropdown Menus</span>
+      <span>•</span>
+      <span>Auto-Detect Blanks</span>
+    </div>
+  </div>
+
+  <!-- 2. Loading State -->
+  <div id="form-loading" class="hidden bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 shadow-sm text-center space-y-4">
+    <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
+    <h3 class="text-base font-bold text-slate-900">
+      Analyzing document layout &amp; vector streams...
+    </h3>
+    <p class="text-xs text-slate-500 max-w-md mx-auto">
+      Rendering interactive editor canvas and scanning for fillable blank prompts.
+    </p>
+  </div>
+
+  <!-- 3. Form Creator Studio Section -->
+  <div id="form-studio-section" class="hidden space-y-6">
+    <!-- Top Studio Toolbar -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 11 12 14 22 4"></polyline>
+            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+          </svg>
+        </div>
+        <div class="min-w-0">
+          <h4 id="form-filename" class="text-sm font-bold text-slate-900 truncate max-w-xs">document.pdf</h4>
+          <p id="form-meta" class="text-xs text-slate-500">Page 1 of 1 • 0 form fields</p>
+        </div>
+      </div>
+
+      <!-- Page Pagination -->
+      <div class="flex items-center gap-2 bg-slate-100 p-1 rounded-xl">
+        <button
+          type="button"
+          id="btn-prev-page"
+          class="p-1.5 rounded-lg hover:bg-white text-slate-600 hover:text-slate-900 transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+          title="Previous Page"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+        <span id="page-indicator" class="text-xs font-semibold px-2 text-slate-700 min-w-16 text-center">Page 1 / 1</span>
+        <button
+          type="button"
+          id="btn-next-page"
+          class="p-1.5 rounded-lg hover:bg-white text-slate-600 hover:text-slate-900 transition-colors disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+          title="Next Page"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          id="btn-auto-detect"
+          class="px-3 py-2 bg-amber-50 hover:bg-amber-100 text-amber-800 text-xs font-semibold rounded-xl transition-all border border-amber-200 flex items-center gap-1.5 cursor-pointer shadow-xs"
+        >
+          <svg class="w-3.5 h-3.5 text-amber-600" viewBox="0 0 20 20" fill="currentColor">
+            <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
+          </svg>
+          <span>Auto-Detect Blanks</span>
+        </button>
+
+        <button
+          type="button"
+          id="btn-toggle-mode"
+          class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-all border border-slate-200 flex items-center gap-1.5 cursor-pointer"
+        >
+          <span id="toggle-mode-icon">👁️</span>
+          <span id="toggle-mode-text">Test Form Mode</span>
+        </button>
+
+        <button
+          type="button"
+          id="btn-change-file"
+          class="text-xs text-slate-500 hover:text-slate-800 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+        >
+          Change PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Toolbox Bar -->
+    <div class="bg-white rounded-2xl border border-slate-200 p-3 shadow-sm flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-2">
+        <span class="text-xs font-bold text-slate-500 uppercase tracking-wider mr-1">Tool:</span>
+        <button
+          type="button"
+          class="tool-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer bg-indigo-600 text-white shadow-xs"
+          data-tool="text"
+        >
+          <span>🔤</span>
+          <span>Text Input</span>
+        </button>
+        <button
+          type="button"
+          class="tool-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200"
+          data-tool="multiline"
+        >
+          <span>📝</span>
+          <span>Multiline Box</span>
+        </button>
+        <button
+          type="button"
+          class="tool-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200"
+          data-tool="checkbox"
+        >
+          <span>☑️</span>
+          <span>Checkbox</span>
+        </button>
+        <button
+          type="button"
+          class="tool-btn px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer bg-slate-100 text-slate-700 hover:bg-slate-200"
+          data-tool="dropdown"
+        >
+          <span>🔽</span>
+          <span>Dropdown</span>
+        </button>
+      </div>
+
+      <div class="text-[11px] text-slate-500 italic">
+        Tip: Click anywhere on the page to place the selected field, or drag to size.
+      </div>
+    </div>
+
+    <!-- Main Workspace (Editor Canvas + Properties Panel) -->
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
+      <!-- Left: PDF Canvas & Interactive Overlay (Span 3 cols) -->
+      <div class="lg:col-span-3 bg-slate-100 rounded-3xl p-4 sm:p-6 border border-slate-200 flex justify-center overflow-auto max-h-[820px] relative">
+        <div id="page-wrapper" class="relative shadow-xl rounded-lg overflow-hidden bg-white select-none">
+          <canvas id="pdf-canvas" class="block w-full h-auto"></canvas>
+          <!-- Interactive HTML Overlay Layer -->
+          <div id="fields-overlay" class="absolute inset-0 z-10 overflow-hidden"></div>
+        </div>
+      </div>
+
+      <!-- Right: Properties Inspector Panel (Span 1 col) -->
+      <div class="lg:col-span-1 space-y-4">
+        <div class="bg-white rounded-3xl border border-slate-200 p-5 shadow-sm space-y-4">
+          <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between">
+            <span>Field Properties</span>
+            <span id="selected-badge" class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] lowercase">none selected</span>
+          </h4>
+
+          <div id="props-empty-state" class="text-center py-6 text-slate-400 space-y-2">
+            <svg class="w-8 h-8 mx-auto text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122"></path>
+            </svg>
+            <p class="text-xs">Click on any placed box on the page to edit its name, default text, or options.</p>
+          </div>
+
+          <div id="props-editor" class="hidden space-y-3">
+            <div>
+              <label for="field-prop-name" class="block text-[11px] font-bold text-slate-700 mb-1">Field Name (AcroForm ID)</label>
+              <input
+                type="text"
+                id="field-prop-name"
+                class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            <div id="prop-default-container">
+              <label for="field-prop-default" class="block text-[11px] font-bold text-slate-700 mb-1">Default / Initial Value</label>
+              <input
+                type="text"
+                id="field-prop-default"
+                class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+              />
+            </div>
+
+            <div id="prop-options-container" class="hidden">
+              <label for="field-prop-options" class="block text-[11px] font-bold text-slate-700 mb-1">Options (comma-separated)</label>
+              <textarea
+                id="field-prop-options"
+                rows="3"
+                class="w-full text-xs px-2.5 py-1.5 rounded-lg border border-slate-300 focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                placeholder="Option 1, Option 2, Option 3"
+              ></textarea>
+            </div>
+
+            <div id="prop-multiline-container" class="flex items-center gap-2 pt-1">
+              <input type="checkbox" id="field-prop-multiline" class="w-4 h-4 text-indigo-600 rounded border-slate-300" />
+              <label for="field-prop-multiline" class="text-xs text-slate-700 font-medium">Multiline text area</label>
+            </div>
+
+            <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+              <button
+                type="button"
+                id="btn-delete-field"
+                class="text-xs text-red-600 hover:text-red-700 font-semibold flex items-center gap-1 cursor-pointer"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                </svg>
+                Delete Field
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Export Action Card -->
+        <div class="bg-indigo-50/70 rounded-3xl border border-indigo-100 p-5 shadow-sm space-y-4">
+          <div class="space-y-1">
+            <h5 class="text-xs font-bold text-indigo-950 uppercase tracking-wider">AcroForm Export</h5>
+            <p class="text-[11px] text-slate-600">
+              Compiles real interactive ISO 32000-1 form fields. Works in Chrome, Edge, Adobe Reader, &amp; Apple Preview.
+            </p>
+          </div>
+
+          <div class="flex items-center justify-between text-xs font-semibold text-slate-700 bg-white p-2.5 rounded-xl border border-indigo-100">
+            <span>Total Fields:</span>
+            <span id="export-fields-count" class="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-800 font-bold">0</span>
+          </div>
+
+          <button
+            type="button"
+            id="btn-download-pdf"
+            class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 group cursor-pointer text-xs"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span id="btn-download-text">Download Fillable PDF</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import {
+    injectFormFields,
+    detectFormFieldsFromText,
+    type FormFieldDefinition,
+    type FieldType
+  } from '../../lib/pdf/formCreatorEngine';
+
+  let rawPdfBytes: Uint8Array | null = null;
+  let originalFilename = 'form.pdf';
+  let pdfDocProxy: any = null;
+  let currentPageIndex = 0;
+  let totalPages = 1;
+  let currentViewportScale = 1;
+  let pageDimensions = { width: 612, height: 792 };
+
+  // Form Fields State
+  let allFields: FormFieldDefinition[] = [];
+  let selectedFieldId: string | null = null;
+  let activeTool: 'text' | 'multiline' | 'checkbox' | 'dropdown' = 'text';
+  let isTestMode = false;
+
+  // DOM Elements
+  const dropzone = document.getElementById('form-dropzone') as HTMLElement;
+  const fileInput = document.getElementById('form-file-input') as HTMLInputElement;
+  const loading = document.getElementById('form-loading') as HTMLElement;
+  const studioSection = document.getElementById('form-studio-section') as HTMLElement;
+  const filenameEl = document.getElementById('form-filename') as HTMLElement;
+  const metaEl = document.getElementById('form-meta') as HTMLElement;
+  const changeFileBtn = document.getElementById('btn-change-file') as HTMLButtonElement;
+
+  const btnPrevPage = document.getElementById('btn-prev-page') as HTMLButtonElement;
+  const btnNextPage = document.getElementById('btn-next-page') as HTMLButtonElement;
+  const pageIndicator = document.getElementById('page-indicator') as HTMLElement;
+
+  const canvas = document.getElementById('pdf-canvas') as HTMLCanvasElement;
+  const fieldsOverlay = document.getElementById('fields-overlay') as HTMLElement;
+
+  const toolBtns = document.querySelectorAll('.tool-btn') as NodeListOf<HTMLButtonElement>;
+  const btnAutoDetect = document.getElementById('btn-auto-detect') as HTMLButtonElement;
+  const btnToggleMode = document.getElementById('btn-toggle-mode') as HTMLButtonElement;
+  const toggleModeIcon = document.getElementById('toggle-mode-icon') as HTMLElement;
+  const toggleModeText = document.getElementById('toggle-mode-text') as HTMLElement;
+
+  // Properties Inspector Elements
+  const selectedBadge = document.getElementById('selected-badge') as HTMLElement;
+  const propsEmptyState = document.getElementById('props-empty-state') as HTMLElement;
+  const propsEditor = document.getElementById('props-editor') as HTMLElement;
+  const propName = document.getElementById('field-prop-name') as HTMLInputElement;
+  const propDefaultContainer = document.getElementById('prop-default-container') as HTMLElement;
+  const propDefault = document.getElementById('field-prop-default') as HTMLInputElement;
+  const propOptionsContainer = document.getElementById('prop-options-container') as HTMLElement;
+  const propOptions = document.getElementById('field-prop-options') as HTMLTextAreaElement;
+  const propMultilineContainer = document.getElementById('prop-multiline-container') as HTMLElement;
+  const propMultiline = document.getElementById('field-prop-multiline') as HTMLInputElement;
+  const btnDeleteField = document.getElementById('btn-delete-field') as HTMLButtonElement;
+
+  const exportFieldsCount = document.getElementById('export-fields-count') as HTMLElement;
+  const btnDownloadPdf = document.getElementById('btn-download-pdf') as HTMLButtonElement;
+  const btnDownloadText = document.getElementById('btn-download-text') as HTMLElement;
+
+  // Dropzone Handlers
+  dropzone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('border-indigo-500', 'bg-indigo-50/20');
+  });
+
+  dropzone?.addEventListener('dragleave', () => {
+    dropzone.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+  });
+
+  dropzone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+    if (e.dataTransfer?.files?.[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput?.addEventListener('change', () => {
+    if (fileInput.files?.[0]) {
+      handleFile(fileInput.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    studioSection.classList.add('hidden');
+    dropzone.classList.remove('hidden');
+    fileInput.value = '';
+    rawPdfBytes = null;
+    allFields = [];
+    selectedFieldId = null;
+  });
+
+  // Tool Selection
+  toolBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tool = btn.getAttribute('data-tool') as any;
+      if (!tool) return;
+      activeTool = tool;
+      toolBtns.forEach(b => {
+        b.classList.remove('bg-indigo-600', 'text-white', 'shadow-xs');
+        b.classList.add('bg-slate-100', 'text-slate-700');
+      });
+      btn.classList.remove('bg-slate-100', 'text-slate-700');
+      btn.classList.add('bg-indigo-600', 'text-white', 'shadow-xs');
+    });
+  });
+
+  // Toggle Test Mode
+  btnToggleMode?.addEventListener('click', () => {
+    isTestMode = !isTestMode;
+    if (isTestMode) {
+      toggleModeIcon.textContent = '✏️';
+      toggleModeText.textContent = 'Edit Layout Mode';
+      btnToggleMode.classList.add('bg-emerald-100', 'text-emerald-800', 'border-emerald-300');
+    } else {
+      toggleModeIcon.textContent = '👁️';
+      toggleModeText.textContent = 'Test Form Mode';
+      btnToggleMode.classList.remove('bg-emerald-100', 'text-emerald-800', 'border-emerald-300');
+    }
+    renderFieldsOverlay();
+  });
+
+  // Pagination Handlers
+  btnPrevPage?.addEventListener('click', () => {
+    if (currentPageIndex > 0) {
+      currentPageIndex--;
+      selectedFieldId = null;
+      renderCurrentPage();
+    }
+  });
+
+  btnNextPage?.addEventListener('click', () => {
+    if (currentPageIndex < totalPages - 1) {
+      currentPageIndex++;
+      selectedFieldId = null;
+      renderCurrentPage();
+    }
+  });
+
+  // Overlay Canvas Click -> Place Field
+  fieldsOverlay?.addEventListener('click', (e) => {
+    if (isTestMode) return;
+    // If clicked on an existing field or button, don't create new field
+    const target = e.target as HTMLElement;
+    if (target.closest('.field-box')) return;
+
+    const rect = fieldsOverlay.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const clickY = e.clientY - rect.top;
+
+    // Convert click coordinates to 72pt PDF space
+    // PDF space: (0,0) is bottom-left
+    let defWidth = 160;
+    let defHeight = 24;
+    let fieldType: FieldType = 'text';
+    let isMulti = false;
+
+    if (activeTool === 'multiline') {
+      fieldType = 'text';
+      isMulti = true;
+      defWidth = 220;
+      defHeight = 65;
+    } else if (activeTool === 'checkbox') {
+      fieldType = 'checkbox';
+      defWidth = 18;
+      defHeight = 18;
+    } else if (activeTool === 'dropdown') {
+      fieldType = 'dropdown';
+      defWidth = 150;
+      defHeight = 26;
+    }
+
+    const pdfPtX = clickX / currentViewportScale;
+    const pdfPtY = pageDimensions.height - ((clickY + defHeight) / currentViewportScale);
+
+    const newField: FormFieldDefinition = {
+      id: `field_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+      name: `${activeTool}_${allFields.length + 1}`,
+      type: fieldType,
+      pageIndex: currentPageIndex,
+      x: Math.max(0, pdfPtX),
+      y: Math.max(0, pdfPtY),
+      width: defWidth,
+      height: defHeight,
+      isMultiline: isMulti,
+      options: fieldType === 'dropdown' ? ['Choice 1', 'Choice 2', 'Choice 3'] : undefined,
+      defaultValue: '',
+      checked: false
+    };
+
+    allFields.push(newField);
+    selectedFieldId = newField.id;
+    updateMeta();
+    renderFieldsOverlay();
+    syncInspector();
+  });
+
+  // Auto-Detect Blanks on Current Page
+  btnAutoDetect?.addEventListener('click', async () => {
+    if (!pdfDocProxy) return;
+    btnAutoDetect.disabled = true;
+    const origHtml = btnAutoDetect.innerHTML;
+    btnAutoDetect.innerHTML = `<span class="animate-spin mr-1">⏳</span> Scanning...`;
+
+    try {
+      const page = await pdfDocProxy.getPage(currentPageIndex + 1);
+      const textContent = await page.getTextContent();
+      const viewport = page.getViewport({ scale: 1.0 });
+
+      const textItems = textContent.items.map((item: any) => ({
+        str: item.str,
+        x: item.transform[4],
+        y: item.transform[5],
+        width: item.width,
+        height: item.height || 12
+      }));
+
+      const detected = detectFormFieldsFromText(textItems, viewport.width, viewport.height, currentPageIndex);
+
+      if (detected.length === 0) {
+        alert('No obvious blanks (____ or [ ]) detected on this page. You can click anywhere to place fields manually!');
+      } else {
+        allFields.push(...detected);
+        updateMeta();
+        renderFieldsOverlay();
+        syncInspector();
+      }
+    } catch (err) {
+      console.error('Auto detect error:', err);
+    } finally {
+      btnAutoDetect.disabled = false;
+      btnAutoDetect.innerHTML = origHtml;
+    }
+  });
+
+  // Inspector Input Event Listeners
+  propName?.addEventListener('input', () => {
+    const f = allFields.find(x => x.id === selectedFieldId);
+    if (f) {
+      f.name = propName.value.trim().replace(/[^a-zA-Z0-9_]/g, '_');
+      renderFieldsOverlay();
+    }
+  });
+
+  propDefault?.addEventListener('input', () => {
+    const f = allFields.find(x => x.id === selectedFieldId);
+    if (f) {
+      f.defaultValue = propDefault.value;
+      renderFieldsOverlay();
+    }
+  });
+
+  propOptions?.addEventListener('input', () => {
+    const f = allFields.find(x => x.id === selectedFieldId);
+    if (f && f.type === 'dropdown') {
+      f.options = propOptions.value.split(',').map(s => s.trim()).filter(Boolean);
+      renderFieldsOverlay();
+    }
+  });
+
+  propMultiline?.addEventListener('change', () => {
+    const f = allFields.find(x => x.id === selectedFieldId);
+    if (f && f.type === 'text') {
+      f.isMultiline = propMultiline.checked;
+      if (f.isMultiline && f.height < 45) {
+        f.height = 60;
+      }
+      renderFieldsOverlay();
+    }
+  });
+
+  btnDeleteField?.addEventListener('click', () => {
+    if (!selectedFieldId) return;
+    allFields = allFields.filter(x => x.id !== selectedFieldId);
+    selectedFieldId = null;
+    updateMeta();
+    renderFieldsOverlay();
+    syncInspector();
+  });
+
+  // Download Handlers
+  btnDownloadPdf?.addEventListener('click', async () => {
+    if (!rawPdfBytes) return;
+
+    btnDownloadPdf.disabled = true;
+    const origText = btnDownloadText.textContent;
+    btnDownloadText.textContent = 'Injecting AcroForm Catalog...';
+
+    try {
+      const outputBytes = await injectFormFields(rawPdfBytes, allFields);
+      const blob = new Blob([outputBytes as unknown as BlobPart], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const baseName = originalFilename.replace(/\.pdf$/i, '');
+      a.href = url;
+      a.download = `${baseName}-fillable.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error('Failed to export fillable PDF:', err);
+      alert('Error injecting AcroForm fields: ' + err.message);
+    } finally {
+      btnDownloadPdf.disabled = false;
+      btnDownloadText.textContent = origText;
+    }
+  });
+
+  async function handleFile(file: File) {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      alert('Please upload a valid PDF document.');
+      return;
+    }
+
+    originalFilename = file.name;
+    dropzone.classList.add('hidden');
+    loading.classList.remove('hidden');
+
+    try {
+      const buffer = await file.arrayBuffer();
+      rawPdfBytes = new Uint8Array(buffer);
+
+      // @ts-ignore
+      const pdfjsLib = window.pdfjsLib || await import('pdfjs-dist');
+      if (pdfjsLib.GlobalWorkerOptions && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+
+      pdfDocProxy = await pdfjsLib.getDocument({ data: rawPdfBytes.slice(0) }).promise;
+      totalPages = pdfDocProxy.numPages;
+      currentPageIndex = 0;
+      allFields = [];
+      selectedFieldId = null;
+
+      loading.classList.add('hidden');
+      studioSection.classList.remove('hidden');
+
+      filenameEl.textContent = originalFilename;
+      renderCurrentPage();
+    } catch (err: any) {
+      console.error('Error loading PDF:', err);
+      alert('Failed to load PDF: ' + err.message);
+      loading.classList.add('hidden');
+      dropzone.classList.remove('hidden');
+    }
+  }
+
+  async function renderCurrentPage() {
+    if (!pdfDocProxy) return;
+
+    btnPrevPage.disabled = currentPageIndex <= 0;
+    btnNextPage.disabled = currentPageIndex >= totalPages - 1;
+    pageIndicator.textContent = `Page ${currentPageIndex + 1} / ${totalPages}`;
+
+    const page = await pdfDocProxy.getPage(currentPageIndex + 1);
+    const originalViewport = page.getViewport({ scale: 1.0 });
+    pageDimensions = { width: originalViewport.width, height: originalViewport.height };
+
+    // Scale canvas to fit nicely inside container
+    const containerWidth = Math.min(760, window.innerWidth - 80);
+    currentViewportScale = containerWidth / originalViewport.width;
+    const viewport = page.getViewport({ scale: currentViewportScale });
+
+    const outputScale = window.devicePixelRatio || 1;
+    canvas.width = Math.floor(viewport.width * outputScale);
+    canvas.height = Math.floor(viewport.height * outputScale);
+    canvas.style.width = Math.floor(viewport.width) + 'px';
+    canvas.style.height = Math.floor(viewport.height) + 'px';
+
+    const ctx = canvas.getContext('2d')!;
+    ctx.scale(outputScale, outputScale);
+
+    await page.render({
+      canvasContext: ctx,
+      viewport: viewport
+    }).promise;
+
+    renderFieldsOverlay();
+    updateMeta();
+  }
+
+  function renderFieldsOverlay() {
+    fieldsOverlay.innerHTML = '';
+    const pageFields = allFields.filter(f => f.pageIndex === currentPageIndex);
+
+    pageFields.forEach(field => {
+      const el = document.createElement('div');
+      el.className = 'field-box absolute transition-shadow';
+      el.dataset.id = field.id;
+
+      // Transform PDF pt space to canvas screen pixels
+      const screenX = field.x * currentViewportScale;
+      const screenY = (pageDimensions.height - field.y - field.height) * currentViewportScale;
+      const screenW = field.width * currentViewportScale;
+      const screenH = field.height * currentViewportScale;
+
+      el.style.left = `${screenX}px`;
+      el.style.top = `${screenY}px`;
+      el.style.width = `${screenW}px`;
+      el.style.height = `${screenH}px`;
+
+      const isSelected = selectedFieldId === field.id;
+
+      if (isTestMode) {
+        // Render interactive form inputs for live user testing!
+        el.className += ' z-20 pointer-events-auto';
+        if (field.type === 'text') {
+          if (field.isMultiline) {
+            const ta = document.createElement('textarea');
+            ta.className = 'w-full h-full text-xs p-1 bg-blue-50/70 border border-blue-400 rounded resize-none focus:outline-none focus:ring-1 focus:ring-blue-600';
+            ta.placeholder = field.name;
+            ta.value = field.defaultValue || '';
+            el.appendChild(ta);
+          } else {
+            const inp = document.createElement('input');
+            inp.type = 'text';
+            inp.className = 'w-full h-full text-xs px-1.5 bg-blue-50/70 border border-blue-400 rounded focus:outline-none focus:ring-1 focus:ring-blue-600';
+            inp.placeholder = field.name;
+            inp.value = field.defaultValue || '';
+            el.appendChild(inp);
+          }
+        } else if (field.type === 'checkbox') {
+          const cb = document.createElement('input');
+          cb.type = 'checkbox';
+          cb.className = 'w-full h-full text-indigo-600 rounded border border-blue-400 cursor-pointer';
+          cb.checked = !!field.checked;
+          el.appendChild(cb);
+        } else if (field.type === 'dropdown') {
+          const sel = document.createElement('select');
+          sel.className = 'w-full h-full text-xs px-1 bg-blue-50/70 border border-blue-400 rounded focus:outline-none';
+          const opts = field.options && field.options.length ? field.options : ['Option 1', 'Option 2'];
+          opts.forEach(opt => {
+            const o = document.createElement('option');
+            o.value = opt;
+            o.textContent = opt;
+            if (opt === field.defaultValue) o.selected = true;
+            sel.appendChild(o);
+          });
+          el.appendChild(sel);
+        }
+      } else {
+        // Layout / Builder Mode: draggable & selectable UI
+        el.className += ` border-2 rounded ${
+          isSelected
+            ? 'border-indigo-600 bg-indigo-100/50 shadow-md ring-2 ring-indigo-400/40 z-30'
+            : 'border-blue-400 bg-blue-50/50 hover:border-indigo-400 hover:bg-blue-100/60 z-20 cursor-move'
+        }`;
+
+        // Field Label Tag
+        const badge = document.createElement('span');
+        badge.className = `absolute -top-4 left-0 px-1.5 py-0.2 rounded text-[9px] font-bold tracking-tight shadow-xs whitespace-nowrap overflow-hidden max-w-[120px] text-ellipsis ${
+          isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-700 text-slate-100'
+        }`;
+        badge.textContent = `${field.type === 'checkbox' ? '☑' : field.type === 'dropdown' ? '▼' : 'T'}: ${field.name}`;
+        el.appendChild(badge);
+
+        // Delete Quick Button
+        const delBtn = document.createElement('button');
+        delBtn.type = 'button';
+        delBtn.className = 'absolute -top-3.5 -right-3.5 w-4 h-4 bg-red-500 hover:bg-red-600 text-white rounded-full text-[9px] font-bold flex items-center justify-center cursor-pointer shadow-xs';
+        delBtn.textContent = '✕';
+        delBtn.title = 'Delete field';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          allFields = allFields.filter(f => f.id !== field.id);
+          if (selectedFieldId === field.id) selectedFieldId = null;
+          updateMeta();
+          renderFieldsOverlay();
+          syncInspector();
+        });
+        el.appendChild(delBtn);
+
+        // Resize Handle
+        const handle = document.createElement('div');
+        handle.className = 'absolute bottom-0 right-0 w-3 h-3 bg-indigo-600 cursor-nwse-resize rounded-tl';
+        el.appendChild(handle);
+
+        // Click to Select Field
+        el.addEventListener('click', (e) => {
+          e.stopPropagation();
+          selectedFieldId = field.id;
+          renderFieldsOverlay();
+          syncInspector();
+        });
+
+        // Setup Drag & Move
+        setupDrag(el, field);
+        setupResize(handle, field);
+      }
+
+      fieldsOverlay.appendChild(el);
+    });
+  }
+
+  function setupDrag(element: HTMLElement, field: FormFieldDefinition) {
+    let startX = 0;
+    let startY = 0;
+    let initialX = field.x;
+    let initialY = field.y;
+
+    element.addEventListener('mousedown', (e) => {
+      if (e.target !== element && !(e.target as HTMLElement).classList.contains('field-box')) return;
+      e.preventDefault();
+      selectedFieldId = field.id;
+      startX = e.clientX;
+      startY = e.clientY;
+      initialX = field.x;
+      initialY = field.y;
+
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        const deltaX = (moveEvent.clientX - startX) / currentViewportScale;
+        const deltaY = (moveEvent.clientY - startY) / currentViewportScale;
+
+        field.x = Math.max(0, initialX + deltaX);
+        field.y = Math.max(0, initialY - deltaY); // Invert Y for PDF coordinates
+
+        const screenX = field.x * currentViewportScale;
+        const screenY = (pageDimensions.height - field.y - field.height) * currentViewportScale;
+        element.style.left = `${screenX}px`;
+        element.style.top = `${screenY}px`;
+      };
+
+      const onMouseUp = () => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        syncInspector();
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  function setupResize(handle: HTMLElement, field: FormFieldDefinition) {
+    handle.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      e.preventDefault();
+      selectedFieldId = field.id;
+      const startX = e.clientX;
+      const startY = e.clientY;
+      const initialW = field.width;
+      const initialH = field.height;
+
+      const onMouseMove = (moveEvent: MouseEvent) => {
+        const deltaW = (moveEvent.clientX - startX) / currentViewportScale;
+        const deltaH = (moveEvent.clientY - startY) / currentViewportScale;
+
+        field.width = Math.max(16, initialW + deltaW);
+        field.height = Math.max(14, initialH + deltaH);
+
+        const screenW = field.width * currentViewportScale;
+        const screenH = field.height * currentViewportScale;
+        const screenY = (pageDimensions.height - field.y - field.height) * currentViewportScale;
+
+        const parent = handle.parentElement as HTMLElement;
+        parent.style.width = `${screenW}px`;
+        parent.style.height = `${screenH}px`;
+        parent.style.top = `${screenY}px`;
+      };
+
+      const onMouseUp = () => {
+        window.removeEventListener('mousemove', onMouseMove);
+        window.removeEventListener('mouseup', onMouseUp);
+        renderFieldsOverlay();
+        syncInspector();
+      };
+
+      window.addEventListener('mousemove', onMouseMove);
+      window.addEventListener('mouseup', onMouseUp);
+    });
+  }
+
+  function syncInspector() {
+    const field = allFields.find(f => f.id === selectedFieldId);
+    if (!field) {
+      propsEmptyState.classList.remove('hidden');
+      propsEditor.classList.add('hidden');
+      selectedBadge.textContent = 'none selected';
+      return;
+    }
+
+    propsEmptyState.classList.add('hidden');
+    propsEditor.classList.remove('hidden');
+    selectedBadge.textContent = `${field.type}: ${field.name}`;
+
+    propName.value = field.name;
+
+    if (field.type === 'text') {
+      propDefaultContainer.classList.remove('hidden');
+      propDefault.value = field.defaultValue || '';
+      propMultilineContainer.classList.remove('hidden');
+      propMultiline.checked = !!field.isMultiline;
+      propOptionsContainer.classList.add('hidden');
+    } else if (field.type === 'dropdown') {
+      propDefaultContainer.classList.remove('hidden');
+      propDefault.value = field.defaultValue || '';
+      propMultilineContainer.classList.add('hidden');
+      propOptionsContainer.classList.remove('hidden');
+      propOptions.value = (field.options || []).join(', ');
+    } else if (field.type === 'checkbox') {
+      propDefaultContainer.classList.add('hidden');
+      propMultilineContainer.classList.add('hidden');
+      propOptionsContainer.classList.add('hidden');
+    }
+  }
+
+  function updateMeta() {
+    metaEl.textContent = `Page ${currentPageIndex + 1} of ${totalPages} • ${allFields.length} form field${allFields.length === 1 ? '' : 's'}`;
+    exportFieldsCount.textContent = `${allFields.length}`;
+  }
+</script>
