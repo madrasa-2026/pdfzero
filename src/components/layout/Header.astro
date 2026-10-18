@@ -1,4 +1,8 @@
 ---
+import { getCollection } from 'astro:content';
+
+const tools = await getCollection('tools');
+const toolCount = tools.length;
 ---
 
 <header class="sticky top-0 z-50 bg-white/85 backdrop-blur-md border-b border-slate-200/80 transition-colors">
@@ -27,7 +31,7 @@
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-800 hover:text-slate-900 hover:bg-slate-100 transition duration-150"
         >
           <span>All Tools</span>
-          <span class="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-slate-900 text-white font-bold">33</span>
+          <span class="px-1.5 py-0.5 rounded-md text-[10px] font-mono bg-slate-900 text-white font-bold">{toolCount}</span>
         </a>
         <a
           href="/tools/edit-pdf"

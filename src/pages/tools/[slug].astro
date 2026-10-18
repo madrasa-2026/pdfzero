@@ -35,6 +35,7 @@ import ReaderPdfIsland from '../../components/tools/ReaderPdfIsland.astro';
 import DarkModePdfIsland from '../../components/tools/DarkModePdfIsland.astro';
 import OverlayPdfIsland from '../../components/tools/OverlayPdfIsland.astro';
 import PdfToCsvIsland from '../../components/tools/PdfToCsvIsland.astro';
+import NupPdfIsland from '../../components/tools/NupPdfIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -225,6 +226,8 @@ const relatedToolCards = allTools
       <OverlayPdfIsland />
     ) : tool.slug === 'pdf-to-csv' ? (
       <PdfToCsvIsland />
+    ) : tool.slug === 'nup-pdf' ? (
+      <NupPdfIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}

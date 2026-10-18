@@ -1,0 +1,561 @@
+---
+// NupPdfIsland.astro - 100% Client-Side PDF N-Up Multi-Page Imposer
+---
+
+<div id="nup-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="nup-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">N-Up Imposition Notice</h4>
+      <p id="nup-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-nup-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="nup-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="nup-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-indigo-50 group-hover:bg-indigo-600 flex items-center justify-center text-indigo-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-indigo-600 transition">
+      Select PDF to Tile & Impose
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your multi-page slides or documents, or click to browse.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF Document
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>2, 4, 8, 9, 16-Up</span>
+      <span>•</span>
+      <span>Infinite Vector Zoom</span>
+      <span>•</span>
+      <span>Print Trimmer Marks</span>
+    </div>
+  </div>
+
+  <!-- 2. Configuration Section -->
+  <div id="nup-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="nup-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="nup-file-meta" class="text-xs text-slate-500">Reading document structure...</p>
+        </div>
+      </div>
+      <button type="button" id="change-nup-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Layout Grid Selector -->
+    <div>
+      <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
+        Pages Per Sheet Layout
+      </label>
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+        <!-- 2-Up -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition hover:border-indigo-500 nup-layout-card" data-layout="2-up">
+          <input type="radio" name="nup-layout" value="2-up" class="sr-only" />
+          <div class="text-base font-extrabold text-slate-800 mb-0.5">2-Up</div>
+          <div class="text-[11px] text-slate-500">2 Pages</div>
+        </label>
+
+        <!-- 4-Up (Default) -->
+        <label class="cursor-pointer border-2 border-indigo-600 bg-indigo-50/50 rounded-xl p-3 text-center transition hover:border-indigo-500 nup-layout-card" data-layout="4-up">
+          <input type="radio" name="nup-layout" value="4-up" checked class="sr-only" />
+          <div class="text-base font-extrabold text-slate-800 mb-0.5">4-Up</div>
+          <div class="text-[11px] text-slate-500">2 × 2 Grid</div>
+        </label>
+
+        <!-- 6-Up -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition hover:border-indigo-500 nup-layout-card" data-layout="6-up">
+          <input type="radio" name="nup-layout" value="6-up" class="sr-only" />
+          <div class="text-base font-extrabold text-slate-800 mb-0.5">6-Up</div>
+          <div class="text-[11px] text-slate-500">2 × 3 Grid</div>
+        </label>
+
+        <!-- 8-Up -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition hover:border-indigo-500 nup-layout-card" data-layout="8-up">
+          <input type="radio" name="nup-layout" value="8-up" class="sr-only" />
+          <div class="text-base font-extrabold text-slate-800 mb-0.5">8-Up</div>
+          <div class="text-[11px] text-slate-500">2 × 4 Grid</div>
+        </label>
+
+        <!-- 9-Up -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition hover:border-indigo-500 nup-layout-card" data-layout="9-up">
+          <input type="radio" name="nup-layout" value="9-up" class="sr-only" />
+          <div class="text-base font-extrabold text-slate-800 mb-0.5">9-Up</div>
+          <div class="text-[11px] text-slate-500">3 × 3 Grid</div>
+        </label>
+
+        <!-- 16-Up -->
+        <label class="cursor-pointer border-2 border-slate-200 bg-white rounded-xl p-3 text-center transition hover:border-indigo-500 nup-layout-card" data-layout="16-up">
+          <input type="radio" name="nup-layout" value="16-up" class="sr-only" />
+          <div class="text-base font-extrabold text-slate-800 mb-0.5">16-Up</div>
+          <div class="text-[11px] text-slate-500">4 × 4 Grid</div>
+        </label>
+      </div>
+    </div>
+
+    <!-- Paper Size & Orientation & Page Order -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+      <!-- Paper Size -->
+      <div>
+        <label for="nup-sheet-size" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Paper Size
+        </label>
+        <select
+          id="nup-sheet-size"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+        >
+          <option value="a4" selected>A4 (210 × 297 mm)</option>
+          <option value="letter">US Letter (8.5 × 11 in)</option>
+          <option value="legal">US Legal (8.5 × 14 in)</option>
+          <option value="a3">A3 (297 × 420 mm)</option>
+          <option value="source">Match Source Page</option>
+        </select>
+      </div>
+
+      <!-- Orientation -->
+      <div>
+        <label for="nup-orientation" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Sheet Orientation
+        </label>
+        <select
+          id="nup-orientation"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+        >
+          <option value="auto" selected>Auto (Max Readable Size)</option>
+          <option value="landscape">Landscape</option>
+          <option value="portrait">Portrait</option>
+        </select>
+      </div>
+
+      <!-- Page Flow Order -->
+      <div>
+        <label for="nup-order" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Page Ordering
+        </label>
+        <select
+          id="nup-order"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+        >
+          <option value="horizontal" selected>Horizontal (Left-to-Right)</option>
+          <option value="vertical">Vertical (Top-to-Bottom)</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Margins & Gutter Spacing -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+      <!-- Outer Margin -->
+      <div>
+        <label for="nup-margin" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Outer Margin
+        </label>
+        <select
+          id="nup-margin"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+        >
+          <option value="0">None (0 pt)</option>
+          <option value="18" selected>Compact (18 pt / 0.25 in)</option>
+          <option value="36">Standard (36 pt / 0.5 in)</option>
+          <option value="54">Wide (54 pt / 0.75 in)</option>
+        </select>
+      </div>
+
+      <!-- Tile Gutter / Spacing -->
+      <div>
+        <label for="nup-spacing" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Tile Gutter / Spacing
+        </label>
+        <select
+          id="nup-spacing"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+        >
+          <option value="0">None (0 pt)</option>
+          <option value="8" selected>Standard (8 pt)</option>
+          <option value="16">Spacious (16 pt)</option>
+          <option value="24">Wide (24 pt)</option>
+        </select>
+      </div>
+
+      <!-- Page Range Filter -->
+      <div>
+        <label for="nup-page-range" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Page Range
+        </label>
+        <input
+          type="text"
+          id="nup-page-range"
+          placeholder="All (e.g. 1-10, 15)"
+          value="all"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white placeholder:text-slate-400"
+        />
+      </div>
+    </div>
+
+    <!-- Finishing Options: Borders & Cut Marks -->
+    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <label class="flex items-center gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          id="nup-draw-borders"
+          class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+        />
+        <div>
+          <span class="text-xs font-bold text-slate-800 block">Draw Tile Borders</span>
+          <span class="text-[11px] text-slate-500">Adds subtle 0.5pt outline around each page tile</span>
+        </div>
+      </label>
+
+      <label class="flex items-center gap-3 cursor-pointer">
+        <input
+          type="checkbox"
+          id="nup-draw-cut-marks"
+          class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+        />
+        <div>
+          <span class="text-xs font-bold text-slate-800 block">Draw Trimmer Cut Marks</span>
+          <span class="text-[11px] text-slate-500">Adds corner crop ticks for trimming with paper cutter</span>
+        </div>
+      </label>
+    </div>
+
+    <!-- Output Forecast Card -->
+    <div class="p-4 bg-indigo-50/60 rounded-xl border border-indigo-100 flex items-center justify-between text-xs text-indigo-950">
+      <div class="flex items-center gap-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-indigo-600 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span id="nup-forecast-text">Calculating sheet breakdown...</span>
+      </div>
+      <span class="font-bold text-indigo-600" id="nup-paper-saving-badge">Paper Saver</span>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="pt-2 flex flex-col sm:flex-row gap-3">
+      <button
+        type="button"
+        id="run-nup-btn"
+        class="flex-1 py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 active:scale-[0.99] transition flex items-center justify-center gap-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Impose & Download N-Up PDF
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Progress State -->
+  <div id="nup-progress-card" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-4">
+    <div class="w-12 h-12 mx-auto rounded-full bg-indigo-50 border-2 border-indigo-600 border-t-transparent animate-spin"></div>
+    <h3 class="text-base font-bold text-slate-800">Tiling & Embedding Vector Pages...</h3>
+    <p id="nup-progress-status" class="text-xs text-slate-500">Calculating grid cells and embedding Form XObjects in memory...</p>
+    <div class="w-full max-w-xs mx-auto bg-slate-100 rounded-full h-2 overflow-hidden">
+      <div id="nup-progress-fill" class="bg-indigo-600 h-full w-2/3 transition-all duration-300"></div>
+    </div>
+  </div>
+
+  <!-- 4. Success & Download View -->
+  <div id="nup-success-card" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-xl font-bold text-slate-900 mb-1">N-Up PDF Ready!</h3>
+      <p id="nup-success-stats" class="text-xs text-slate-600">
+        Successfully tiled 12 pages onto 3 sheets.
+      </p>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <a
+        id="nup-download-link"
+        download="imposed-nup.pdf"
+        class="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-indigo-600 hover:bg-indigo-700 shadow-md shadow-indigo-600/20 active:scale-[0.99] transition inline-flex items-center justify-center gap-2 cursor-pointer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Download Imposed PDF
+      </a>
+
+      <button
+        type="button"
+        id="nup-reset-btn"
+        class="w-full sm:w-auto px-5 py-3 rounded-xl font-semibold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
+      >
+        Tile Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  import { imposeNup, type NupLayout, type SheetSize, type SheetOrientation, type NupOrder, parsePageRange } from '../../lib/pdf/nup';
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let detectedPageCount = 0;
+  let detectedWidth = 0;
+  let detectedHeight = 0;
+  let selectedLayout: NupLayout = '4-up';
+  let generatedBlobUrl: string | null = null;
+
+  // DOM Elements
+  const dropZone = document.getElementById('nup-drop-zone')!;
+  const fileInput = document.getElementById('nup-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('nup-config-section')!;
+  const progressCard = document.getElementById('nup-progress-card')!;
+  const successCard = document.getElementById('nup-success-card')!;
+  const errorBanner = document.getElementById('nup-error-banner')!;
+  const errorMessage = document.getElementById('nup-error-message')!;
+  const dismissErrorBtn = document.getElementById('dismiss-nup-error')!;
+  const fileNameEl = document.getElementById('nup-file-name')!;
+  const fileMetaEl = document.getElementById('nup-file-meta')!;
+  const changeFileBtn = document.getElementById('change-nup-file-btn')!;
+  const sheetSizeSelect = document.getElementById('nup-sheet-size') as HTMLSelectElement;
+  const orientationSelect = document.getElementById('nup-orientation') as HTMLSelectElement;
+  const orderSelect = document.getElementById('nup-order') as HTMLSelectElement;
+  const marginSelect = document.getElementById('nup-margin') as HTMLSelectElement;
+  const spacingSelect = document.getElementById('nup-spacing') as HTMLSelectElement;
+  const pageRangeInput = document.getElementById('nup-page-range') as HTMLInputElement;
+  const drawBordersCheck = document.getElementById('nup-draw-borders') as HTMLInputElement;
+  const drawCutMarksCheck = document.getElementById('nup-draw-cut-marks') as HTMLInputElement;
+  const forecastText = document.getElementById('nup-forecast-text')!;
+  const paperSavingBadge = document.getElementById('nup-paper-saving-badge')!;
+  const runBtn = document.getElementById('run-nup-btn')!;
+  const successStats = document.getElementById('nup-success-stats')!;
+  const downloadLink = document.getElementById('nup-download-link') as HTMLAnchorElement;
+  const resetBtn = document.getElementById('nup-reset-btn')!;
+  const layoutCards = document.querySelectorAll<HTMLElement>('.nup-layout-card');
+
+  function showError(msg: string) {
+    errorMessage.textContent = msg;
+    errorBanner.classList.remove('hidden');
+    progressCard.classList.add('hidden');
+  }
+
+  function hideError() {
+    errorBanner.classList.add('hidden');
+  }
+
+  dismissErrorBtn.addEventListener('click', hideError);
+
+  // Setup Layout Card Clicks
+  layoutCards.forEach((card) => {
+    card.addEventListener('click', () => {
+      layoutCards.forEach((c) => {
+        c.classList.remove('border-indigo-600', 'bg-indigo-50/50');
+        c.classList.add('border-slate-200', 'bg-white');
+      });
+      card.classList.remove('border-slate-200', 'bg-white');
+      card.classList.add('border-indigo-600', 'bg-indigo-50/50');
+
+      const radio = card.querySelector('input[type="radio"]') as HTMLInputElement;
+      if (radio) {
+        radio.checked = true;
+        selectedLayout = radio.value as NupLayout;
+        updateForecast();
+      }
+    });
+  });
+
+  function getPagesPerSheet(layout: NupLayout): number {
+    switch (layout) {
+      case '2-up': return 2;
+      case '4-up': return 4;
+      case '6-up': return 6;
+      case '8-up': return 8;
+      case '9-up': return 9;
+      case '16-up': return 16;
+    }
+  }
+
+  function updateForecast() {
+    if (detectedPageCount === 0) return;
+
+    const rangeVal = pageRangeInput.value.trim() || 'all';
+    const parsed = parsePageRange(rangeVal, detectedPageCount);
+    const validCount = parsed.length;
+    const pps = getPagesPerSheet(selectedLayout);
+    const outSheets = Math.ceil(validCount / pps);
+
+    forecastText.textContent = `Input: ${validCount} page${validCount === 1 ? '' : 's'} -> Output: ${outSheets} sheet${outSheets === 1 ? '' : 's'} (${pps} pages/sheet)`;
+
+    const savedSheets = Math.max(0, validCount - outSheets);
+    if (savedSheets > 0) {
+      paperSavingBadge.textContent = `Saves ${savedSheets} physical sheet${savedSheets === 1 ? '' : 's'} (${Math.round((savedSheets / validCount) * 100)}% paper reduction)`;
+    } else {
+      paperSavingBadge.textContent = 'Standard Layout';
+    }
+  }
+
+  [sheetSizeSelect, orientationSelect, orderSelect, marginSelect, spacingSelect].forEach((el) => {
+    el.addEventListener('change', updateForecast);
+  });
+  pageRangeInput.addEventListener('input', updateForecast);
+
+  async function handleFile(file: File) {
+    if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please upload a valid PDF file.');
+      return;
+    }
+
+    hideError();
+    currentFile = file;
+    fileNameEl.textContent = file.name;
+    fileMetaEl.textContent = 'Reading document pages...';
+
+    dropZone.classList.add('hidden');
+    configSection.classList.remove('hidden');
+
+    try {
+      fileBuffer = await file.arrayBuffer();
+      const testDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
+      detectedPageCount = testDoc.getPageCount();
+
+      if (detectedPageCount === 0) {
+        throw new Error('PDF document has no pages.');
+      }
+
+      const p1 = testDoc.getPage(0);
+      const { width, height } = p1.getSize();
+      detectedWidth = Math.round(width);
+      detectedHeight = Math.round(height);
+
+      fileMetaEl.textContent = `${detectedPageCount} page${detectedPageCount === 1 ? '' : 's'} • ${detectedWidth} × ${detectedHeight} pt • ${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+      updateForecast();
+    } catch (err: any) {
+      showError(err.message || 'Failed to inspect PDF document structure.');
+      configSection.classList.add('hidden');
+      dropZone.classList.remove('hidden');
+    }
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files[0]) {
+      handleFile(target.files[0]);
+    }
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-indigo-500', 'bg-indigo-50/20');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  changeFileBtn.addEventListener('click', () => {
+    configSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+  });
+
+  resetBtn.addEventListener('click', () => {
+    successCard.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+    if (generatedBlobUrl) {
+      URL.revokeObjectURL(generatedBlobUrl);
+      generatedBlobUrl = null;
+    }
+  });
+
+  runBtn.addEventListener('click', async () => {
+    if (!fileBuffer || !currentFile) {
+      showError('Please upload a PDF document first.');
+      return;
+    }
+
+    hideError();
+    configSection.classList.add('hidden');
+    progressCard.classList.remove('hidden');
+
+    try {
+      const marginVal = parseInt(marginSelect.value, 10);
+      const spacingVal = parseInt(spacingSelect.value, 10);
+
+      const result = await imposeNup(new Uint8Array(fileBuffer), {
+        layout: selectedLayout,
+        sheetSize: sheetSizeSelect.value as SheetSize,
+        orientation: orientationSelect.value as SheetOrientation,
+        order: orderSelect.value as NupOrder,
+        margin: marginVal,
+        spacing: spacingVal,
+        drawBorders: drawBordersCheck.checked,
+        drawCutMarks: drawCutMarksCheck.checked,
+        pageRange: pageRangeInput.value.trim() || 'all',
+      });
+
+      const blob = new Blob([result.pdfBytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' });
+      if (generatedBlobUrl) {
+        URL.revokeObjectURL(generatedBlobUrl);
+      }
+      generatedBlobUrl = URL.createObjectURL(blob);
+
+      downloadLink.href = generatedBlobUrl;
+      const baseName = currentFile.name.replace(/\.pdf$/i, '');
+      downloadLink.download = `${baseName}-${selectedLayout}-nup.pdf`;
+
+      successStats.textContent = `Tiled ${result.inputPagesProcessed} pages into ${result.sheetsGenerated} sheet${result.sheetsGenerated === 1 ? '' : 's'} (${result.pagesPerSheet} per sheet). Output file: ${(result.outputSize / (1024 * 1024)).toFixed(2)} MB.`;
+
+      progressCard.classList.add('hidden');
+      successCard.classList.remove('hidden');
+    } catch (err: any) {
+      showError(err.message || 'Failed to impose PDF.');
+      progressCard.classList.add('hidden');
+      configSection.classList.remove('hidden');
+    }
+  });
+</script>
