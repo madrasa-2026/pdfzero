@@ -1,0 +1,384 @@
+---
+// RedactPdfIsland.astro - 100% in-browser True PDF Redactor & Metadata Sanitizer
+---
+
+<div id="redact-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="redact-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Redaction Notice</h4>
+      <p id="redact-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-redact-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="redact-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="redact-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-rose-50 group-hover:bg-rose-600 flex items-center justify-center text-rose-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-rose-600 transition">
+      Select PDF to Redact & Sanitize
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your PDF here, or click to choose from your device.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose Confidential PDF
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>True Stream Eradication</span>
+      <span>•</span>
+      <span>Metadata Purge</span>
+    </div>
+  </div>
+
+  <!-- 2. Configure Redaction Options Card -->
+  <div id="redact-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="redact-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="redact-file-meta" class="text-xs text-slate-500">Ready to configure redaction filters</p>
+        </div>
+      </div>
+      <button type="button" id="change-redact-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Redaction Patterns Checkboxes -->
+    <div class="space-y-3 pt-1">
+      <h5 class="text-xs font-bold uppercase tracking-wider text-slate-700">Automatic Sensitive Pattern Filters</h5>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200/90 hover:bg-slate-50/50 cursor-pointer transition">
+          <input type="checkbox" id="opt-redact-ssn" checked class="mt-0.5 rounded text-rose-600 focus:ring-rose-500 w-4 h-4" />
+          <div class="text-xs">
+            <span class="font-bold text-slate-800 block mb-0.5">Social Security Numbers (SSN)</span>
+            <span class="text-slate-500">Purges formats like 123-45-6789</span>
+          </div>
+        </label>
+
+        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200/90 hover:bg-slate-50/50 cursor-pointer transition">
+          <input type="checkbox" id="opt-redact-email" checked class="mt-0.5 rounded text-rose-600 focus:ring-rose-500 w-4 h-4" />
+          <div class="text-xs">
+            <span class="font-bold text-slate-800 block mb-0.5">Email Addresses</span>
+            <span class="text-slate-500">Purges email contacts and handles</span>
+          </div>
+        </label>
+
+        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200/90 hover:bg-slate-50/50 cursor-pointer transition">
+          <input type="checkbox" id="opt-redact-phone" checked class="mt-0.5 rounded text-rose-600 focus:ring-rose-500 w-4 h-4" />
+          <div class="text-xs">
+            <span class="font-bold text-slate-800 block mb-0.5">Phone Numbers</span>
+            <span class="text-slate-500">Purges standard mobile & landlines</span>
+          </div>
+        </label>
+
+        <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-200/90 hover:bg-slate-50/50 cursor-pointer transition">
+          <input type="checkbox" id="opt-redact-card" class="mt-0.5 rounded text-rose-600 focus:ring-rose-500 w-4 h-4" />
+          <div class="text-xs">
+            <span class="font-bold text-slate-800 block mb-0.5">Credit Card Numbers</span>
+            <span class="text-slate-500">Purges 16-digit card strings</span>
+          </div>
+        </label>
+      </div>
+
+      <!-- Custom Terms -->
+      <div class="pt-2 space-y-1.5">
+        <label for="custom-redact-terms" class="text-xs font-bold uppercase tracking-wider text-slate-700 block">
+          Custom Confidential Terms, Names, or Numbers
+        </label>
+        <input
+          type="text"
+          id="custom-redact-terms"
+          placeholder="e.g. John Doe, Confidential, Acme Corp, $450,000 (comma-separated)"
+          class="w-full px-3 py-2.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
+        />
+        <p class="text-[11px] text-slate-500">Enter specific words or phrases you want wiped from every page stream.</p>
+      </div>
+
+      <!-- Metadata Sanitization Checkbox -->
+      <label class="flex items-start gap-3 p-3 rounded-xl border border-emerald-200/80 bg-emerald-50/30 cursor-pointer transition mt-2">
+        <input type="checkbox" id="opt-sanitize-metadata" checked class="mt-0.5 rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4" />
+        <div class="text-xs">
+          <span class="font-bold text-slate-800 block mb-0.5">Purge Hidden Document Metadata & XMP Packets (Recommended)</span>
+          <span class="text-slate-600">Completely clears author name, creator software, creation date, modification timestamp, and operating system fingerprints.</span>
+        </div>
+      </label>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2 flex flex-col sm:flex-row items-center gap-3">
+      <button
+        type="button"
+        id="execute-redact-btn"
+        class="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-rose-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        <span>Permanently Redact & Sanitize PDF</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Processing State -->
+  <div id="redact-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-5">
+    <div class="w-16 h-16 mx-auto relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-rose-100 border-t-rose-600 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-rose-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-lg font-bold text-slate-800 mb-1">Eradicating Sensitive Data...</h3>
+      <p id="redact-progress-message" class="text-xs text-slate-500">Decompressing content streams and scrubbing character bytes...</p>
+    </div>
+  </div>
+
+  <!-- 4. Success & Download State -->
+  <div id="redact-success-section" class="hidden bg-white rounded-2xl border border-emerald-200 p-6 sm:p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-xl font-bold text-slate-900 mb-1">Document Redacted & Sanitized Successfully!</h3>
+      <p class="text-xs text-slate-600">The underlying sensitive data was permanently purged from the file.</p>
+    </div>
+
+    <!-- Diagnostic Details Breakdown -->
+    <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/80 text-left space-y-2 max-w-lg mx-auto">
+      <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-200">
+        <span class="text-slate-500">Pages Processed:</span>
+        <span id="redact-res-pages" class="font-bold text-slate-800">1</span>
+      </div>
+      <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-200">
+        <span class="text-slate-500">File Size:</span>
+        <span id="redact-res-size" class="font-bold text-slate-800">120 KB</span>
+      </div>
+      <div class="text-xs pt-1">
+        <span class="text-slate-500 block mb-1">Sanitization Report:</span>
+        <ul id="redact-res-list" class="space-y-1 text-slate-700 list-disc list-inside text-[11px]">
+          <li>Permanently eradicated sensitive text occurrences</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Security Guarantee Badge -->
+    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+      </svg>
+      <span>True Stream Eradication — Data Cannot Be Uncovered or Copied</span>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        id="download-redacted-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Redacted PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="redact-another-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition duration-150"
+      >
+        Redact Another PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  import { redactPdf, type RedactionResult } from '../../lib/pdf/redact';
+
+  let currentFile: File | null = null;
+  let rawPdfBytes: Uint8Array | null = null;
+  let redactedResultBytes: Uint8Array | null = null;
+
+  const dropZone = document.getElementById('redact-drop-zone')!;
+  const fileInput = document.getElementById('redact-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('redact-config-section')!;
+  const progressSection = document.getElementById('redact-progress-section')!;
+  const successSection = document.getElementById('redact-success-section')!;
+  const errorBanner = document.getElementById('redact-error-banner')!;
+  const errorMessage = document.getElementById('redact-error-message')!;
+  const dismissError = document.getElementById('dismiss-redact-error')!;
+
+  const fileNameLabel = document.getElementById('redact-file-name')!;
+  const fileMetaLabel = document.getElementById('redact-file-meta')!;
+  const changeFileBtn = document.getElementById('change-redact-file-btn')!;
+  const executeBtn = document.getElementById('execute-redact-btn')!;
+  const downloadBtn = document.getElementById('download-redacted-btn')!;
+  const redactAnotherBtn = document.getElementById('redact-another-btn')!;
+
+  const optSsn = document.getElementById('opt-redact-ssn') as HTMLInputElement;
+  const optEmail = document.getElementById('opt-redact-email') as HTMLInputElement;
+  const optPhone = document.getElementById('opt-redact-phone') as HTMLInputElement;
+  const optCard = document.getElementById('opt-redact-card') as HTMLInputElement;
+  const customTermsInput = document.getElementById('custom-redact-terms') as HTMLInputElement;
+  const optSanitizeMeta = document.getElementById('opt-sanitize-metadata') as HTMLInputElement;
+
+  const resPages = document.getElementById('redact-res-pages')!;
+  const resSize = document.getElementById('redact-res-size')!;
+  const resList = document.getElementById('redact-res-list')!;
+
+  function showError(msg: string) {
+    errorMessage.textContent = msg;
+    errorBanner.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBanner.classList.add('hidden');
+  }
+
+  dismissError?.addEventListener('click', hideError);
+
+  function formatBytes(bytes: number): string {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  async function handleFile(file: File) {
+    hideError();
+    currentFile = file;
+
+    fileNameLabel.textContent = file.name;
+    fileMetaLabel.textContent = `${formatBytes(file.size)} • Loading...`;
+
+    dropZone.classList.add('hidden');
+    configSection.classList.remove('hidden');
+    progressSection.classList.add('hidden');
+    successSection.classList.add('hidden');
+
+    try {
+      rawPdfBytes = new Uint8Array(await file.arrayBuffer());
+      const doc = await PDFDocument.load(rawPdfBytes, { ignoreEncryption: true });
+      fileMetaLabel.textContent = `${formatBytes(file.size)} • ${doc.getPageCount()} page(s)`;
+    } catch (err: any) {
+      showError(err.message || 'Failed to read PDF document.');
+    }
+  }
+
+  fileInput?.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      handleFile(target.files[0]);
+    }
+  });
+
+  function resetState() {
+    dropZone.classList.remove('hidden');
+    configSection.classList.add('hidden');
+    progressSection.classList.add('hidden');
+    successSection.classList.add('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    rawPdfBytes = null;
+    redactedResultBytes = null;
+  }
+
+  changeFileBtn?.addEventListener('click', resetState);
+  redactAnotherBtn?.addEventListener('click', resetState);
+
+  executeBtn?.addEventListener('click', async () => {
+    if (!rawPdfBytes || !currentFile) return;
+
+    configSection.classList.add('hidden');
+    progressSection.classList.remove('hidden');
+
+    try {
+      const customTerms = customTermsInput.value
+        .split(',')
+        .map((t) => t.trim())
+        .filter((t) => t.length > 0);
+
+      const result: RedactionResult = await redactPdf(rawPdfBytes, {
+        customTerms,
+        redactEmails: optEmail.checked,
+        redactSsns: optSsn.checked,
+        redactPhones: optPhone.checked,
+        redactCreditCards: optCard.checked,
+        sanitizeMetadata: optSanitizeMeta.checked,
+      });
+
+      redactedResultBytes = result.redactedPdfBytes;
+
+      resPages.textContent = `${result.pagesProcessed} page(s)`;
+      resSize.textContent = `${formatBytes(result.originalSize)} → ${formatBytes(result.redactedSize)}`;
+
+      resList.innerHTML = '';
+      result.details.forEach((d) => {
+        const li = document.createElement('li');
+        li.textContent = d;
+        resList.appendChild(li);
+      });
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      showError(err.message || 'Failed to redact PDF document.');
+    }
+  });
+
+  downloadBtn?.addEventListener('click', () => {
+    if (!redactedResultBytes || !currentFile) return;
+
+    const baseName = currentFile.name.replace(/\.pdf$/i, '');
+    const fileName = `${baseName}_redacted.pdf`;
+
+    const blob = new Blob([redactedResultBytes as any], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+</script>
