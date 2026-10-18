@@ -1,0 +1,531 @@
+---
+// src/components/tools/VerifyRedactionPdfIsland.astro
+---
+
+<div class="w-full max-w-4xl mx-auto">
+  <!-- 1. Dropzone Section -->
+  <div
+    id="verify-dropzone"
+    class="relative border-2 border-dashed border-slate-700 hover:border-rose-500 bg-slate-900/90 hover:bg-slate-900 transition-all rounded-3xl p-8 sm:p-12 text-center cursor-pointer shadow-xl group text-white"
+  >
+    <input
+      type="file"
+      id="verify-file-input"
+      accept="application/pdf"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+    />
+    <div class="flex flex-col items-center justify-center pointer-events-none">
+      <div class="w-16 h-16 rounded-2xl bg-rose-950/80 border border-rose-800 text-rose-400 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:border-rose-400 transition-all shadow-inner">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <line x1="12" y1="8" x2="12" y2="12"></line>
+          <line x1="12" y1="16" x2="12.01" y2="16"></line>
+        </svg>
+      </div>
+      <h3 class="text-lg sm:text-xl font-bold text-white mb-2">
+        Drop PDF to scan for fake black-box redaction leaks
+      </h3>
+      <p class="text-xs sm:text-sm text-slate-400 max-w-md mb-4">
+        Detect hidden selectable text secretly trapped beneath black marker boxes, toggle forensic X-Ray vision, and hard-purge leaks for court filing safety.
+      </p>
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-950/60 border border-rose-800/80 text-rose-300 text-xs font-semibold">
+        <span class="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+        100% In-Browser Forensic Scanner • Zero Cloud Leaks • Court &amp; FOIA Safe
+      </div>
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-500 font-mono">
+      <span>Manafort Leak Detector</span>
+      <span>•</span>
+      <span>Pixel &amp; Vector Intersection</span>
+      <span>•</span>
+      <span>Forensic X-Ray</span>
+      <span>•</span>
+      <span>Metadata Purge</span>
+    </div>
+  </div>
+
+  <!-- 2. Scanning Progress State -->
+  <div id="verify-loading" class="hidden bg-slate-900 rounded-3xl border border-slate-800 p-8 sm:p-12 shadow-xl text-center space-y-4 text-white">
+    <div class="w-12 h-12 border-4 border-rose-900 border-t-rose-500 rounded-full animate-spin mx-auto"></div>
+    <h3 class="text-base font-bold text-white" id="verify-scan-status">
+      Scanning visual blackouts &amp; selectable text streams...
+    </h3>
+    <p class="text-xs text-slate-400 font-mono" id="verify-scan-details">
+      Cross-referencing dark canvas pixel coordinates with underlying PDF text glyphs.
+    </p>
+  </div>
+
+  <!-- 3. Audit Dashboard Panel -->
+  <div id="verify-dashboard" class="hidden bg-slate-900 text-slate-200 rounded-3xl border border-slate-800 p-6 sm:p-8 shadow-2xl space-y-6 text-left">
+    <!-- Header Summary Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+      <div>
+        <div class="flex items-center gap-2.5 mb-1.5">
+          <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700 text-[11px] font-mono font-bold" id="badge-doc-pages">
+            0 Pages
+          </span>
+          <h4 id="verify-filename" class="font-bold text-white text-base truncate max-w-xs sm:max-w-md">
+            court-document.pdf
+          </h4>
+        </div>
+        <p class="text-xs text-slate-400 font-mono" id="verify-summary-meta">
+          Scanned 0 pages • 0 dark redaction boxes audited
+        </p>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <button
+          type="button"
+          id="export-audit-log-btn"
+          class="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 transition flex items-center gap-1.5 cursor-pointer"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-rose-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export Log
+        </button>
+        <button
+          type="button"
+          id="verify-reset-btn"
+          class="text-xs font-medium text-slate-400 hover:text-white hover:underline cursor-pointer"
+        >
+          New Document
+        </button>
+      </div>
+    </div>
+
+    <!-- Alert Banner (Red if Leaks, Green if Clean) -->
+    <div id="leak-alert-banner" class="p-4 sm:p-5 rounded-2xl border flex items-start gap-3.5 bg-rose-950/50 border-rose-800 text-rose-200">
+      <div id="leak-alert-icon" class="w-9 h-9 rounded-xl bg-rose-900/80 text-rose-300 flex items-center justify-center font-bold text-lg shrink-0 mt-0.5">
+        !
+      </div>
+      <div class="space-y-1">
+        <h5 class="text-sm font-bold text-white" id="leak-alert-title">
+          CRITICAL: Fake Redactions Found! Text Is Still Selectable
+        </h5>
+        <p class="text-xs text-slate-300 leading-relaxed" id="leak-alert-desc">
+          Black rectangles were placed on top of text without deleting the underlying content stream. Anyone can copy-paste the redacted text below!
+        </p>
+      </div>
+    </div>
+
+    <!-- Interactive Forensic X-Ray Viewer -->
+    <div class="space-y-3">
+      <div class="flex items-center justify-between">
+        <span class="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono">
+          Page 1 Visual Inspection
+        </span>
+        <!-- X-Ray Mode Toggle -->
+        <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-mono select-none">
+          <input type="checkbox" id="xray-mode-toggle" class="sr-only peer" checked />
+          <div class="w-9 h-5 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-rose-600"></div>
+          <span class="text-rose-400 font-bold" id="xray-toggle-label">Forensic X-Ray Vision ON</span>
+        </label>
+      </div>
+
+      <div class="bg-slate-950 rounded-2xl p-4 flex flex-col items-center justify-center relative shadow-inner overflow-hidden min-h-[280px]">
+        <div class="relative inline-block border border-slate-800 rounded shadow-md overflow-hidden bg-white" id="xray-canvas-wrapper">
+          <canvas id="xray-preview-canvas" class="max-w-full max-h-[380px] object-contain block"></canvas>
+          <!-- Dynamic Overlay Indicators inserted via JS -->
+          <div id="xray-overlay-container" class="absolute inset-0 pointer-events-none"></div>
+        </div>
+        <p class="text-[10px] text-slate-400 mt-2 text-center font-mono">
+          In X-Ray mode, black boxes turn translucent red to expose hidden selectable text underneath.
+        </p>
+      </div>
+    </div>
+
+    <!-- Leaked Text Findings Table -->
+    <div class="space-y-3">
+      <h5 class="text-xs font-bold text-slate-300 uppercase tracking-wider font-mono flex items-center justify-between">
+        <span>Detected Compromised Text Strings (<span id="leaks-count-badge">0</span>)</span>
+        <span class="text-[10px] text-rose-400 font-normal">Selectable &amp; Copyable Underneath Blackout</span>
+      </h5>
+
+      <div class="overflow-x-auto rounded-xl border border-slate-800 max-h-56 overflow-y-auto">
+        <table class="w-full text-left text-xs font-mono">
+          <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] border-b border-slate-800 sticky top-0">
+            <tr>
+              <th class="p-3">Page</th>
+              <th class="p-3">Trapped Secret Text</th>
+              <th class="p-3">Confidence</th>
+              <th class="p-3 text-right">Action</th>
+            </tr>
+          </thead>
+          <tbody id="leaks-table-body" class="divide-y divide-slate-800 text-slate-300">
+            <tr>
+              <td colspan="4" class="p-4 text-center text-slate-500">
+                No leaky text found under redaction boxes.
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Hard Purge & Sanitize Action -->
+    <div class="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="text-xs text-slate-400">
+        Hard Purge stamps permanent vector blackout polygons and cleans document metadata.
+      </div>
+      <button
+        type="button"
+        id="btn-hard-purge"
+        class="w-full sm:w-auto bg-rose-600 hover:bg-rose-700 text-white font-bold py-3.5 px-8 rounded-2xl shadow-lg shadow-rose-600/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          <polyline points="9 12 11 14 15 10"></polyline>
+        </svg>
+        <span id="btn-purge-text">Hard-Purge &amp; Export Court-Ready PDF</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import {
+    detectDarkBoxesFromImageData,
+    findIntersectingTextLeaks,
+    hardSanitizeRedactions,
+    type DarkBox,
+    type TextSpan,
+    type LeakedTextFinding,
+  } from '../../lib/pdf/redactionVerifierEngine';
+
+  let rawPdfBytes: Uint8Array | null = null;
+  let specimenName = 'document.pdf';
+  let pdfDocProxy: any = null;
+  let detectedDarkBoxes: DarkBox[] = [];
+  let detectedLeaks: LeakedTextFinding[] = [];
+  let page1CanvasSize = { width: 0, height: 0 };
+
+  // DOM Elements
+  const dropzone = document.getElementById('verify-dropzone') as HTMLElement;
+  const fileInput = document.getElementById('verify-file-input') as HTMLInputElement;
+  const loading = document.getElementById('verify-loading') as HTMLElement;
+  const dashboard = document.getElementById('verify-dashboard') as HTMLElement;
+  const filenameEl = document.getElementById('verify-filename') as HTMLElement;
+  const pagesBadge = document.getElementById('badge-doc-pages') as HTMLElement;
+  const summaryMetaEl = document.getElementById('verify-summary-meta') as HTMLElement;
+  const resetBtn = document.getElementById('verify-reset-btn') as HTMLButtonElement;
+  const exportLogBtn = document.getElementById('export-audit-log-btn') as HTMLButtonElement;
+  const hardPurgeBtn = document.getElementById('btn-hard-purge') as HTMLButtonElement;
+  const hardPurgeBtnText = document.getElementById('btn-purge-text') as HTMLElement;
+  const xrayToggle = document.getElementById('xray-mode-toggle') as HTMLInputElement;
+  const xrayToggleLabel = document.getElementById('xray-toggle-label') as HTMLElement;
+  const previewCanvas = document.getElementById('xray-preview-canvas') as HTMLCanvasElement;
+  const overlayContainer = document.getElementById('xray-overlay-container') as HTMLElement;
+  const leaksTableBody = document.getElementById('leaks-table-body') as HTMLElement;
+  const leaksCountBadge = document.getElementById('leaks-count-badge') as HTMLElement;
+
+  // Alert Banner Elements
+  const leakAlertBanner = document.getElementById('leak-alert-banner') as HTMLElement;
+  const leakAlertIcon = document.getElementById('leak-alert-icon') as HTMLElement;
+  const leakAlertTitle = document.getElementById('leak-alert-title') as HTMLElement;
+  const leakAlertDesc = document.getElementById('leak-alert-desc') as HTMLElement;
+
+  // Drag and Drop
+  dropzone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('border-rose-500', 'bg-slate-900');
+  });
+
+  dropzone?.addEventListener('dragleave', () => {
+    dropzone.classList.remove('border-rose-500');
+  });
+
+  dropzone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('border-rose-500');
+    if (e.dataTransfer?.files?.[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput?.addEventListener('change', () => {
+    if (fileInput.files?.[0]) {
+      handleFile(fileInput.files[0]);
+    }
+  });
+
+  resetBtn?.addEventListener('click', () => {
+    dashboard.classList.add('hidden');
+    dropzone.classList.remove('hidden');
+    fileInput.value = '';
+    rawPdfBytes = null;
+    detectedDarkBoxes = [];
+    detectedLeaks = [];
+  });
+
+  xrayToggle?.addEventListener('change', () => {
+    updateXrayOverlayVisibility();
+  });
+
+  function updateXrayOverlayVisibility() {
+    const isXray = xrayToggle.checked;
+    xrayToggleLabel.textContent = isXray ? 'Forensic X-Ray Vision ON' : 'Normal View (Opaque Black)';
+    xrayToggleLabel.className = isXray ? 'text-rose-400 font-bold' : 'text-slate-400 font-normal';
+
+    const overlayBoxes = overlayContainer.querySelectorAll('.xray-box');
+    overlayBoxes.forEach((box: any) => {
+      if (isXray) {
+        box.classList.remove('bg-black', 'border-black');
+        box.classList.add('bg-rose-500/40', 'border-rose-400', 'border-dashed');
+      } else {
+        box.classList.add('bg-black', 'border-black');
+        box.classList.remove('bg-rose-500/40', 'border-rose-400', 'border-dashed');
+      }
+    });
+
+    const overlayTexts = overlayContainer.querySelectorAll('.xray-text');
+    overlayTexts.forEach((txt: any) => {
+      txt.style.display = isXray ? 'block' : 'none';
+    });
+  }
+
+  async function handleFile(file: File) {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      alert('Please upload a valid PDF document.');
+      return;
+    }
+
+    specimenName = file.name;
+    dropzone.classList.add('hidden');
+    loading.classList.remove('hidden');
+
+    try {
+      const buffer = await file.arrayBuffer();
+      rawPdfBytes = new Uint8Array(buffer);
+
+      // @ts-ignore
+      const pdfjsLib = window.pdfjsLib || await import('pdfjs-dist');
+      if (pdfjsLib.GlobalWorkerOptions && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+
+      pdfDocProxy = await pdfjsLib.getDocument({ data: rawPdfBytes.slice(0) }).promise;
+      const numPages = pdfDocProxy.numPages;
+
+      detectedDarkBoxes = [];
+      const extractedTextSpans: TextSpan[] = [];
+
+      const scanLimit = Math.min(numPages, 25);
+
+      for (let pNum = 1; pNum <= scanLimit; pNum++) {
+        const page = await pdfDocProxy.getPage(pNum);
+        const viewport = page.getViewport({ scale: 1.0 });
+
+        // 1. Render to off-screen canvas for pixel darkness inspection
+        const offCanvas = document.createElement('canvas');
+        offCanvas.width = Math.round(viewport.width);
+        offCanvas.height = Math.round(viewport.height);
+        const ctx = offCanvas.getContext('2d', { willReadFrequently: true });
+        if (!ctx) continue;
+
+        await page.render({ canvasContext: ctx, viewport }).promise;
+
+        if (pNum === 1) {
+          // Render page 1 preview canvas
+          previewCanvas.width = offCanvas.width;
+          previewCanvas.height = offCanvas.height;
+          const pCtx = previewCanvas.getContext('2d');
+          pCtx?.drawImage(offCanvas, 0, 0);
+          page1CanvasSize = { width: offCanvas.width, height: offCanvas.height };
+        }
+
+        const imgData = ctx.getImageData(0, 0, offCanvas.width, offCanvas.height);
+        const boxesOnPage = detectDarkBoxesFromImageData(imgData.data, offCanvas.width, offCanvas.height, pNum);
+        detectedDarkBoxes.push(...boxesOnPage);
+
+        // 2. Extract underlying text items from PDF stream
+        const textContent = await page.getTextContent();
+        for (const item of textContent.items) {
+          if (!('str' in item) || !item.str.trim()) continue;
+
+          // Convert PDF transform to canvas viewport coordinates
+          const tx = item.transform;
+          const pdfX = tx[4];
+          const pdfY = tx[5];
+          const [canvasX, canvasY] = viewport.convertToViewportPoint(pdfX, pdfY);
+
+          const spanWidth = (item.width || 20);
+          const spanHeight = (item.height || 12);
+
+          extractedTextSpans.push({
+            text: item.str,
+            x: canvasX,
+            y: canvasY - spanHeight,
+            width: spanWidth,
+            height: spanHeight,
+            pageNumber: pNum,
+          });
+        }
+      }
+
+      // 3. Find intersecting leaks
+      detectedLeaks = findIntersectingTextLeaks(extractedTextSpans, detectedDarkBoxes);
+
+      renderAuditResults(numPages);
+
+      loading.classList.add('hidden');
+      dashboard.classList.remove('hidden');
+    } catch (err: any) {
+      console.error(err);
+      alert('Error verifying redactions: ' + (err.message || err));
+      loading.classList.add('hidden');
+      dropzone.classList.remove('hidden');
+    }
+  }
+
+  function renderAuditResults(totalPages: number) {
+    filenameEl.textContent = specimenName;
+    pagesBadge.textContent = `${totalPages} Page${totalPages !== 1 ? 's' : ''}`;
+    summaryMetaEl.textContent = `Scanned ${Math.min(totalPages, 25)} pages • ${detectedDarkBoxes.length} black redaction box${detectedDarkBoxes.length !== 1 ? 'es' : ''} detected`;
+
+    const hasLeaks = detectedLeaks.length > 0;
+    leaksCountBadge.textContent = String(detectedLeaks.length);
+
+    if (hasLeaks) {
+      leakAlertBanner.className = 'p-4 sm:p-5 rounded-2xl border flex items-start gap-3.5 bg-rose-950/50 border-rose-800 text-rose-200';
+      leakAlertIcon.className = 'w-9 h-9 rounded-xl bg-rose-900/80 text-rose-300 flex items-center justify-center font-bold text-lg shrink-0 mt-0.5';
+      leakAlertIcon.textContent = '!';
+      leakAlertTitle.textContent = `CRITICAL: ${detectedLeaks.length} Fake Redaction Leak${detectedLeaks.length > 1 ? 's' : ''} Found!`;
+      leakAlertDesc.textContent = 'Black boxes were drawn over text without stripping the underlying content stream. Anyone can highlight and copy-paste the secret text below!';
+    } else {
+      leakAlertBanner.className = 'p-4 sm:p-5 rounded-2xl border flex items-start gap-3.5 bg-emerald-950/50 border-emerald-800 text-emerald-200';
+      leakAlertIcon.className = 'w-9 h-9 rounded-xl bg-emerald-900/80 text-emerald-300 flex items-center justify-center font-bold text-lg shrink-0 mt-0.5';
+      leakAlertIcon.textContent = '✓';
+      leakAlertTitle.textContent = 'PASSED: Zero Text Leaks Detected Underneath Blackouts';
+      leakAlertDesc.textContent = detectedDarkBoxes.length > 0
+        ? `Found ${detectedDarkBoxes.length} redaction box${detectedDarkBoxes.length > 1 ? 'es' : ''}, and no underlying selectable text was found beneath them.`
+        : 'No black redaction boxes detected on scanned pages.';
+    }
+
+    // Render Overlay on Page 1
+    renderPage1Overlays();
+
+    // Render Leaks Table
+    if (detectedLeaks.length === 0) {
+      leaksTableBody.innerHTML = '<tr><td colspan="4" class="p-4 text-center text-slate-500 font-mono">No leaky text found under redaction boxes. Document is clean.</td></tr>';
+    } else {
+      leaksTableBody.innerHTML = '';
+      detectedLeaks.forEach((leak, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-950/50 transition';
+        tr.innerHTML = `
+          <td class="p-3 font-bold text-slate-400">Page ${leak.pageNumber}</td>
+          <td class="p-3 text-rose-300 font-bold bg-rose-950/20 rounded select-all font-mono">
+            "${leak.text}"
+          </td>
+          <td class="p-3 text-cyan-400">${Math.round(leak.confidence * 100)}%</td>
+          <td class="p-3 text-right">
+            <button type="button" class="copy-leak-btn px-2 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-[10px] cursor-pointer" data-text="${leak.text.replace(/"/g, '&quot;')}">
+              Copy
+            </button>
+          </td>
+        `;
+        leaksTableBody.appendChild(tr);
+      });
+
+      document.querySelectorAll('.copy-leak-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const text = (btn as HTMLElement).dataset.text || '';
+          navigator.clipboard.writeText(text);
+          btn.textContent = 'Copied!';
+          setTimeout(() => (btn.textContent = 'Copy'), 2000);
+        });
+      });
+    }
+  }
+
+  function renderPage1Overlays() {
+    overlayContainer.innerHTML = '';
+    const page1Boxes = detectedDarkBoxes.filter((b) => b.pageNumber === 1);
+    const page1Leaks = detectedLeaks.filter((l) => l.pageNumber === 1);
+
+    const scaleX = previewCanvas.clientWidth / page1CanvasSize.width;
+    const scaleY = previewCanvas.clientHeight / page1CanvasSize.height;
+
+    page1Boxes.forEach((b) => {
+      const boxEl = document.createElement('div');
+      boxEl.className = 'xray-box absolute border-2 transition-all duration-200 pointer-events-none rounded-xs';
+      boxEl.style.left = `${b.x * scaleX}px`;
+      boxEl.style.top = `${b.y * scaleY}px`;
+      boxEl.style.width = `${b.width * scaleX}px`;
+      boxEl.style.height = `${b.height * scaleY}px`;
+
+      if (xrayToggle.checked) {
+        boxEl.classList.add('bg-rose-500/40', 'border-rose-400', 'border-dashed');
+      } else {
+        boxEl.classList.add('bg-black', 'border-black');
+      }
+      overlayContainer.appendChild(boxEl);
+    });
+
+    page1Leaks.forEach((l) => {
+      const textEl = document.createElement('div');
+      textEl.className = 'xray-text absolute text-[10px] font-bold text-yellow-300 font-mono bg-black/80 px-1 rounded pointer-events-none shadow-md truncate';
+      textEl.style.left = `${l.box.x * scaleX}px`;
+      textEl.style.top = `${(l.box.y + l.box.height / 2 - 8) * scaleY}px`;
+      textEl.style.maxWidth = `${l.box.width * scaleX}px`;
+      textEl.textContent = l.text;
+      textEl.style.display = xrayToggle.checked ? 'block' : 'none';
+      overlayContainer.appendChild(textEl);
+    });
+  }
+
+  // Hard Purge & Sanitize
+  hardPurgeBtn?.addEventListener('click', async () => {
+    if (!rawPdfBytes) return;
+
+    hardPurgeBtn.disabled = true;
+    hardPurgeBtnText.textContent = 'Permanently Sealing Redactions...';
+
+    try {
+      const sanitizedBytes = await hardSanitizeRedactions(rawPdfBytes, detectedDarkBoxes);
+
+      const blob = new Blob([sanitizedBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = specimenName.replace(/\.pdf$/i, '') + '-court-sanitized.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error(err);
+      alert('Error hard-sanitizing PDF: ' + (err.message || err));
+    } finally {
+      hardPurgeBtn.disabled = false;
+      hardPurgeBtnText.textContent = 'Hard-Purge & Export Court-Ready PDF';
+    }
+  });
+
+  // Export JSON Log
+  exportLogBtn?.addEventListener('click', () => {
+    const reportData = {
+      specimen: specimenName,
+      timestamp: new Date().toISOString(),
+      isCompromised: detectedLeaks.length > 0,
+      totalLeaks: detectedLeaks.length,
+      leaks: detectedLeaks,
+      darkBoxesDetected: detectedDarkBoxes.length,
+    };
+
+    const jsonStr = JSON.stringify(reportData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = specimenName.replace(/\.pdf$/i, '') + '-redaction-audit.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+</script>
