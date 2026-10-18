@@ -1,0 +1,511 @@
+---
+// BatesNumberingIsland.astro - 100% in-browser Legal Bates Numbering & Stamp Stacker
+---
+
+<div id="bates-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="bates-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Bates Numbering Notice</h4>
+      <p id="bates-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-bates-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="bates-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="bates-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-indigo-50 group-hover:bg-indigo-600 flex items-center justify-center text-indigo-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-indigo-600 transition">
+      Select PDF to Apply Bates Numbers
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your legal document or discovery exhibit here, or click to browse.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose Discovery PDF
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Privileged & Confidential</span>
+      <span>•</span>
+      <span>Zero Server Uploads</span>
+    </div>
+  </div>
+
+  <!-- 2. Configure Bates Numbering Card -->
+  <div id="bates-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="bates-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="bates-file-meta" class="text-xs text-slate-500">10 pages detected</p>
+        </div>
+      </div>
+      <button type="button" id="change-bates-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Live Bates Range Preview Badge -->
+    <div class="p-4 rounded-xl bg-indigo-50/80 border border-indigo-100 flex items-center justify-between">
+      <div class="text-xs">
+        <span class="text-indigo-900 font-bold block mb-0.5">Projected Bates Number Range:</span>
+        <span id="bates-range-preview" class="font-mono text-sm font-bold text-indigo-700">CONF-000001 → CONF-000010</span>
+      </div>
+      <span class="text-[11px] font-semibold text-indigo-600 uppercase tracking-wider bg-white px-2.5 py-1 rounded-md border border-indigo-200">
+        Live Preview
+      </span>
+    </div>
+
+    <!-- Form Inputs -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+      <div>
+        <label for="bates-prefix" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+          Prefix
+        </label>
+        <input
+          type="text"
+          id="bates-prefix"
+          value="CONF-"
+          placeholder="e.g. PLTF-, EXHIBIT-"
+          class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-mono"
+        />
+      </div>
+
+      <div>
+        <label for="bates-start" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+          Start Number
+        </label>
+        <input
+          type="number"
+          id="bates-start"
+          value="1"
+          min="1"
+          class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-mono"
+        />
+      </div>
+
+      <div>
+        <label for="bates-digits" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+          Zero Padding
+        </label>
+        <select
+          id="bates-digits"
+          class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+        >
+          <option value="3">3 digits (001)</option>
+          <option value="4">4 digits (0001)</option>
+          <option value="5">5 digits (00001)</option>
+          <option value="6" selected>6 digits (000001)</option>
+          <option value="7">7 digits (0000001)</option>
+          <option value="8">8 digits (00000001)</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="bates-suffix" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+          Suffix (Optional)
+        </label>
+        <input
+          type="text"
+          id="bates-suffix"
+          placeholder="e.g. -EX1"
+          class="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 font-mono"
+        />
+      </div>
+    </div>
+
+    <!-- Position & Styling Controls -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
+      <!-- 6-way Position Selector -->
+      <div>
+        <label class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+          Stamp Position
+        </label>
+        <div class="grid grid-cols-3 gap-2">
+          <button type="button" data-pos="topLeft" class="pos-btn p-2.5 text-xs font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition">
+            Top Left
+          </button>
+          <button type="button" data-pos="topCenter" class="pos-btn p-2.5 text-xs font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition">
+            Top Center
+          </button>
+          <button type="button" data-pos="topRight" class="pos-btn p-2.5 text-xs font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition">
+            Top Right
+          </button>
+          <button type="button" data-pos="bottomLeft" class="pos-btn p-2.5 text-xs font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition">
+            Bottom Left
+          </button>
+          <button type="button" data-pos="bottomCenter" class="pos-btn p-2.5 text-xs font-medium rounded-lg border border-slate-200 hover:bg-slate-50 transition">
+            Bottom Center
+          </button>
+          <button type="button" data-pos="bottomRight" class="pos-btn p-2.5 text-xs font-bold rounded-lg border border-indigo-600 bg-indigo-50 text-indigo-700 transition">
+            Bottom Right
+          </button>
+        </div>
+      </div>
+
+      <!-- Font Size & Margins -->
+      <div class="space-y-4">
+        <div>
+          <label for="bates-font-size" class="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+            <span>Font Size</span>
+            <span id="font-size-label" class="text-slate-500 font-normal">10 pt</span>
+          </label>
+          <input
+            type="range"
+            id="bates-font-size"
+            min="8"
+            max="16"
+            value="10"
+            class="w-full accent-indigo-600"
+          />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label for="bates-margin-x" class="block text-xs font-medium text-slate-600 mb-1">
+              Side Margin (pt)
+            </label>
+            <input
+              type="number"
+              id="bates-margin-x"
+              value="36"
+              min="10"
+              max="150"
+              class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            />
+          </div>
+          <div>
+            <label for="bates-margin-y" class="block text-xs font-medium text-slate-600 mb-1">
+              Bottom/Top Margin (pt)
+            </label>
+            <input
+              type="number"
+              id="bates-margin-y"
+              value="30"
+              min="10"
+              max="150"
+              class="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-4 flex flex-col sm:flex-row items-center gap-3">
+      <button
+        type="button"
+        id="execute-bates-btn"
+        class="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+        </svg>
+        <span>Apply Bates Numbers & Download</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Processing State -->
+  <div id="bates-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-5">
+    <div class="w-16 h-16 mx-auto relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-indigo-100 border-t-indigo-600 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-indigo-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 20l4-16m2 16l4-16M6 9h14M4 15h14" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-lg font-bold text-slate-800 mb-1">Applying Bates Numbers...</h3>
+      <p id="bates-progress-message" class="text-xs text-slate-500">Stamping vector sequence onto page content streams...</p>
+    </div>
+  </div>
+
+  <!-- 4. Success & Download State -->
+  <div id="bates-success-section" class="hidden bg-white rounded-2xl border border-emerald-200 p-6 sm:p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-xl font-bold text-slate-900 mb-1">Bates Numbering Applied Successfully!</h3>
+      <p class="text-xs text-slate-600">Your discovery bundle was stamped with razor-sharp vector typography.</p>
+    </div>
+
+    <!-- Diagnostic Details Breakdown -->
+    <div class="bg-slate-50 rounded-xl p-4 border border-slate-200/80 text-left space-y-2 max-w-lg mx-auto">
+      <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-200">
+        <span class="text-slate-500">Pages Stamped:</span>
+        <span id="bates-res-pages" class="font-bold text-slate-800">1</span>
+      </div>
+      <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-200">
+        <span class="text-slate-500">Bates Range:</span>
+        <span id="bates-res-range" class="font-mono font-bold text-indigo-700">CONF-000001 → CONF-000010</span>
+      </div>
+      <div class="text-xs pt-1">
+        <span class="text-slate-500 block mb-1">Details:</span>
+        <ul id="bates-res-list" class="space-y-1 text-slate-700 list-disc list-inside text-[11px]">
+          <li>100% vector typography preserved</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Legal Compliance Badge -->
+    <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
+        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+      </svg>
+      <span>Court-Compliant Vector Stamping — Zero Rasterization</span>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        id="download-bates-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Stamped PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="bates-another-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center px-5 py-3 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition duration-150"
+      >
+        Stamp Another PDF
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  import { applyBatesNumbering, formatBatesNumber, type BatesPosition, type BatesResult } from '../../lib/pdf/bates';
+
+  let currentFile: File | null = null;
+  let rawPdfBytes: Uint8Array | null = null;
+  let stampedResultBytes: Uint8Array | null = null;
+  let totalDocPages = 1;
+  let selectedPosition: BatesPosition = 'bottomRight';
+
+  const dropZone = document.getElementById('bates-drop-zone')!;
+  const fileInput = document.getElementById('bates-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('bates-config-section')!;
+  const progressSection = document.getElementById('bates-progress-section')!;
+  const successSection = document.getElementById('bates-success-section')!;
+  const errorBanner = document.getElementById('bates-error-banner')!;
+  const errorMessage = document.getElementById('bates-error-message')!;
+  const dismissError = document.getElementById('dismiss-bates-error')!;
+
+  const fileNameLabel = document.getElementById('bates-file-name')!;
+  const fileMetaLabel = document.getElementById('bates-file-meta')!;
+  const rangePreview = document.getElementById('bates-range-preview')!;
+  const changeFileBtn = document.getElementById('change-bates-file-btn')!;
+  const executeBtn = document.getElementById('execute-bates-btn')!;
+  const downloadBtn = document.getElementById('download-bates-btn')!;
+  const batesAnotherBtn = document.getElementById('bates-another-btn')!;
+
+  const inputPrefix = document.getElementById('bates-prefix') as HTMLInputElement;
+  const inputStart = document.getElementById('bates-start') as HTMLInputElement;
+  const selectDigits = document.getElementById('bates-digits') as HTMLSelectElement;
+  const inputSuffix = document.getElementById('bates-suffix') as HTMLInputElement;
+  const sliderFontSize = document.getElementById('bates-font-size') as HTMLInputElement;
+  const fontSizeLabel = document.getElementById('font-size-label')!;
+  const inputMarginX = document.getElementById('bates-margin-x') as HTMLInputElement;
+  const inputMarginY = document.getElementById('bates-margin-y') as HTMLInputElement;
+  const posButtons = document.querySelectorAll('.pos-btn');
+
+  const resPages = document.getElementById('bates-res-pages')!;
+  const resRange = document.getElementById('bates-res-range')!;
+  const resList = document.getElementById('bates-res-list')!;
+
+  function showError(msg: string) {
+    errorMessage.textContent = msg;
+    errorBanner.classList.remove('hidden');
+  }
+
+  function hideError() {
+    errorBanner.classList.add('hidden');
+  }
+
+  dismissError?.addEventListener('click', hideError);
+
+  function formatBytes(bytes: number): string {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+  }
+
+  function updateRangePreview() {
+    const prefix = inputPrefix.value;
+    const startNum = parseInt(inputStart.value, 10) || 1;
+    const digits = parseInt(selectDigits.value, 10) || 6;
+    const suffix = inputSuffix.value;
+
+    const first = formatBatesNumber(0, { prefix, startNumber: startNum, digits, suffix });
+    const last = formatBatesNumber(Math.max(0, totalDocPages - 1), { prefix, startNumber: startNum, digits, suffix });
+
+    rangePreview.textContent = `${first} → ${last}`;
+  }
+
+  [inputPrefix, inputStart, selectDigits, inputSuffix].forEach((el) => {
+    el?.addEventListener('input', updateRangePreview);
+  });
+
+  sliderFontSize?.addEventListener('input', () => {
+    fontSizeLabel.textContent = `${sliderFontSize.value} pt`;
+  });
+
+  posButtons.forEach((btn) => {
+    btn.addEventListener('click', () => {
+      posButtons.forEach((b) => {
+        b.classList.remove('border-indigo-600', 'bg-indigo-50', 'text-indigo-700', 'font-bold');
+        b.classList.add('border-slate-200', 'font-medium');
+      });
+      btn.classList.add('border-indigo-600', 'bg-indigo-50', 'text-indigo-700', 'font-bold');
+      btn.classList.remove('border-slate-200', 'font-medium');
+      selectedPosition = btn.getAttribute('data-pos') as BatesPosition;
+    });
+  });
+
+  async function handleFile(file: File) {
+    hideError();
+    currentFile = file;
+
+    fileNameLabel.textContent = file.name;
+    fileMetaLabel.textContent = `${formatBytes(file.size)} • Loading...`;
+
+    dropZone.classList.add('hidden');
+    configSection.classList.remove('hidden');
+    progressSection.classList.add('hidden');
+    successSection.classList.add('hidden');
+
+    try {
+      rawPdfBytes = new Uint8Array(await file.arrayBuffer());
+      const doc = await PDFDocument.load(rawPdfBytes, { ignoreEncryption: true });
+      totalDocPages = doc.getPageCount();
+      fileMetaLabel.textContent = `${formatBytes(file.size)} • ${totalDocPages} page(s)`;
+      updateRangePreview();
+    } catch (err: any) {
+      showError(err.message || 'Failed to read PDF document.');
+    }
+  }
+
+  fileInput?.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files.length > 0) {
+      handleFile(target.files[0]);
+    }
+  });
+
+  function resetState() {
+    dropZone.classList.remove('hidden');
+    configSection.classList.add('hidden');
+    progressSection.classList.add('hidden');
+    successSection.classList.add('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    rawPdfBytes = null;
+    stampedResultBytes = null;
+  }
+
+  changeFileBtn?.addEventListener('click', resetState);
+  batesAnotherBtn?.addEventListener('click', resetState);
+
+  executeBtn?.addEventListener('click', async () => {
+    if (!rawPdfBytes || !currentFile) return;
+
+    configSection.classList.add('hidden');
+    progressSection.classList.remove('hidden');
+
+    try {
+      const startNum = parseInt(inputStart.value, 10) || 1;
+      const digits = parseInt(selectDigits.value, 10) || 6;
+      const fontSize = parseInt(sliderFontSize.value, 10) || 10;
+      const marginX = parseInt(inputMarginX.value, 10) || 36;
+      const marginY = parseInt(inputMarginY.value, 10) || 30;
+
+      const result: BatesResult = await applyBatesNumbering(rawPdfBytes, {
+        prefix: inputPrefix.value,
+        startNumber: startNum,
+        digits,
+        suffix: inputSuffix.value,
+        position: selectedPosition,
+        fontSize,
+        marginX,
+        marginY,
+      });
+
+      stampedResultBytes = result.stampedPdfBytes;
+
+      resPages.textContent = `${result.pagesStamped} page(s)`;
+      resRange.textContent = `${result.batesStart} → ${result.batesEnd}`;
+
+      resList.innerHTML = '';
+      result.details.forEach((d) => {
+        const li = document.createElement('li');
+        li.textContent = d;
+        resList.appendChild(li);
+      });
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      showError(err.message || 'Failed to apply Bates numbering.');
+    }
+  });
+
+  downloadBtn?.addEventListener('click', () => {
+    if (!stampedResultBytes || !currentFile) return;
+
+    const baseName = currentFile.name.replace(/\.pdf$/i, '');
+    const fileName = `${baseName}_bates.pdf`;
+
+    const blob = new Blob([stampedResultBytes as any], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+</script>
