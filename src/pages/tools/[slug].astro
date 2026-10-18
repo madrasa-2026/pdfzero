@@ -26,6 +26,7 @@ import ComparePdfIsland from '../../components/tools/ComparePdfIsland.astro';
 import CropPdfIsland from '../../components/tools/CropPdfIsland.astro';
 import BookmarksPdfIsland from '../../components/tools/BookmarksPdfIsland.astro';
 import HeaderFooterPdfIsland from '../../components/tools/HeaderFooterPdfIsland.astro';
+import ResizePdfIsland from '../../components/tools/ResizePdfIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -198,6 +199,8 @@ const relatedToolCards = allTools
       <BookmarksPdfIsland />
     ) : tool.slug === 'header-footer-pdf' ? (
       <HeaderFooterPdfIsland />
+    ) : tool.slug === 'resize-pdf' ? (
+      <ResizePdfIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}

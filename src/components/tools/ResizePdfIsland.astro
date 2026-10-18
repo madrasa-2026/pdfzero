@@ -1,0 +1,694 @@
+---
+// ResizePdfIsland.astro - 100% In-Browser PDF Page Resizer & Margin Expander
+---
+
+<div id="resize-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="resize-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Page Resize Notice</h4>
+      <p id="resize-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-resize-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="resize-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="resize-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-sky-50 group-hover:bg-sky-600 flex items-center justify-center text-sky-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-sky-600 transition">
+      Select PDF to Resize or Expand Margins
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop your PDF file here, or click to browse.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF File
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>A4, Letter, Legal, A3 & Custom</span>
+      <span>•</span>
+      <span>Zero Vector Degradation</span>
+    </div>
+  </div>
+
+  <!-- 2. Configure Resize Card -->
+  <div id="resize-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="resize-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="resize-file-meta" class="text-xs text-slate-500">Detecting document metadata...</p>
+        </div>
+      </div>
+      <button type="button" id="change-resize-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Strategy Tabs: Fit vs Expand -->
+    <div>
+      <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+        Resizing Strategy
+      </label>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <label class="strategy-card relative flex items-start gap-3 p-4 rounded-xl border border-sky-500 bg-sky-50/40 cursor-pointer transition" data-strategy="fit">
+          <input type="radio" name="resize-strategy" value="fit" checked class="mt-1 text-sky-600 focus:ring-sky-500" />
+          <div>
+            <span class="block text-sm font-bold text-slate-900">Fit to Standard Paper</span>
+            <span class="block text-xs text-slate-500 mt-0.5">Scale content proportionally to fit A4, Letter, Legal, etc., without clipping.</span>
+          </div>
+        </label>
+
+        <label class="strategy-card relative flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-slate-300 bg-white cursor-pointer transition" data-strategy="expand">
+          <input type="radio" name="resize-strategy" value="expand" class="mt-1 text-sky-600 focus:ring-sky-500" />
+          <div>
+            <span class="block text-sm font-bold text-slate-900">Add Margin Gutters (100% Scale)</span>
+            <span class="block text-xs text-slate-500 mt-0.5">Keep existing page size at 1:1 scale and add blank margin space around all edges for binding.</span>
+          </div>
+        </label>
+      </div>
+    </div>
+
+    <!-- FIT MODE CONTROLS -->
+    <div id="fit-controls-container" class="space-y-5">
+      <!-- Target Presets Grid -->
+      <div>
+        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Target Paper Format
+        </label>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="preset-buttons-container">
+          <button type="button" class="preset-btn p-3 rounded-xl border border-sky-500 bg-sky-50/50 text-left transition" data-preset="a4">
+            <span class="block text-xs font-bold text-slate-900">ISO A4</span>
+            <span class="block text-[11px] text-slate-500">210 × 297 mm</span>
+          </button>
+          <button type="button" class="preset-btn p-3 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-left transition" data-preset="letter">
+            <span class="block text-xs font-bold text-slate-900">US Letter</span>
+            <span class="block text-[11px] text-slate-500">8.5 × 11 in</span>
+          </button>
+          <button type="button" class="preset-btn p-3 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-left transition" data-preset="legal">
+            <span class="block text-xs font-bold text-slate-900">US Legal</span>
+            <span class="block text-[11px] text-slate-500">8.5 × 14 in</span>
+          </button>
+          <button type="button" class="preset-btn p-3 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-left transition" data-preset="a3">
+            <span class="block text-xs font-bold text-slate-900">ISO A3</span>
+            <span class="block text-[11px] text-slate-500">297 × 420 mm</span>
+          </button>
+          <button type="button" class="preset-btn p-3 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-left transition" data-preset="a5">
+            <span class="block text-xs font-bold text-slate-900">ISO A5</span>
+            <span class="block text-[11px] text-slate-500">148 × 210 mm</span>
+          </button>
+          <button type="button" class="preset-btn p-3 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-left transition" data-preset="tabloid">
+            <span class="block text-xs font-bold text-slate-900">US Tabloid</span>
+            <span class="block text-[11px] text-slate-500">11 × 17 in</span>
+          </button>
+          <button type="button" class="preset-btn p-3 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-left transition col-span-2" data-preset="custom">
+            <span class="block text-xs font-bold text-slate-900">Custom Dimensions</span>
+            <span class="block text-[11px] text-slate-500">Enter custom width & height in points</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Custom Dimensions Inputs (Hidden by default) -->
+      <div id="custom-dims-row" class="hidden grid grid-cols-2 gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Width (pt, 72 pt = 1 in)</label>
+          <input type="number" id="custom-w-input" value="595" min="50" max="3000" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500" />
+        </div>
+        <div>
+          <label class="block text-[11px] font-bold text-slate-600 mb-1">Height (pt, 72 pt = 1 in)</label>
+          <input type="number" id="custom-h-input" value="842" min="50" max="3000" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500" />
+        </div>
+      </div>
+
+      <!-- Orientation & Inset Margin Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+            Page Orientation
+          </label>
+          <select id="resize-orientation" class="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500">
+            <option value="auto" selected>Auto-detect (Match Source Aspect)</option>
+            <option value="portrait">Force Portrait</option>
+            <option value="landscape">Force Landscape</option>
+          </select>
+        </div>
+
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+              Safety Margin Inset
+            </label>
+            <span id="margin-value-label" class="text-xs font-mono font-bold text-sky-600">10 pt</span>
+          </div>
+          <input type="range" id="fit-margin-slider" min="0" max="50" step="2" value="10" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-600" />
+          <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+            <span>0 pt (Full Bleed)</span>
+            <span>25 pt</span>
+            <span>50 pt</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- EXPAND MODE CONTROLS (Hidden by default) -->
+    <div id="expand-controls-container" class="hidden space-y-4">
+      <div>
+        <div class="flex items-center justify-between mb-1.5">
+          <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+            Margin Gutter Padding
+          </label>
+          <span id="expand-margin-value-label" class="text-xs font-mono font-bold text-sky-600">36 pt (0.50 in)</span>
+        </div>
+        <input type="range" id="expand-margin-slider" min="10" max="144" step="2" value="36" class="w-full h-2 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-sky-600" />
+        <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+          <span>10 pt (~0.14 in)</span>
+          <span>72 pt (1.0 in)</span>
+          <span>144 pt (2.0 in)</span>
+        </div>
+      </div>
+
+      <!-- Quick Margin Presets -->
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="text-xs text-slate-500">Quick Gutters:</span>
+        <button type="button" class="gutter-preset-btn px-2.5 py-1 text-xs bg-slate-100 hover:bg-sky-50 hover:text-sky-600 rounded-lg border border-slate-200 transition" data-margin="18">0.25 in (18 pt)</button>
+        <button type="button" class="gutter-preset-btn px-2.5 py-1 text-xs bg-sky-50 text-sky-600 font-bold rounded-lg border border-sky-300 transition" data-margin="36">0.50 in (36 pt - Standard Binding)</button>
+        <button type="button" class="gutter-preset-btn px-2.5 py-1 text-xs bg-slate-100 hover:bg-sky-50 hover:text-sky-600 rounded-lg border border-slate-200 transition" data-margin="72">1.0 in (72 pt - Notes)</button>
+      </div>
+    </div>
+
+    <!-- Live Preview Visualizer Box -->
+    <div class="p-4 rounded-xl bg-slate-50 border border-slate-200 text-center space-y-3">
+      <div class="flex items-center justify-between text-xs text-slate-600">
+        <span class="font-bold">Live Canvas & Proportion Preview:</span>
+        <span id="preview-calc-text" class="font-mono text-sky-700">Calculating...</span>
+      </div>
+
+      <div class="w-full h-44 bg-slate-200/60 rounded-lg flex items-center justify-center p-3 relative overflow-hidden">
+        <div id="preview-outer-sheet" class="border-2 border-slate-700 bg-white shadow-md relative flex items-center justify-center transition-all duration-200" style="width: 120px; height: 170px;">
+          <span class="absolute top-1 text-[9px] font-mono font-bold text-slate-400">Target Canvas</span>
+          <div id="preview-inner-content" class="bg-sky-100 border border-dashed border-sky-600 flex items-center justify-center transition-all duration-200" style="width: 100px; height: 140px;">
+            <span class="text-[9px] font-bold text-sky-800">Content</span>
+          </div>
+        </div>
+      </div>
+      <p class="text-[11px] text-slate-500">
+        All vector fonts, images, and text streams are retained without rasterization.
+      </p>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2 flex flex-col sm:flex-row items-center gap-3">
+      <button
+        type="button"
+        id="execute-resize-btn"
+        class="w-full sm:w-auto flex-1 inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-slate-900 hover:bg-slate-800 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-sky-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+        </svg>
+        <span>Resize PDF Pages</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Processing State -->
+  <div id="resize-progress-section" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-5">
+    <div class="w-16 h-16 mx-auto relative flex items-center justify-center">
+      <div class="w-16 h-16 rounded-full border-4 border-sky-100 border-t-sky-600 animate-spin"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 text-sky-600 absolute" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-base font-bold text-slate-900 mb-1">Resizing Document Pages...</h3>
+      <p id="resize-progress-text" class="text-xs text-slate-500">
+        Embedding vector streams and rebuilding page boxes...
+      </p>
+    </div>
+  </div>
+
+  <!-- 4. Success & Download State -->
+  <div id="resize-success-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-lg font-bold text-slate-900 mb-1">PDF Resized Successfully!</h3>
+      <p class="text-xs text-slate-500 max-w-md mx-auto">
+        Your document pages have been re-dimensioned with vector clarity.
+      </p>
+    </div>
+
+    <!-- Metrics Details -->
+    <div id="resize-metrics-container" class="max-w-md mx-auto p-4 rounded-xl bg-slate-50 border border-slate-100 text-xs text-slate-600 space-y-2 text-left">
+      <!-- Injected dynamically -->
+    </div>
+
+    <!-- Download Action -->
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <button
+        type="button"
+        id="download-resized-pdf-btn"
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-button transition duration-150"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        <span>Download Resized PDF</span>
+      </button>
+
+      <button
+        type="button"
+        id="resize-another-btn"
+        class="w-full sm:w-auto px-5 py-3 text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+      >
+        Resize Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  import {
+    resizePdfPages,
+    STANDARD_PAPER_SIZES,
+    type PaperSizePreset,
+    type ResizeStrategy,
+    type PageOrientation,
+  } from '../../lib/pdf/resize';
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let resizedPdfBytes: Uint8Array | null = null;
+  let detectedPageCount = 1;
+  let originalPageW = 595.28;
+  let originalPageH = 841.89;
+
+  let activeStrategy: ResizeStrategy = 'fit';
+  let activePreset: PaperSizePreset = 'a4';
+
+  const dropZone = document.getElementById('resize-drop-zone') as HTMLDivElement;
+  const fileInput = document.getElementById('resize-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('resize-config-section') as HTMLDivElement;
+  const progressSection = document.getElementById('resize-progress-section') as HTMLDivElement;
+  const successSection = document.getElementById('resize-success-section') as HTMLDivElement;
+
+  const errorBanner = document.getElementById('resize-error-banner') as HTMLDivElement;
+  const errorMessage = document.getElementById('resize-error-message') as HTMLElement;
+  const dismissErrorBtn = document.getElementById('dismiss-resize-error') as HTMLButtonElement;
+
+  const fileNameLabel = document.getElementById('resize-file-name') as HTMLElement;
+  const fileMetaLabel = document.getElementById('resize-file-meta') as HTMLElement;
+  const changeFileBtn = document.getElementById('change-resize-file-btn') as HTMLButtonElement;
+  const executeBtn = document.getElementById('execute-resize-btn') as HTMLButtonElement;
+
+  const fitControls = document.getElementById('fit-controls-container') as HTMLDivElement;
+  const expandControls = document.getElementById('expand-controls-container') as HTMLDivElement;
+  const customDimsRow = document.getElementById('custom-dims-row') as HTMLDivElement;
+  const customWInput = document.getElementById('custom-w-input') as HTMLInputElement;
+  const customHInput = document.getElementById('custom-h-input') as HTMLInputElement;
+
+  const orientationSelect = document.getElementById('resize-orientation') as HTMLSelectElement;
+  const fitMarginSlider = document.getElementById('fit-margin-slider') as HTMLInputElement;
+  const marginValueLabel = document.getElementById('margin-value-label') as HTMLElement;
+
+  const expandMarginSlider = document.getElementById('expand-margin-slider') as HTMLInputElement;
+  const expandMarginValueLabel = document.getElementById('expand-margin-value-label') as HTMLElement;
+
+  const previewCalcText = document.getElementById('preview-calc-text') as HTMLElement;
+  const previewOuterSheet = document.getElementById('preview-outer-sheet') as HTMLElement;
+  const previewInnerContent = document.getElementById('preview-inner-content') as HTMLElement;
+
+  const metricsContainer = document.getElementById('resize-metrics-container') as HTMLDivElement;
+  const downloadBtn = document.getElementById('download-resized-pdf-btn') as HTMLButtonElement;
+  const resizeAnotherBtn = document.getElementById('resize-another-btn') as HTMLButtonElement;
+
+  function showError(msg: string) {
+    if (errorMessage && errorBanner) {
+      errorMessage.textContent = msg;
+      errorBanner.classList.remove('hidden');
+    }
+  }
+
+  function hideError() {
+    if (errorBanner) {
+      errorBanner.classList.add('hidden');
+    }
+  }
+
+  dismissErrorBtn?.addEventListener('click', hideError);
+
+  function formatBytes(bytes: number): string {
+    if (bytes === 0) return '0 B';
+    const k = 1024;
+    const sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+  }
+
+  // Update Live Preview Box
+  function updateVisualPreview() {
+    let targetW = 595.28;
+    let targetH = 841.89;
+    let margin = 0;
+
+    if (activeStrategy === 'fit') {
+      margin = parseInt(fitMarginSlider.value, 10) || 0;
+      if (activePreset === 'custom') {
+        targetW = parseFloat(customWInput.value) || 595;
+        targetH = parseFloat(customHInput.value) || 842;
+      } else if (STANDARD_PAPER_SIZES[activePreset]) {
+        [targetW, targetH] = STANDARD_PAPER_SIZES[activePreset];
+      }
+
+      const orientation = orientationSelect.value as PageOrientation;
+      const isSrcLandscape = originalPageW > originalPageH;
+      let shouldLandscape = false;
+      if (orientation === 'landscape') shouldLandscape = true;
+      else if (orientation === 'portrait') shouldLandscape = false;
+      else shouldLandscape = isSrcLandscape;
+
+      if (shouldLandscape && targetW < targetH) {
+        [targetW, targetH] = [targetH, targetW];
+      } else if (!shouldLandscape && targetW > targetH) {
+        [targetW, targetH] = [targetH, targetW];
+      }
+
+      const availW = Math.max(10, targetW - 2 * margin);
+      const availH = Math.max(10, targetH - 2 * margin);
+      const scale = Math.min(availW / originalPageW, availH / originalPageH);
+
+      const drawW = originalPageW * scale;
+      const drawH = originalPageH * scale;
+
+      previewCalcText.textContent = `${Math.round(originalPageW)}×${Math.round(originalPageH)} pt → ${Math.round(targetW)}×${Math.round(targetH)} pt (Scale: ${Math.round(scale * 100)}%)`;
+
+      // Scale visual preview inside 140px max box
+      const maxDim = 140;
+      const boxScale = Math.min(maxDim / targetW, maxDim / targetH);
+      const outerPxW = Math.max(30, Math.round(targetW * boxScale));
+      const outerPxH = Math.max(30, Math.round(targetH * boxScale));
+      const innerPxW = Math.max(20, Math.round(drawW * boxScale));
+      const innerPxH = Math.max(20, Math.round(drawH * boxScale));
+
+      previewOuterSheet.style.width = `${outerPxW}px`;
+      previewOuterSheet.style.height = `${outerPxH}px`;
+      previewInnerContent.style.width = `${innerPxW}px`;
+      previewInnerContent.style.height = `${innerPxH}px`;
+    } else {
+      // Expand strategy
+      margin = parseInt(expandMarginSlider.value, 10) || 0;
+      targetW = originalPageW + margin * 2;
+      targetH = originalPageH + margin * 2;
+
+      previewCalcText.textContent = `${Math.round(originalPageW)}×${Math.round(originalPageH)} pt → ${Math.round(targetW)}×${Math.round(targetH)} pt (+${margin} pt gutter)`;
+
+      const maxDim = 140;
+      const boxScale = Math.min(maxDim / targetH, maxDim / targetW);
+      const outerPxW = Math.max(40, Math.round(targetW * boxScale));
+      const outerPxH = Math.max(40, Math.round(targetH * boxScale));
+      const innerPxW = Math.max(25, Math.round(originalPageW * boxScale));
+      const innerPxH = Math.max(25, Math.round(originalPageH * boxScale));
+
+      previewOuterSheet.style.width = `${outerPxW}px`;
+      previewOuterSheet.style.height = `${outerPxH}px`;
+      previewInnerContent.style.width = `${innerPxW}px`;
+      previewInnerContent.style.height = `${innerPxH}px`;
+    }
+  }
+
+  // Strategy change
+  document.querySelectorAll('input[name="resize-strategy"]').forEach((radio) => {
+    radio.addEventListener('change', (e) => {
+      const val = (e.target as HTMLInputElement).value as ResizeStrategy;
+      activeStrategy = val;
+
+      document.querySelectorAll('.strategy-card').forEach((card) => {
+        const isMatch = card.getAttribute('data-strategy') === val;
+        card.className = isMatch
+          ? 'strategy-card relative flex items-start gap-3 p-4 rounded-xl border border-sky-500 bg-sky-50/40 cursor-pointer transition'
+          : 'strategy-card relative flex items-start gap-3 p-4 rounded-xl border border-slate-200 hover:border-slate-300 bg-white cursor-pointer transition';
+      });
+
+      if (val === 'fit') {
+        fitControls.classList.remove('hidden');
+        expandControls.classList.add('hidden');
+      } else {
+        fitControls.classList.add('hidden');
+        expandControls.classList.remove('hidden');
+      }
+      updateVisualPreview();
+    });
+  });
+
+  // Preset buttons
+  document.querySelectorAll('.preset-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const preset = btn.getAttribute('data-preset') as PaperSizePreset;
+      activePreset = preset;
+
+      document.querySelectorAll('.preset-btn').forEach((b) => {
+        b.className = b === btn
+          ? 'preset-btn p-3 rounded-xl border border-sky-500 bg-sky-50/50 text-left transition' + (preset === 'custom' ? ' col-span-2' : '')
+          : 'preset-btn p-3 rounded-xl border border-slate-200 hover:border-slate-300 bg-white text-left transition' + (b.getAttribute('data-preset') === 'custom' ? ' col-span-2' : '');
+      });
+
+      if (preset === 'custom') {
+        customDimsRow.classList.remove('hidden');
+      } else {
+        customDimsRow.classList.add('hidden');
+      }
+      updateVisualPreview();
+    });
+  });
+
+  // Slider events
+  fitMarginSlider?.addEventListener('input', () => {
+    marginValueLabel.textContent = `${fitMarginSlider.value} pt`;
+    updateVisualPreview();
+  });
+
+  expandMarginSlider?.addEventListener('input', () => {
+    const val = parseInt(expandMarginSlider.value, 10);
+    const inVal = (val / 72).toFixed(2);
+    expandMarginValueLabel.textContent = `${val} pt (${inVal} in)`;
+    updateVisualPreview();
+  });
+
+  document.querySelectorAll('.gutter-preset-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const m = btn.getAttribute('data-margin');
+      if (m) {
+        expandMarginSlider.value = m;
+        const inVal = (parseInt(m, 10) / 72).toFixed(2);
+        expandMarginValueLabel.textContent = `${m} pt (${inVal} in)`;
+        document.querySelectorAll('.gutter-preset-btn').forEach((b) => {
+          b.className = b === btn
+            ? 'gutter-preset-btn px-2.5 py-1 text-xs bg-sky-50 text-sky-600 font-bold rounded-lg border border-sky-300 transition'
+            : 'gutter-preset-btn px-2.5 py-1 text-xs bg-slate-100 hover:bg-sky-50 hover:text-sky-600 rounded-lg border border-slate-200 transition';
+        });
+        updateVisualPreview();
+      }
+    });
+  });
+
+  orientationSelect?.addEventListener('change', updateVisualPreview);
+  customWInput?.addEventListener('input', updateVisualPreview);
+  customHInput?.addEventListener('input', updateVisualPreview);
+
+  // File loading
+  async function loadFile(file: File) {
+    hideError();
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please upload a valid PDF document.');
+      return;
+    }
+
+    try {
+      currentFile = file;
+      fileBuffer = await file.arrayBuffer();
+
+      const doc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
+      detectedPageCount = doc.getPageCount();
+
+      if (detectedPageCount === 0) {
+        showError('The uploaded PDF contains no pages.');
+        return;
+      }
+
+      const p1 = doc.getPage(0);
+      originalPageW = Math.round(p1.getWidth() * 100) / 100;
+      originalPageH = Math.round(p1.getHeight() * 100) / 100;
+
+      fileNameLabel.textContent = file.name;
+      fileMetaLabel.textContent = `${formatBytes(file.size)} • ${detectedPageCount} page${detectedPageCount > 1 ? 's' : ''} • Current: ${Math.round(originalPageW)} × ${Math.round(originalPageH)} pt`;
+
+      dropZone.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      progressSection.classList.add('hidden');
+      successSection.classList.add('hidden');
+
+      updateVisualPreview();
+    } catch (err: any) {
+      showError('Failed to read PDF document: ' + (err?.message || 'Invalid or corrupted file'));
+    }
+  }
+
+  fileInput?.addEventListener('change', (e) => {
+    const files = (e.target as HTMLInputElement).files;
+    if (files && files.length > 0) {
+      loadFile(files[0]);
+    }
+  });
+
+  dropZone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-sky-500', 'bg-sky-50/30');
+  });
+
+  dropZone?.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-sky-500', 'bg-sky-50/30');
+  });
+
+  dropZone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-sky-500', 'bg-sky-50/30');
+    if (e.dataTransfer && e.dataTransfer.files.length > 0) {
+      loadFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    configSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+  });
+
+  resizeAnotherBtn?.addEventListener('click', () => {
+    successSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+  });
+
+  // Execute Resize
+  executeBtn?.addEventListener('click', async () => {
+    if (!fileBuffer || !currentFile) {
+      showError('No PDF loaded.');
+      return;
+    }
+
+    try {
+      configSection.classList.add('hidden');
+      progressSection.classList.remove('hidden');
+
+      const customDims: [number, number] | undefined =
+        activePreset === 'custom'
+          ? [parseFloat(customWInput.value) || 595, parseFloat(customHInput.value) || 842]
+          : undefined;
+
+      const margin =
+        activeStrategy === 'fit'
+          ? parseInt(fitMarginSlider.value, 10) || 0
+          : parseInt(expandMarginSlider.value, 10) || 36;
+
+      const orientation = orientationSelect.value as PageOrientation;
+
+      const result = await resizePdfPages(new Uint8Array(fileBuffer), {
+        preset: activePreset,
+        customDimensions: customDims,
+        strategy: activeStrategy,
+        margin,
+        orientation,
+      });
+
+      resizedPdfBytes = result.resizedBytes;
+
+      // Populate metrics
+      const strategyName = activeStrategy === 'fit' ? 'Fit to Paper' : 'Expand Margins';
+      const presetLabel = activeStrategy === 'fit' ? activePreset.toUpperCase() : 'Gutter Expansion';
+
+      metricsContainer.innerHTML = `
+        <div class="flex justify-between py-1 border-b border-slate-200/60">
+          <span class="text-slate-500">Total Pages Re-dimensioned:</span>
+          <span class="font-bold text-slate-800">${result.pageCount} pages</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-200/60">
+          <span class="text-slate-500">Resizing Mode:</span>
+          <span class="font-semibold text-slate-800">${strategyName} (${presetLabel})</span>
+        </div>
+        <div class="flex justify-between py-1 border-b border-slate-200/60">
+          <span class="text-slate-500">Output Sheet Dimensions:</span>
+          <span class="font-mono font-bold text-sky-600">${result.targetWidth} × ${result.targetHeight} pt</span>
+        </div>
+        <div class="flex justify-between py-1">
+          <span class="text-slate-500">Processed Output Size:</span>
+          <span class="font-bold text-slate-800">${formatBytes(result.outputSize)}</span>
+        </div>
+      `;
+
+      progressSection.classList.add('hidden');
+      successSection.classList.remove('hidden');
+    } catch (err: any) {
+      progressSection.classList.add('hidden');
+      configSection.classList.remove('hidden');
+      showError('Resize failed: ' + (err?.message || 'Unknown error during PDF processing'));
+    }
+  });
+
+  // Download Trigger
+  downloadBtn?.addEventListener('click', () => {
+    if (!resizedPdfBytes || !currentFile) return;
+
+    const baseName = currentFile.name.replace(/\.pdf$/i, '');
+    const suffix = activeStrategy === 'fit' ? `resized-${activePreset}` : 'expanded-margins';
+    const downloadFileName = `${baseName}-${suffix}.pdf`;
+
+    const blob = new Blob([resizedPdfBytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = downloadFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  });
+</script>
