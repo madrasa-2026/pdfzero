@@ -1,0 +1,402 @@
+---
+// src/components/tools/PrinterMarksPdfIsland.astro
+---
+
+<div class="w-full max-w-4xl mx-auto">
+  <!-- 1. Dropzone Section -->
+  <div
+    id="marks-dropzone"
+    class="relative border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-white/80 hover:bg-indigo-50/20 transition-all rounded-3xl p-8 sm:p-12 text-center cursor-pointer shadow-sm group"
+  >
+    <input
+      type="file"
+      id="marks-file-input"
+      accept="application/pdf"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+    />
+    <div class="flex flex-col items-center justify-center pointer-events-none">
+      <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-indigo-100 transition-all shadow-inner">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"></path>
+        </svg>
+      </div>
+      <h3 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">
+        Drop PDF to stamp prepress bleed, trim &amp; registration marks
+      </h3>
+      <p class="text-xs sm:text-sm text-slate-500 max-w-md mb-4">
+        Convert Canva, Word, Figma, or Google Docs PDFs into commercial print-shop ready documents with ISO 12647 compliant marks.
+      </p>
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold">
+        <svg class="w-4 h-4 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        100% Vector Quality • Zero Rasterization • Offset &amp; Digital Press Ready
+      </div>
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>Corner Cut Marks</span>
+      <span>•</span>
+      <span>3mm Bleed Box</span>
+      <span>•</span>
+      <span>CMYK Calibration Bars</span>
+      <span>•</span>
+      <span>Zero Upload</span>
+    </div>
+  </div>
+
+  <!-- 2. Loading State -->
+  <div id="marks-loading" class="hidden bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 shadow-sm text-center space-y-4">
+    <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
+    <h3 class="text-base font-bold text-slate-900">
+      Loading PDF vector geometry...
+    </h3>
+    <p class="text-xs text-slate-500 max-w-md mx-auto">
+      Parsing trim boundaries and rendering interactive prepress preview canvas.
+    </p>
+  </div>
+
+  <!-- 3. Configuration & Preview Panel -->
+  <div id="marks-config-section" class="hidden bg-white rounded-3xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- Header Summary Bar -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm shrink-0">
+          PDF
+        </div>
+        <div>
+          <h4 id="marks-filename" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">
+            design.pdf
+          </h4>
+          <p id="marks-meta" class="text-xs text-slate-500">
+            0 pages loaded
+          </p>
+        </div>
+      </div>
+      <button type="button" id="marks-change-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline cursor-pointer">
+        Change File
+      </button>
+    </div>
+
+    <!-- Controls & Sheet Preview -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <!-- Visual Sheet Canvas Preview with Guides -->
+      <div class="lg:col-span-5 bg-slate-950 rounded-2xl p-4 flex flex-col items-center justify-center relative shadow-inner overflow-hidden min-h-[320px]">
+        <div class="text-[11px] font-mono text-slate-400 mb-2 flex items-center justify-between w-full px-2">
+          <span>Sheet Preview with Marks</span>
+          <span class="text-indigo-400 font-bold" id="sheet-preview-tag">ISO 12647</span>
+        </div>
+
+        <div class="relative inline-block border border-slate-800 rounded shadow-md overflow-hidden bg-slate-100 p-4" id="sheet-wrapper">
+          <canvas id="marks-preview-canvas" class="max-w-full max-h-[300px] object-contain block border border-slate-300 shadow-sm"></canvas>
+          
+          <!-- Red Trim Box Guide Outline -->
+          <div
+            id="trim-guide-outline"
+            class="absolute pointer-events-none border border-rose-500 border-dashed"
+          >
+            <span class="absolute -top-3.5 left-1 text-[8px] font-mono font-bold text-rose-600 bg-white/90 px-1 rounded shadow-xs">
+              TRIM LINE
+            </span>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-3 text-[10px] text-slate-400 mt-3 font-mono">
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-500"></span> Red = Cut Trim Line</span>
+          <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-indigo-500"></span> Hairline Ticks = Guillotine Guide</span>
+        </div>
+      </div>
+
+      <!-- Controls Panel -->
+      <div class="lg:col-span-7 space-y-5">
+        <!-- Slug & Bleed Selectors -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label for="marks-slug-margin" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              Slug Margin (Outer Border)
+            </label>
+            <select
+              id="marks-slug-margin"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+            >
+              <option value="24">24 pt (Compact / ~8.5 mm)</option>
+              <option value="36" selected>36 pt (Standard / 0.5 in / 12.7 mm)</option>
+              <option value="54">54 pt (Generous / 0.75 in / 19 mm)</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="marks-bleed-select" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+              Bleed Distance
+            </label>
+            <select
+              id="marks-bleed-select"
+              class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white"
+            >
+              <option value="0">0 mm (No Bleed)</option>
+              <option value="9" selected>3 mm (Standard 0.125 in / 9 pt)</option>
+              <option value="14">5 mm (Large Bleed / ~14 pt)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Toggles -->
+        <div class="p-4 bg-slate-50 rounded-2xl border border-slate-200/80 space-y-3">
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              id="check-trim-marks"
+              checked
+              class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+            />
+            <div>
+              <span class="text-xs font-bold text-slate-800 block">8 Corner Trim Marks</span>
+              <span class="text-[11px] text-slate-500">Fine 0.35pt ticks marking exact cutting lines for the paper knife</span>
+            </div>
+          </label>
+
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              id="check-registration-marks"
+              checked
+              class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+            />
+            <div>
+              <span class="text-xs font-bold text-slate-800 block">4-Point Registration Bullseyes</span>
+              <span class="text-[11px] text-slate-500">Circular alignment crosshairs centered on top, bottom, left, and right</span>
+            </div>
+          </label>
+
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              id="check-color-bars"
+              checked
+              class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+            />
+            <div>
+              <span class="text-xs font-bold text-slate-800 block">CMYK Densitometer Calibration Bars</span>
+              <span class="text-[11px] text-slate-500">10-step density swatches for press technician spectrophotometer scanning</span>
+            </div>
+          </label>
+
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              id="check-slug-line"
+              checked
+              class="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+            />
+            <div>
+              <span class="text-xs font-bold text-slate-800 block">Production Information Slug Line</span>
+              <span class="text-[11px] text-slate-500">Stamps filename, page sequence, trim dimensions, and timestamp in margin</span>
+            </div>
+          </label>
+        </div>
+
+        <!-- Sheet Dimensions Banner -->
+        <div class="p-4 bg-indigo-50/70 rounded-2xl border border-indigo-100 flex items-center justify-between text-xs text-indigo-950">
+          <div class="flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-sm shrink-0">
+              ✓
+            </div>
+            <div>
+              <div class="font-bold text-slate-900" id="marks-dimensions-title">
+                Ready for Heidelberg &amp; Digital Presses
+              </div>
+              <div class="text-[11px] text-slate-600" id="marks-dimensions-desc">
+                Trim Box: 210 × 297 mm • Total Press Sheet: 235 × 322 mm
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Download Button -->
+        <button
+          type="button"
+          id="btn-apply-marks"
+          class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 group cursor-pointer"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 group-hover:scale-110 transition-transform" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          <span id="btn-apply-marks-text">Download Press-Ready Vector PDF</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { applyPrinterMarks, type PrinterMarksOptions } from '../../lib/pdf/printerMarksEngine';
+
+  let rawPdfBytes: Uint8Array | null = null;
+  let originalFilename = 'document.pdf';
+  let pdfDocProxy: any = null;
+  let page1Dimensions = { width: 612, height: 792 };
+
+  // DOM Elements
+  const dropzone = document.getElementById('marks-dropzone') as HTMLElement;
+  const fileInput = document.getElementById('marks-file-input') as HTMLInputElement;
+  const loading = document.getElementById('marks-loading') as HTMLElement;
+  const configSection = document.getElementById('marks-config-section') as HTMLElement;
+  const filenameEl = document.getElementById('marks-filename') as HTMLElement;
+  const metaEl = document.getElementById('marks-meta') as HTMLElement;
+  const changeFileBtn = document.getElementById('marks-change-file-btn') as HTMLButtonElement;
+  const previewCanvas = document.getElementById('marks-preview-canvas') as HTMLCanvasElement;
+  const trimGuide = document.getElementById('trim-guide-outline') as HTMLElement;
+  const slugMarginSelect = document.getElementById('marks-slug-margin') as HTMLSelectElement;
+  const bleedSelect = document.getElementById('marks-bleed-select') as HTMLSelectElement;
+  const checkTrim = document.getElementById('check-trim-marks') as HTMLInputElement;
+  const checkReg = document.getElementById('check-registration-marks') as HTMLInputElement;
+  const checkColor = document.getElementById('check-color-bars') as HTMLInputElement;
+  const checkSlug = document.getElementById('check-slug-line') as HTMLInputElement;
+  const dimsDesc = document.getElementById('marks-dimensions-desc') as HTMLElement;
+  const applyBtn = document.getElementById('btn-apply-marks') as HTMLButtonElement;
+  const applyBtnText = document.getElementById('btn-apply-marks-text') as HTMLElement;
+
+  // Drag & Drop
+  dropzone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('border-indigo-500', 'bg-indigo-50/20');
+  });
+
+  dropzone?.addEventListener('dragleave', () => {
+    dropzone.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+  });
+
+  dropzone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+    if (e.dataTransfer?.files?.[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput?.addEventListener('change', () => {
+    if (fileInput.files?.[0]) {
+      handleFile(fileInput.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    configSection.classList.add('hidden');
+    dropzone.classList.remove('hidden');
+    fileInput.value = '';
+    rawPdfBytes = null;
+  });
+
+  slugMarginSelect?.addEventListener('change', () => updateDimensionsReadout());
+  bleedSelect?.addEventListener('change', () => updateDimensionsReadout());
+
+  async function handleFile(file: File) {
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      alert('Please upload a valid PDF document.');
+      return;
+    }
+
+    originalFilename = file.name;
+    dropzone.classList.add('hidden');
+    loading.classList.remove('hidden');
+
+    try {
+      const buffer = await file.arrayBuffer();
+      rawPdfBytes = new Uint8Array(buffer);
+
+      // @ts-ignore
+      const pdfjsLib = window.pdfjsLib || await import('pdfjs-dist');
+      if (pdfjsLib.GlobalWorkerOptions && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+      }
+
+      pdfDocProxy = await pdfjsLib.getDocument({ data: rawPdfBytes.slice(0) }).promise;
+      const numPages = pdfDocProxy.numPages;
+
+      const page1 = await pdfDocProxy.getPage(1);
+      const viewport = page1.getViewport({ scale: 0.5 });
+      page1Dimensions = { width: page1.view[2] - page1.view[0], height: page1.view[3] - page1.view[1] };
+
+      previewCanvas.width = Math.round(viewport.width);
+      previewCanvas.height = Math.round(viewport.height);
+      const ctx = previewCanvas.getContext('2d');
+      if (ctx) {
+        await page1.render({ canvasContext: ctx, viewport }).promise;
+      }
+
+      loading.classList.add('hidden');
+      configSection.classList.remove('hidden');
+
+      filenameEl.textContent = originalFilename;
+      metaEl.textContent = `${numPages} page${numPages > 1 ? 's' : ''} • ${(file.size / 1024 / 1024).toFixed(2)} MB`;
+
+      updateDimensionsReadout();
+    } catch (err: any) {
+      console.error(err);
+      alert('Error loading PDF: ' + (err.message || err));
+      loading.classList.add('hidden');
+      dropzone.classList.remove('hidden');
+    }
+  }
+
+  function updateDimensionsReadout() {
+    const slugMargin = parseInt(slugMarginSelect.value, 10) || 36;
+    const trimWmm = Math.round((page1Dimensions.width * 25.4) / 72);
+    const trimHmm = Math.round((page1Dimensions.height * 25.4) / 72);
+
+    const sheetWmm = Math.round(((page1Dimensions.width + 2 * slugMargin) * 25.4) / 72);
+    const sheetHmm = Math.round(((page1Dimensions.height + 2 * slugMargin) * 25.4) / 72);
+
+    dimsDesc.textContent = `Trim Box: ${trimWmm} × ${trimHmm} mm • Total Press Sheet: ${sheetWmm} × ${sheetHmm} mm`;
+
+    // Position trim line guide
+    if (previewCanvas.clientWidth && previewCanvas.clientHeight) {
+      trimGuide.style.left = '0px';
+      trimGuide.style.top = '0px';
+      trimGuide.style.width = `${previewCanvas.clientWidth}px`;
+      trimGuide.style.height = `${previewCanvas.clientHeight}px`;
+    }
+  }
+
+  // Handle Export
+  applyBtn?.addEventListener('click', async () => {
+    if (!rawPdfBytes) return;
+
+    applyBtn.disabled = true;
+    applyBtnText.textContent = 'Generating Prepress PDF...';
+
+    try {
+      const options: Partial<PrinterMarksOptions> = {
+        slugMargin: parseInt(slugMarginSelect.value, 10) || 36,
+        bleed: parseInt(bleedSelect.value, 10) || 9,
+        includeTrimMarks: checkTrim.checked,
+        includeRegistrationMarks: checkReg.checked,
+        includeColorBars: checkColor.checked,
+        includeSlugLine: checkSlug.checked,
+        fileName: originalFilename,
+      };
+
+      const markedBytes = await applyPrinterMarks(rawPdfBytes, options);
+
+      const blob = new Blob([markedBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = originalFilename.replace(/\.pdf$/i, '') + '-press-ready.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      console.error(err);
+      alert('Error stamping printer marks: ' + (err.message || err));
+    } finally {
+      applyBtn.disabled = false;
+      applyBtnText.textContent = 'Download Press-Ready Vector PDF';
+    }
+  });
+</script>
