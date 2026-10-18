@@ -1,0 +1,623 @@
+---
+// SignPkcsPdfIsland.astro - 100% In-Browser Cryptographic PDF Digital Signature (PKCS#7 / PAdES)
+---
+
+<div id="sign-pkcs-island-app" class="w-full max-w-4xl mx-auto my-8 font-sans">
+  <!-- Error Alert Container -->
+  <div
+    id="sign-pkcs-error-banner"
+    class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm text-left flex items-start gap-3 shadow-sm"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+      <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+    </svg>
+    <div class="flex-grow">
+      <h4 class="font-bold text-red-900 mb-0.5">Digital Signature Notice</h4>
+      <p id="sign-pkcs-error-message" class="text-xs text-red-700 leading-relaxed"></p>
+    </div>
+    <button type="button" id="dismiss-sign-pkcs-error" class="text-red-400 hover:text-red-700 text-sm font-bold">✕</button>
+  </div>
+
+  <!-- 1. Drop Zone (Active before file selection) -->
+  <div
+    id="sign-pkcs-drop-zone"
+    class="relative rounded-2xl border border-slate-200/90 hover:border-slate-300 bg-white shadow-sm hover:shadow-panel-hover p-8 sm:p-12 text-center transition cursor-pointer group"
+  >
+    <input
+      type="file"
+      id="sign-pkcs-file-input"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+      accept=".pdf,application/pdf"
+    />
+
+    <div class="w-12 h-12 mx-auto mb-4 rounded-xl bg-emerald-50 group-hover:bg-emerald-600 flex items-center justify-center text-emerald-600 group-hover:text-white shadow-sm transition">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-7 h-7 group-hover:scale-110 transition duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    </div>
+
+    <h3 class="text-xl font-bold text-slate-800 mb-1.5 group-hover:text-emerald-600 transition">
+      Select PDF to Cryptographically Sign
+    </h3>
+    <p class="text-sm text-slate-500 mb-6 max-w-sm mx-auto">
+      Drag & drop contracts, agreements, or invoices here, or click to browse.
+    </p>
+
+    <div class="inline-flex items-center justify-center px-5 py-2.5 text-xs font-semibold text-white bg-slate-900 group-hover:bg-slate-800 rounded-xl shadow-button transition duration-150">
+      Choose PDF Document
+    </div>
+
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs text-slate-400">
+      <span>100% In-Browser</span>
+      <span>•</span>
+      <span>PKCS#7 / PAdES Detached</span>
+      <span>•</span>
+      <span>Tamper-Evident</span>
+      <span>•</span>
+      <span>Adobe Acrobat Compatible</span>
+    </div>
+  </div>
+
+  <!-- 2. Signing Configuration Workspace -->
+  <div id="sign-pkcs-config-section" class="hidden bg-white rounded-2xl border border-slate-200 p-6 sm:p-8 shadow-sm space-y-6 text-left">
+    <!-- File Header -->
+    <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
+          PDF
+        </div>
+        <div>
+          <h4 id="sign-pkcs-file-name" class="font-bold text-slate-900 text-sm truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="sign-pkcs-file-meta" class="text-xs text-slate-500">Checking document structure...</p>
+        </div>
+      </div>
+      <button type="button" id="change-sign-pkcs-file-btn" class="text-xs font-medium text-slate-500 hover:text-slate-800 hover:underline">
+        Change File
+      </button>
+    </div>
+
+    <!-- Certificate Source Tabs -->
+    <div>
+      <div class="flex items-center justify-between mb-3">
+        <label class="text-xs font-bold text-slate-700 uppercase tracking-wider block">
+          Digital Certificate Source
+        </label>
+        <span id="cert-status-badge" class="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-amber-50 text-amber-700 border border-amber-200">
+          Certificate Needed
+        </span>
+      </div>
+
+      <div class="flex border-b border-slate-200 mb-4">
+        <button
+          type="button"
+          id="tab-self-cert-btn"
+          class="px-4 py-2 text-xs font-bold border-b-2 border-emerald-600 text-emerald-700 transition"
+        >
+          Generate In-Browser X.509 Certificate
+        </button>
+        <button
+          type="button"
+          id="tab-p12-cert-btn"
+          class="px-4 py-2 text-xs font-bold border-b-2 border-transparent text-slate-500 hover:text-slate-700 transition"
+        >
+          Upload Existing (.p12 / .pfx)
+        </button>
+      </div>
+
+      <!-- Tab 1: Self-Signed In-Browser Generator -->
+      <div id="panel-self-cert" class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Signer Full Name *</label>
+            <input
+              type="text"
+              id="self-common-name"
+              placeholder="e.g. John Doe, Esq."
+              class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Organization / Company</label>
+            <input
+              type="text"
+              id="self-organization"
+              placeholder="e.g. Acme Corporation"
+              value="Personal Digital Identity"
+              class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Email Address</label>
+            <input
+              type="email"
+              id="self-email"
+              placeholder="e.g. john@acme.com"
+              class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Country Code</label>
+            <input
+              type="text"
+              id="self-country"
+              placeholder="US"
+              value="US"
+              maxlength="2"
+              class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 uppercase"
+            />
+          </div>
+        </div>
+
+        <div class="pt-1 flex items-center justify-between">
+          <button
+            type="button"
+            id="generate-cert-btn"
+            class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-lg shadow-sm transition active:scale-95"
+          >
+            Generate 2048-bit RSA Certificate
+          </button>
+          <span id="cert-gen-feedback" class="text-[11px] text-slate-500">Ready to create certificate</span>
+        </div>
+      </div>
+
+      <!-- Tab 2: Existing .p12/.pfx Upload -->
+      <div id="panel-p12-cert" class="hidden space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200/80">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Select .p12 / .pfx Certificate File *</label>
+            <input
+              type="file"
+              id="p12-file-input"
+              accept=".p12,.pfx,application/x-pkcs12"
+              class="w-full text-xs text-slate-600 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-slate-200 file:text-slate-800 hover:file:bg-slate-300"
+            />
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Certificate Password (if protected)</label>
+            <input
+              type="password"
+              id="p12-password"
+              placeholder="Enter password"
+              class="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            />
+          </div>
+        </div>
+
+        <div class="pt-1 flex items-center justify-between">
+          <button
+            type="button"
+            id="load-p12-btn"
+            class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-lg shadow-sm transition active:scale-95"
+          >
+            Load & Decrypt Certificate
+          </button>
+          <span id="p12-feedback" class="text-[11px] text-slate-500">Select certificate bundle</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Signing Intent & Metadata -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+      <div>
+        <label for="sign-reason" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Signing Reason
+        </label>
+        <select
+          id="sign-reason"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+        >
+          <option value="I approve and execute this document" selected>I approve and execute this document</option>
+          <option value="I am the author of this document">I am the author of this document</option>
+          <option value="I have reviewed and agree to the terms">I have reviewed and agree to the terms</option>
+          <option value="Certified authentic copy of original">Certified authentic copy of original</option>
+          <option value="Witnessed and acknowledged">Witnessed and acknowledged</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="sign-location" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+          Signing Location
+        </label>
+        <input
+          type="text"
+          id="sign-location"
+          placeholder="e.g. New York, USA"
+          value="Client Device"
+          class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:bg-white"
+        />
+      </div>
+    </div>
+
+    <!-- Visual Appearance Stamp Controls -->
+    <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/80 space-y-3">
+      <div class="flex items-center justify-between">
+        <label class="flex items-center gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            id="sign-visual-stamp"
+            checked
+            class="w-4 h-4 text-emerald-600 rounded border-slate-300 focus:ring-emerald-500"
+          />
+          <div>
+            <span class="text-xs font-bold text-slate-800 block">Stamp Certified Visual Badge</span>
+            <span class="text-[11px] text-slate-500">Embeds an on-page seal badge with signer, date & SHA-256 fingerprint</span>
+          </div>
+        </label>
+      </div>
+
+      <div id="visual-stamp-options" class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-200/60">
+        <div>
+          <label for="sign-page-target" class="block text-[11px] font-bold text-slate-600 mb-1">Target Page</label>
+          <select
+            id="sign-page-target"
+            class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500"
+          >
+            <option value="last" selected>Last Page (Signature Page)</option>
+            <option value="1">First Page (Cover)</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="sign-position" class="block text-[11px] font-bold text-slate-600 mb-1">Badge Position</label>
+          <select
+            id="sign-position"
+            class="w-full bg-white border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-800 focus:ring-2 focus:ring-emerald-500"
+          >
+            <option value="bottom-right" selected>Bottom-Right Corner</option>
+            <option value="bottom-left">Bottom-Left Corner</option>
+            <option value="top-right">Top-Right Corner</option>
+            <option value="top-left">Top-Left Corner</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Button -->
+    <div class="pt-2 flex flex-col sm:flex-row gap-3">
+      <button
+        type="button"
+        id="run-sign-btn"
+        disabled
+        class="flex-1 py-3.5 px-6 rounded-xl font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md shadow-emerald-600/20 active:scale-[0.99] transition flex items-center justify-center gap-2"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+        </svg>
+        Sign PDF Cryptographically
+      </button>
+    </div>
+  </div>
+
+  <!-- 3. Progress State -->
+  <div id="sign-pkcs-progress-card" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-4">
+    <div class="w-12 h-12 mx-auto rounded-full bg-emerald-50 border-2 border-emerald-600 border-t-transparent animate-spin"></div>
+    <h3 class="text-base font-bold text-slate-800">Hashing & Signing PDF Bytes...</h3>
+    <p id="sign-pkcs-progress-status" class="text-xs text-slate-500">Calculating SHA-256 message digest and detached PKCS#7 signature...</p>
+  </div>
+
+  <!-- 4. Success & Download View -->
+  <div id="sign-pkcs-success-card" class="hidden bg-white rounded-2xl border border-slate-200 p-8 shadow-sm text-center space-y-6">
+    <div class="w-14 h-14 mx-auto rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+      </svg>
+    </div>
+
+    <div>
+      <h3 class="text-xl font-bold text-slate-900 mb-1">Cryptographic Digital Signature Applied!</h3>
+      <p id="sign-pkcs-success-stats" class="text-xs text-slate-600 max-w-md mx-auto leading-relaxed">
+        Sealed with PKCS#7 detached digital signature and valid ByteRange.
+      </p>
+    </div>
+
+    <!-- Fingerprint Pill -->
+    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 font-mono text-[11px] text-slate-600 max-w-lg mx-auto truncate text-left">
+      <span class="text-slate-400 block text-[9px] uppercase tracking-wider font-sans font-bold mb-0.5">SHA-256 Document Hash</span>
+      <span id="sign-sha256-display">0000000000000000000000000000000000000000</span>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+      <a
+        id="sign-pkcs-download-link"
+        download="digitally-signed.pdf"
+        class="w-full sm:w-auto px-6 py-3 rounded-xl font-bold text-sm text-white bg-emerald-600 hover:bg-emerald-700 shadow-md shadow-emerald-600/20 active:scale-[0.99] transition inline-flex items-center justify-center gap-2 cursor-pointer"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+        </svg>
+        Download Signed PDF
+      </a>
+
+      <button
+        type="button"
+        id="sign-pkcs-reset-btn"
+        class="w-full sm:w-auto px-5 py-3 rounded-xl font-semibold text-sm text-slate-600 bg-slate-100 hover:bg-slate-200 transition"
+      >
+        Sign Another Document
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { PDFDocument } from 'pdf-lib';
+  import {
+    generateSelfSignedCertificate,
+    parsePkcs12Certificate,
+    signPdfCryptographically,
+    type CertificateCredentials,
+  } from '../../lib/pdf/pkcsSigner';
+
+  let currentFile: File | null = null;
+  let fileBuffer: ArrayBuffer | null = null;
+  let detectedPageCount = 0;
+  let activeCredentials: CertificateCredentials | null = null;
+  let generatedBlobUrl: string | null = null;
+
+  // DOM Elements
+  const dropZone = document.getElementById('sign-pkcs-drop-zone')!;
+  const fileInput = document.getElementById('sign-pkcs-file-input') as HTMLInputElement;
+  const configSection = document.getElementById('sign-pkcs-config-section')!;
+  const progressCard = document.getElementById('sign-pkcs-progress-card')!;
+  const successCard = document.getElementById('sign-pkcs-success-card')!;
+  const errorBanner = document.getElementById('sign-pkcs-error-banner')!;
+  const errorMessage = document.getElementById('sign-pkcs-error-message')!;
+  const dismissErrorBtn = document.getElementById('dismiss-sign-pkcs-error')!;
+  const fileNameEl = document.getElementById('sign-pkcs-file-name')!;
+  const fileMetaEl = document.getElementById('sign-pkcs-file-meta')!;
+  const changeFileBtn = document.getElementById('change-sign-pkcs-file-btn')!;
+  const certStatusBadge = document.getElementById('cert-status-badge')!;
+
+  const tabSelfCertBtn = document.getElementById('tab-self-cert-btn')!;
+  const tabP12CertBtn = document.getElementById('tab-p12-cert-btn')!;
+  const panelSelfCert = document.getElementById('panel-self-cert')!;
+  const panelP12Cert = document.getElementById('panel-p12-cert')!;
+
+  const selfCommonName = document.getElementById('self-common-name') as HTMLInputElement;
+  const selfOrg = document.getElementById('self-organization') as HTMLInputElement;
+  const selfEmail = document.getElementById('self-email') as HTMLInputElement;
+  const selfCountry = document.getElementById('self-country') as HTMLInputElement;
+  const generateCertBtn = document.getElementById('generate-cert-btn')!;
+  const certGenFeedback = document.getElementById('cert-gen-feedback')!;
+
+  const p12FileInput = document.getElementById('p12-file-input') as HTMLInputElement;
+  const p12Password = document.getElementById('p12-password') as HTMLInputElement;
+  const loadP12Btn = document.getElementById('load-p12-btn')!;
+  const p12Feedback = document.getElementById('p12-feedback')!;
+
+  const signReason = document.getElementById('sign-reason') as HTMLSelectElement;
+  const signLocation = document.getElementById('sign-location') as HTMLInputElement;
+  const signVisualStamp = document.getElementById('sign-visual-stamp') as HTMLInputElement;
+  const visualStampOptions = document.getElementById('visual-stamp-options')!;
+  const signPageTarget = document.getElementById('sign-page-target') as HTMLSelectElement;
+  const signPosition = document.getElementById('sign-position') as HTMLSelectElement;
+  const runSignBtn = document.getElementById('run-sign-btn') as HTMLButtonElement;
+
+  const successStats = document.getElementById('sign-pkcs-success-stats')!;
+  const sha256Display = document.getElementById('sign-sha256-display')!;
+  const downloadLink = document.getElementById('sign-pkcs-download-link') as HTMLAnchorElement;
+  const resetBtn = document.getElementById('sign-pkcs-reset-btn')!;
+
+  function showError(msg: string) {
+    errorMessage.textContent = msg;
+    errorBanner.classList.remove('hidden');
+    progressCard.classList.add('hidden');
+  }
+
+  function hideError() {
+    errorBanner.classList.add('hidden');
+  }
+
+  dismissErrorBtn.addEventListener('click', hideError);
+
+  // Tab Switching
+  tabSelfCertBtn.addEventListener('click', () => {
+    tabSelfCertBtn.classList.add('border-emerald-600', 'text-emerald-700');
+    tabSelfCertBtn.classList.remove('border-transparent', 'text-slate-500');
+    tabP12CertBtn.classList.remove('border-emerald-600', 'text-emerald-700');
+    tabP12CertBtn.classList.add('border-transparent', 'text-slate-500');
+
+    panelSelfCert.classList.remove('hidden');
+    panelP12Cert.classList.add('hidden');
+  });
+
+  tabP12CertBtn.addEventListener('click', () => {
+    tabP12CertBtn.classList.add('border-emerald-600', 'text-emerald-700');
+    tabP12CertBtn.classList.remove('border-transparent', 'text-slate-500');
+    tabSelfCertBtn.classList.remove('border-emerald-600', 'text-emerald-700');
+    tabSelfCertBtn.classList.add('border-transparent', 'text-slate-500');
+
+    panelP12Cert.classList.remove('hidden');
+    panelSelfCert.classList.add('hidden');
+  });
+
+  signVisualStamp.addEventListener('change', () => {
+    if (signVisualStamp.checked) {
+      visualStampOptions.classList.remove('hidden');
+    } else {
+      visualStampOptions.classList.add('hidden');
+    }
+  });
+
+  function setCredentialReady(creds: CertificateCredentials) {
+    activeCredentials = creds;
+    certStatusBadge.textContent = `Ready: ${creds.commonName.slice(0, 18)}`;
+    certStatusBadge.classList.remove('bg-amber-50', 'text-amber-700', 'border-amber-200');
+    certStatusBadge.classList.add('bg-emerald-50', 'text-emerald-700', 'border-emerald-200');
+    runSignBtn.disabled = false;
+  }
+
+  // Generate In-Browser Certificate
+  generateCertBtn.addEventListener('click', async () => {
+    const name = selfCommonName.value.trim();
+    if (!name) {
+      showError('Please enter your full name for the certificate.');
+      selfCommonName.focus();
+      return;
+    }
+
+    hideError();
+    certGenFeedback.textContent = 'Generating 2048-bit RSA keypair...';
+
+    try {
+      const creds = await generateSelfSignedCertificate({
+        commonName: name,
+        organization: selfOrg.value.trim() || undefined,
+        email: selfEmail.value.trim() || undefined,
+        country: selfCountry.value.trim() || 'US',
+        validityDays: 365,
+      });
+
+      setCredentialReady(creds);
+      certGenFeedback.textContent = `Generated certificate for "${name}"`;
+    } catch (err: any) {
+      showError(err.message || 'Failed to generate certificate.');
+      certGenFeedback.textContent = 'Generation failed';
+    }
+  });
+
+  // Load Existing .p12/.pfx
+  loadP12Btn.addEventListener('click', async () => {
+    if (!p12FileInput.files || !p12FileInput.files[0]) {
+      showError('Please choose a .p12 or .pfx certificate file.');
+      return;
+    }
+
+    hideError();
+    p12Feedback.textContent = 'Decrypting certificate bundle...';
+
+    try {
+      const file = p12FileInput.files[0];
+      const buf = await file.arrayBuffer();
+      const creds = parsePkcs12Certificate(new Uint8Array(buf), p12Password.value);
+
+      setCredentialReady(creds);
+      p12Feedback.textContent = `Loaded certificate for "${creds.commonName}"`;
+    } catch (err: any) {
+      showError(err.message || 'Failed to decrypt .p12/.pfx file. Check password.');
+      p12Feedback.textContent = 'Failed to load certificate';
+    }
+  });
+
+  // Handle PDF Upload
+  async function handlePdf(file: File) {
+    if (!file || !file.name.toLowerCase().endsWith('.pdf')) {
+      showError('Please select a valid PDF file.');
+      return;
+    }
+
+    hideError();
+    currentFile = file;
+    fileNameEl.textContent = file.name;
+    fileMetaEl.textContent = 'Analyzing document...';
+
+    dropZone.classList.add('hidden');
+    configSection.classList.remove('hidden');
+
+    try {
+      fileBuffer = await file.arrayBuffer();
+      const testDoc = await PDFDocument.load(fileBuffer, { ignoreEncryption: true });
+      detectedPageCount = testDoc.getPageCount();
+
+      fileMetaEl.textContent = `${detectedPageCount} page${detectedPageCount === 1 ? '' : 's'} • ${(file.size / (1024 * 1024)).toFixed(2)} MB`;
+    } catch (err: any) {
+      showError(err.message || 'Failed to read PDF document.');
+      configSection.classList.add('hidden');
+      dropZone.classList.remove('hidden');
+    }
+  }
+
+  fileInput.addEventListener('change', (e) => {
+    const target = e.target as HTMLInputElement;
+    if (target.files && target.files[0]) {
+      handlePdf(target.files[0]);
+    }
+  });
+
+  dropZone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropZone.classList.add('border-emerald-500', 'bg-emerald-50/20');
+  });
+
+  dropZone.addEventListener('dragleave', () => {
+    dropZone.classList.remove('border-emerald-500', 'bg-emerald-50/20');
+  });
+
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropZone.classList.remove('border-emerald-500', 'bg-emerald-50/20');
+    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handlePdf(e.dataTransfer.files[0]);
+    }
+  });
+
+  changeFileBtn.addEventListener('click', () => {
+    configSection.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+  });
+
+  resetBtn.addEventListener('click', () => {
+    successCard.classList.add('hidden');
+    dropZone.classList.remove('hidden');
+    fileInput.value = '';
+    currentFile = null;
+    fileBuffer = null;
+    if (generatedBlobUrl) {
+      URL.revokeObjectURL(generatedBlobUrl);
+      generatedBlobUrl = null;
+    }
+  });
+
+  // Execute Cryptographic Signing
+  runSignBtn.addEventListener('click', async () => {
+    if (!fileBuffer || !currentFile) {
+      showError('Please upload a PDF document first.');
+      return;
+    }
+
+    if (!activeCredentials) {
+      showError('Please generate or upload an X.509 certificate first.');
+      return;
+    }
+
+    hideError();
+    configSection.classList.add('hidden');
+    progressCard.classList.remove('hidden');
+
+    try {
+      const targetPageNum = signPageTarget.value === 'last' ? detectedPageCount : 1;
+
+      const result = await signPdfCryptographically(new Uint8Array(fileBuffer), activeCredentials, {
+        signerName: activeCredentials.commonName,
+        reason: signReason.value,
+        location: signLocation.value,
+        visualStamp: signVisualStamp.checked,
+        pageNumber: targetPageNum,
+        position: signPosition.value as any,
+      });
+
+      const blob = new Blob([result.pdfBytes as Uint8Array<ArrayBuffer>], { type: 'application/pdf' });
+      if (generatedBlobUrl) {
+        URL.revokeObjectURL(generatedBlobUrl);
+      }
+      generatedBlobUrl = URL.createObjectURL(blob);
+
+      downloadLink.href = generatedBlobUrl;
+      const baseName = currentFile.name.replace(/\.pdf$/i, '');
+      downloadLink.download = `${baseName}-digitally-signed.pdf`;
+
+      sha256Display.textContent = result.sha256Fingerprint;
+      successStats.textContent = `Document signed cryptographically by "${result.signerName}" on ${result.signingTime.toUTCString()}. Output file: ${(result.outputSize / (1024 * 1024)).toFixed(2)} MB.`;
+
+      progressCard.classList.add('hidden');
+      successCard.classList.remove('hidden');
+    } catch (err: any) {
+      showError(err.message || 'Cryptographic signing failed.');
+      progressCard.classList.add('hidden');
+      configSection.classList.remove('hidden');
+    }
+  });
+</script>
