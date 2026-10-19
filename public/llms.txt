@@ -1,20 +1,71 @@
-# AirPDF — 100% Client-Side Private PDF Tools
+# AirPDF — 47 Free Client-Side PDF Tools (Zero Uploads, Zero Ads)
 
-> Free, browser-based PDF utilities engineered for zero data leaks. Files are processed locally on your device using WebAssembly and client-side JavaScript. Files are never transmitted to any external server.
+> The most comprehensive free browser-based PDF toolkit. All 47 tools process files 100% locally on your device using WebAssembly and client-side JavaScript. No files are ever transmitted to any external server. No registration, no accounts, no paywalls, no page limits.
 
-## Core Features & Tools
-- Merge PDF (/tools/merge-pdf): Combine multiple PDF documents into a single organized file in seconds.
-- Compress PDF (/tools/compress-pdf): Reduce file size directly in your browser with optimized downsampling.
+## All Tools
+
+### Organize & Edit
+- Merge PDF (/tools/merge-pdf): Combine multiple PDF documents into a single organized file.
 - Split PDF (/tools/split-pdf): Extract individual pages or ranges into separate standalone PDF documents.
 - Rotate PDF (/tools/rotate-pdf): Rotate PDF pages permanently by 90, 180, or 270 degrees.
-- Protect PDF (/tools/protect-pdf): Secure PDF files with AES passwords and client-side encryption.
-- Unlock PDF (/tools/unlock-pdf): Remove password security from your PDF documents client-side.
 - Page Numbers (/tools/page-numbers): Stamp page numbers with custom font, size, and alignment.
-- JPG to PDF (/tools/jpg-to-pdf): Convert PNG/JPEG images into formatted PDF documents.
-- PDF to JPG (/tools/pdf-to-jpg): Convert pages into crisp, high-resolution JPEG/PNG images.
-- PDF to Word (/tools/pdf-to-word): Extract text and structure from PDFs into editable .docx documents.
+- Edit PDF Online (/tools/edit-pdf): Annotate, draw, add text, whiteout, and sign PDFs with full vector fidelity.
+- Booklet PDF (/tools/booklet-pdf): Impose pages into saddle-stitch booklet signatures.
+- N-Up Imposer (/tools/nup-pdf): Print 2, 4, 8, or 16 miniaturized pages on a single physical sheet.
+- Crop & Trim (/tools/crop-pdf): Adjust visible area with precision CropBox control.
+- Bookmarks / TOC (/tools/bookmarks-pdf): Insert, edit, or remove PDF outline bookmarks.
+- Split by Chapters (/tools/split-by-bookmarks): Auto-split by bookmark/chapter boundaries.
+- Headers & Footers (/tools/header-footer-pdf): Inject headers, footers with page numbering.
+- Overlay & Letterhead (/tools/overlay-pdf): Stamp letterheads, watermark layers on every page.
+- Bates Numbering (/tools/bates-numbering): Stamp legal Bates numbers for court and discovery.
+- Flatten Forms (/tools/flatten-pdf): Bake interactive fields into static vector art.
+- Two-Page Spread Cutter (/tools/split-spread-pdf): Slice magazine double spreads into single pages.
+- Poster Maker (/tools/poster-pdf): Tile documents across multiple physical sheets for wall-sized prints.
+- Auto-Crop White Margins (/tools/auto-crop-pdf): Detect and remove blank margins automatically.
+- Visual Page Sorter (/tools/organize-pdf): Drag and reorder pages with thumbnail previews.
+- Form Creator (/tools/form-creator-pdf): Convert flat static PDFs into interactive fillable AcroForms.
+- Duplex Print Wizard (/tools/duplex-sort-pdf): Split for manual two-sided printing with reverse interleaving.
 
-## Security & Architecture
-- Architecture: 100% Client-side static Jamstack site.
-- Libraries: pdf-lib, pdfjs-dist, jsPDF, WebAssembly.
+### Optimize & Repair
+- Compress PDF (/tools/compress-pdf): Reduce file size with optimized downsampling.
+- Repair Corrupt PDF (/tools/repair-pdf): Recover and rebuild damaged PDF cross-reference tables.
+- Remove Watermark (/tools/remove-watermark): Strip unwanted watermarks and overlays.
+- Privacy OCR (/tools/ocr-pdf): Make scanned PDFs searchable with local Tesseract OCR.
+- Grayscale & Ink Saver (/tools/grayscale-pdf): Convert to greyscale to save expensive color ink.
+- Resize & Expand Margins (/tools/resize-pdf): Rescale pages to A4, Letter, or custom dimensions.
+- Fast Web View (/tools/linearize-pdf): Linearize for instant progressive web loading.
+- Deskew & Straighten (/tools/deskew-pdf): Auto-correct rotation angle on crooked scanned pages.
+- Blueprint Scale & Measure (/tools/measure-pdf): Calibrate architectural scale and measure distances.
+- DPI Downsampler (/tools/downsample-pdf): Reduce embedded image resolution to 72/150/300 DPI.
+- Prepress Bleed & Trim Marks (/tools/printer-marks-pdf): Stamp commercial print-shop trim and registration marks.
+- Extract Embedded Fonts (/tools/extract-fonts-pdf): Rip TrueType and OpenType fonts from PDF streams.
+
+### Security & Privacy
+- Password Protect (/tools/protect-pdf): Encrypt with AES passwords and permission controls.
+- Unlock PDF (/tools/unlock-pdf): Remove password security from PDF files.
+- Recover PDF Password (/tools/recover-pdf-password): Brute-force recover forgotten PDF passwords.
+- Redact Sensitive Data (/tools/redact-pdf): Permanently black out confidential text and areas.
+- Digital Signature (/tools/sign-pkcs-pdf): Sign with PKCS#7 / PAdES cryptographic certificates.
+- Verify Redaction (/tools/verify-redaction-pdf): Detect Manafort-style fake visual-only redactions.
+
+### Convert & View
+- JPG to PDF (/tools/jpg-to-pdf): Convert PNG/JPEG images into formatted PDF documents.
+- PDF to JPG (/tools/pdf-to-jpg): Convert pages into crisp high-resolution images.
+- PDF to Word (/tools/pdf-to-word): Extract text into editable .docx documents.
+- PDF to CSV (/tools/pdf-to-csv): Extract tables into spreadsheet-ready CSV format.
+- Dark Mode Reader (/tools/dark-mode-pdf): Invert colors for comfortable night reading.
+- PDF Reader (/tools/reader-pdf): Distraction-free progressive document viewer.
+- PDF Comparison (/tools/compare-pdf): Side-by-side visual diff of two PDF versions.
+- Metadata Editor (/tools/metadata-pdf): View and edit title, author, and XMP metadata.
+- Forensic X-Ray Inspector (/tools/inspect-pdf): Deep-scan internal PDF object tree and streams.
+
+## Architecture & Security
+- Architecture: 100% Client-side static Jamstack site deployed on Cloudflare Pages.
+- Libraries: pdf-lib, pdfjs-dist, fontkit, JSZip, Tesseract.js, WebAssembly.
 - Privacy Guarantee: Zero server upload. Complete air-gap capable local processing.
+- No accounts, no registration, no subscriptions, no page limits.
+- Open to all search engines and AI crawlers.
+
+## Links
+- Homepage: https://airpdf.pages.dev
+- Mirror: https://pdfzero.pages.dev

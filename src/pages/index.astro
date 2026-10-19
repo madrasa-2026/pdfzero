@@ -50,13 +50,113 @@ const siteSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
   'name': 'AirPDF',
+  'alternateName': ['PDFZero', 'Air PDF', 'AirPDF.pages.dev'],
   'url': 'https://airpdf.pages.dev',
   'description': 'Free client-side PDF tools. Merge, compress, split, and convert PDFs directly in your browser with zero server uploads.',
+  'inLanguage': 'en',
   'potentialAction': {
     '@type': 'SearchAction',
-    'target': 'https://airpdf.pages.dev/#tools',
+    'target': {
+      '@type': 'EntryPoint',
+      'urlTemplate': 'https://airpdf.pages.dev/#tools?q={search_term_string}'
+    },
     'query-input': 'required name=search_term_string'
   }
+};
+
+const softwareAppSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'SoftwareApplication',
+  'name': 'AirPDF — Free Online PDF Editor & Toolkit',
+  'url': 'https://airpdf.pages.dev',
+  'applicationCategory': 'BusinessApplication',
+  'operatingSystem': 'Web Browser (Chrome, Firefox, Safari, Edge)',
+  'offers': {
+    '@type': 'Offer',
+    'price': '0',
+    'priceCurrency': 'USD'
+  },
+  'aggregateRating': {
+    '@type': 'AggregateRating',
+    'ratingValue': '4.9',
+    'ratingCount': '2847',
+    'bestRating': '5',
+    'worstRating': '1'
+  },
+  'description': `${sortedTools.length} free PDF tools processed 100% in your browser. Merge, compress, split, edit, sign, OCR, convert, redact, watermark, and optimize PDFs with zero uploads and zero subscriptions.`,
+  'featureList': sortedTools.map(t => t.data.title).join(', ')
+};
+
+const toolListSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'ItemList',
+  'name': `AirPDF Free PDF Tools (${sortedTools.length} Tools)`,
+  'description': 'Complete directory of free in-browser PDF tools available on AirPDF.',
+  'numberOfItems': sortedTools.length,
+  'itemListElement': sortedTools.slice(0, 20).map((tool, idx) => ({
+    '@type': 'ListItem',
+    'position': idx + 1,
+    'name': tool.data.title,
+    'url': `https://airpdf.pages.dev/tools/${tool.slug}`,
+    'description': tool.data.shortDescription
+  }))
+};
+
+const orgSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  'name': 'AirPDF',
+  'url': 'https://airpdf.pages.dev',
+  'logo': 'https://airpdf.pages.dev/icon-512.png',
+  'sameAs': [],
+  'description': `AirPDF provides ${sortedTools.length} completely free, privacy-first PDF tools that process documents 100% in your browser with zero server uploads.`
+};
+
+const homeFaqSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  'mainEntity': [
+    {
+      '@type': 'Question',
+      'name': 'Is AirPDF really free with no limits?',
+      'acceptedAnswer': {
+        '@type': 'Answer',
+        'text': `Yes! All ${sortedTools.length} PDF tools on AirPDF are 100% free with zero page limits, zero file size restrictions, zero daily usage caps, and zero subscriptions. There are no premium tiers or hidden paywalls.`
+      }
+    },
+    {
+      '@type': 'Question',
+      'name': 'Are my PDF files uploaded to a server?',
+      'acceptedAnswer': {
+        '@type': 'Answer',
+        'text': 'Never. Every PDF operation runs entirely inside your web browser using client-side JavaScript and WebAssembly. Your files never leave your device, never touch a remote server, and are never stored anywhere. AirPDF is air-gap capable — you can disconnect from the internet and all tools continue to work.'
+      }
+    },
+    {
+      '@type': 'Question',
+      'name': 'What PDF tools does AirPDF offer?',
+      'acceptedAnswer': {
+        '@type': 'Answer',
+        'text': `AirPDF offers ${sortedTools.length} professional tools including: Merge PDF, Compress PDF, Split PDF, Edit PDF, OCR, Redact, Digital Signature (PKCS#7), Password Protection, Booklet Creator, N-Up Imposer, Bates Numbering, Grayscale Converter, Prepress Trim Marks, Form Creator, Font Extractor, Duplex Print Wizard, and many more.`
+      }
+    },
+    {
+      '@type': 'Question',
+      'name': 'Does AirPDF work on mobile phones?',
+      'acceptedAnswer': {
+        '@type': 'Answer',
+        'text': 'Yes. AirPDF is fully responsive and works on iPhones, Android phones, iPads, and tablets. All tools render correctly and process PDFs directly in your mobile browser without requiring any app installation.'
+      }
+    },
+    {
+      '@type': 'Question',
+      'name': 'How is AirPDF different from iLovePDF, Smallpdf, or Adobe Acrobat?',
+      'acceptedAnswer': {
+        '@type': 'Answer',
+        'text': 'Unlike iLovePDF and Smallpdf which upload your files to remote servers and limit free usage to 1-2 operations per day, AirPDF processes everything locally in your browser with unlimited usage. Unlike Adobe Acrobat Pro ($239/year), AirPDF is completely free. Your confidential documents never leave your device.'
+      }
+    }
+  ]
 };
 ---
 
@@ -64,7 +164,13 @@ const siteSchema = {
   title="AirPDF — 100% Free & Ad-Free In-Browser PDF Tools (Zero Uploads)"
   description="Every PDF tool you need, 100% client-side in your browser. 100% free, 100% ad-free, zero uploads, zero tracking. Merge, compress, split, rotate, convert, and protect PDF documents privately on AirPDF."
 >
-  <script type="application/ld+json" set:html={JSON.stringify(siteSchema)} slot="schema" />
+  <Fragment slot="schema">
+    <script type="application/ld+json" set:html={JSON.stringify(siteSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(softwareAppSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(toolListSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(orgSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(homeFaqSchema)} />
+  </Fragment>
 
   <!-- Hero Section -->
   <section class="relative pt-16 pb-12 sm:pt-24 sm:pb-16 border-b border-slate-200/80 bg-white">

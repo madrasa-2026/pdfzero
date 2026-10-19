@@ -129,6 +129,29 @@ const allTools = await getCollection('tools');
 const relatedToolCards = allTools
   .filter((t) => tool.data.relatedTools.includes(t.slug))
   .slice(0, 3);
+
+// HowTo Schema for Google rich results (step-by-step featured snippets)
+const howToSchema = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  'name': `How to use ${tool.data.title}`,
+  'description': tool.data.description,
+  'totalTime': 'PT2M',
+  'tool': {
+    '@type': 'HowToTool',
+    'name': 'Web Browser (Chrome, Firefox, Safari, Edge)'
+  },
+  'step': tool.data.howToSteps.map((step, idx) => ({
+    '@type': 'HowToStep',
+    'position': idx + 1,
+    'name': step.title,
+    'text': step.description,
+    'url': `https://airpdf.pages.dev/tools/${tool.slug}#step-${idx + 1}`
+  }))
+};
+
+// Keywords string for meta tag
+const keywordsString = (tool.data.keywords || []).join(', ');
 ---
 
 <BaseLayout
@@ -136,11 +159,19 @@ const relatedToolCards = allTools
   description={tool.data.description}
   canonicalUrl={`https://airpdf.pages.dev/tools/${tool.slug}`}
 >
+  <!-- SEO Keywords Meta -->
+  <Fragment slot="head">
+    {keywordsString && <meta name="keywords" content={keywordsString} />}
+    <meta name="author" content="AirPDF" />
+    <link rel="alternate" hreflang="en" href={`https://airpdf.pages.dev/tools/${tool.slug}`} />
+  </Fragment>
+
   <!-- Inject Structured Data in schema slot -->
   <Fragment slot="schema">
     <script type="application/ld+json" set:html={JSON.stringify(webAppSchema)} />
     <script type="application/ld+json" set:html={JSON.stringify(faqSchema)} />
     <script type="application/ld+json" set:html={JSON.stringify(breadcrumbSchema)} />
+    <script type="application/ld+json" set:html={JSON.stringify(howToSchema)} />
   </Fragment>
 
   <!-- Top Ad Slot (Compliant, distinct from download buttons) -->
