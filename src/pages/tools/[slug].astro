@@ -49,6 +49,7 @@ import PrinterMarksPdfIsland from '../../components/tools/PrinterMarksPdfIsland.
 import FormCreatorPdfIsland from '../../components/tools/FormCreatorPdfIsland.astro';
 import ExtractFontsPdfIsland from '../../components/tools/ExtractFontsPdfIsland.astro';
 import DuplexSortPdfIsland from '../../components/tools/DuplexSortPdfIsland.astro';
+import StripOcrPdfIsland from '../../components/tools/StripOcrPdfIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -298,6 +299,8 @@ const keywordsString = (tool.data.keywords || []).join(', ');
       <ExtractFontsPdfIsland />
     ) : tool.slug === 'duplex-sort-pdf' ? (
       <DuplexSortPdfIsland />
+    ) : tool.slug === 'strip-ocr-pdf' ? (
+      <StripOcrPdfIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}

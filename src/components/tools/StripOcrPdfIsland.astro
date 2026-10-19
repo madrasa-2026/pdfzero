@@ -1,0 +1,261 @@
+---
+// src/components/tools/StripOcrPdfIsland.astro
+---
+
+<div class="w-full max-w-4xl mx-auto space-y-6">
+  <!-- 1. Dropzone Section -->
+  <div
+    id="strip-dropzone"
+    class="relative border-2 border-dashed border-slate-300 hover:border-indigo-500 bg-white/80 hover:bg-indigo-50/20 transition-all rounded-3xl p-8 sm:p-12 text-center cursor-pointer shadow-sm group"
+  >
+    <input
+      type="file"
+      id="strip-file-input"
+      accept="application/pdf"
+      class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+    />
+    <div class="flex flex-col items-center justify-center pointer-events-none">
+      <div class="w-16 h-16 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:bg-indigo-100 transition-all shadow-inner">
+        <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>
+      </div>
+      <h3 class="text-lg sm:text-xl font-bold text-slate-900 mb-2">
+        Drop PDF to strip corrupt or invisible OCR text layer
+      </h3>
+      <p class="text-xs sm:text-sm text-slate-500 max-w-md mb-4">
+        Surgically removes PostScript 3 Tr invisible text blocks without rasterizing or blurring your original document.
+      </p>
+      <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-xs font-semibold">
+        <svg class="w-4 h-4 text-indigo-600" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+        </svg>
+        Zero Rasterization • 100% Vector Quality Preserved • In-Browser Sandbox
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Loading State -->
+  <div id="strip-loading" class="hidden bg-white rounded-3xl border border-slate-200 p-8 sm:p-12 shadow-sm text-center space-y-4">
+    <div class="w-12 h-12 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin mx-auto"></div>
+    <h3 class="text-base font-bold text-slate-900">
+      Scanning PDF PostScript stream operators...
+    </h3>
+    <p class="text-xs text-slate-500 max-w-md mx-auto">
+      Parsing BT ... ET text blocks and locating 3 Tr invisible rendering operators.
+    </p>
+  </div>
+
+  <!-- 3. Results & Options Panel -->
+  <div id="strip-panel" class="hidden space-y-6">
+    <!-- File Header Card -->
+    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm flex flex-wrap items-center justify-between gap-4">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+          </svg>
+        </div>
+        <div>
+          <h4 id="strip-filename" class="text-base font-bold text-slate-900 truncate max-w-xs sm:max-w-md">document.pdf</h4>
+          <p id="strip-meta" class="text-xs text-slate-500">Document analyzed</p>
+        </div>
+      </div>
+
+      <button
+        type="button"
+        id="btn-change-strip-file"
+        class="text-xs text-slate-500 hover:text-slate-800 px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
+      >
+        Change PDF
+      </button>
+    </div>
+
+    <!-- Mode Selector Card -->
+    <div class="bg-white rounded-3xl border border-slate-200 p-6 shadow-sm space-y-4">
+      <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider">Select Stripping Strategy</h4>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <label class="flex items-start gap-3 p-4 rounded-2xl border-2 border-indigo-600 bg-indigo-50/20 transition-all cursor-pointer mode-label" id="label-mode-invisible">
+          <input
+            type="radio"
+            name="strip-mode"
+            value="invisible-only"
+            checked
+            class="w-4 h-4 mt-0.5 text-indigo-600 focus:ring-indigo-500"
+          />
+          <div>
+            <span class="text-xs font-bold text-slate-900 block">Invisible OCR Layer Only (Recommended)</span>
+            <span class="text-[11px] text-slate-500 leading-tight block mt-0.5">
+              Surgically strips only the hidden 3 Tr scan text. Keeps normal visible headings and typed text completely intact.
+            </span>
+          </div>
+        </label>
+
+        <label class="flex items-start gap-3 p-4 rounded-2xl border border-slate-200 hover:border-slate-300 transition-all cursor-pointer mode-label" id="label-mode-all">
+          <input
+            type="radio"
+            name="strip-mode"
+            value="all-text"
+            class="w-4 h-4 mt-0.5 text-indigo-600 focus:ring-indigo-500"
+          />
+          <div>
+            <span class="text-xs font-bold text-slate-900 block">Strip ALL Text (Visual Artwork Only)</span>
+            <span class="text-[11px] text-slate-500 leading-tight block mt-0.5">
+              Removes all selectable text streams. Perfect for preventing text scraping or preparing a clean slate for fresh AI OCR.
+            </span>
+          </div>
+        </label>
+      </div>
+
+      <!-- Execution Stats Readout -->
+      <div id="stats-banner" class="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-700 gap-3">
+        <div class="flex items-center gap-2">
+          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+          <span id="stats-summary">Ready to sanitize</span>
+        </div>
+        <span class="font-mono text-slate-400 text-[11px]" id="stats-size-change">Original Size: --</span>
+      </div>
+
+      <!-- Action Button -->
+      <button
+        type="button"
+        id="btn-execute-strip"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3.5 px-6 rounded-2xl shadow-lg shadow-indigo-600/25 transition-all flex items-center justify-center gap-2 cursor-pointer text-xs"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+        </svg>
+        <span id="btn-strip-text">Strip OCR &amp; Download Clean PDF</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  import { stripOcrLayer, type StripOcrResult } from '../../lib/pdf/stripOcrEngine';
+
+  let rawBytes: Uint8Array | null = null;
+  let filename = 'document.pdf';
+
+  // DOM
+  const dropzone = document.getElementById('strip-dropzone') as HTMLElement;
+  const fileInput = document.getElementById('strip-file-input') as HTMLInputElement;
+  const loading = document.getElementById('strip-loading') as HTMLElement;
+  const panel = document.getElementById('strip-panel') as HTMLElement;
+  const filenameEl = document.getElementById('strip-filename') as HTMLElement;
+  const metaEl = document.getElementById('strip-meta') as HTMLElement;
+  const changeFileBtn = document.getElementById('btn-change-strip-file') as HTMLButtonElement;
+
+  const modeRadios = document.querySelectorAll('input[name="strip-mode"]') as NodeListOf<HTMLInputElement>;
+  const labelInvisible = document.getElementById('label-mode-invisible') as HTMLElement;
+  const labelAll = document.getElementById('label-mode-all') as HTMLElement;
+
+  const statsSummary = document.getElementById('stats-summary') as HTMLElement;
+  const statsSizeChange = document.getElementById('stats-size-change') as HTMLElement;
+  const btnExecuteStrip = document.getElementById('btn-execute-strip') as HTMLButtonElement;
+  const btnStripText = document.getElementById('btn-strip-text') as HTMLElement;
+
+  // Dropzone
+  dropzone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('border-indigo-500', 'bg-indigo-50/20');
+  });
+
+  dropzone?.addEventListener('dragleave', () => {
+    dropzone.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+  });
+
+  dropzone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('border-indigo-500', 'bg-indigo-50/20');
+    if (e.dataTransfer?.files?.[0]) {
+      handleFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  fileInput?.addEventListener('change', () => {
+    if (fileInput.files?.[0]) {
+      handleFile(fileInput.files[0]);
+    }
+  });
+
+  changeFileBtn?.addEventListener('click', () => {
+    panel.classList.add('hidden');
+    dropzone.classList.remove('hidden');
+    fileInput.value = '';
+    rawBytes = null;
+  });
+
+  // Radio styling
+  modeRadios.forEach((r) => {
+    r.addEventListener('change', () => {
+      if (r.value === 'invisible-only') {
+        labelInvisible.className = 'flex items-start gap-3 p-4 rounded-2xl border-2 border-indigo-600 bg-indigo-50/20 transition-all cursor-pointer mode-label';
+        labelAll.className = 'flex items-start gap-3 p-4 rounded-2xl border border-slate-200 hover:border-slate-300 transition-all cursor-pointer mode-label';
+      } else {
+        labelAll.className = 'flex items-start gap-3 p-4 rounded-2xl border-2 border-indigo-600 bg-indigo-50/20 transition-all cursor-pointer mode-label';
+        labelInvisible.className = 'flex items-start gap-3 p-4 rounded-2xl border border-slate-200 hover:border-slate-300 transition-all cursor-pointer mode-label';
+      }
+    });
+  });
+
+  async function handleFile(file: File) {
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      alert('Please upload a PDF document.');
+      return;
+    }
+    filename = file.name;
+    dropzone.classList.add('hidden');
+    loading.classList.remove('hidden');
+
+    try {
+      const buffer = await file.arrayBuffer();
+      rawBytes = new Uint8Array(buffer);
+      filenameEl.textContent = filename;
+      metaEl.textContent = `${(file.size / 1024).toFixed(1)} KB • Document loaded`;
+      statsSizeChange.textContent = `Original: ${(file.size / 1024).toFixed(1)} KB`;
+      statsSummary.textContent = 'Ready to analyze & sanitize PostScript streams';
+
+      loading.classList.add('hidden');
+      panel.classList.remove('hidden');
+    } catch (err: any) {
+      alert('Error reading PDF: ' + err.message);
+      loading.classList.add('hidden');
+      dropzone.classList.remove('hidden');
+    }
+  }
+
+  btnExecuteStrip?.addEventListener('click', async () => {
+    if (!rawBytes) return;
+    btnExecuteStrip.disabled = true;
+    const origText = btnStripText.textContent;
+    btnStripText.textContent = 'Sanitizing PostScript streams...';
+
+    const selectedMode = (document.querySelector('input[name="strip-mode"]:checked') as HTMLInputElement)?.value as any || 'invisible-only';
+
+    try {
+      const result: StripOcrResult = await stripOcrLayer(rawBytes, { mode: selectedMode });
+
+      statsSummary.textContent = `✓ Cleaned ${result.pagesProcessed} pages (${result.invisibleBlocksRemoved} text blocks removed)`;
+      statsSizeChange.textContent = `${(result.originalSizeBytes / 1024).toFixed(1)} KB → ${(result.cleanedSizeBytes / 1024).toFixed(1)} KB`;
+
+      // Download
+      const blob = new Blob([result.pdfBytes as unknown as BlobPart], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const baseName = filename.replace(/\.pdf$/i, '');
+      a.href = url;
+      a.download = `${baseName}-no-ocr.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert('Failed to strip OCR layer: ' + err.message);
+    } finally {
+      btnExecuteStrip.disabled = false;
+      btnStripText.textContent = origText;
+    }
+  });
+</script>
