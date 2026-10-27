@@ -97,7 +97,7 @@ const toolListSchema = {
     '@type': 'ListItem',
     'position': idx + 1,
     'name': tool.data.title,
-    'url': `https://airpdf.pages.dev/tools/${tool.slug}`,
+    'url': `https://airpdf.pages.dev/tools/${tool.slug}/`,
     'description': tool.data.shortDescription
   }))
 };
@@ -187,7 +187,7 @@ const homeFaqSchema = {
       <!-- Quick Action Buttons -->
       <div class="mt-8 flex flex-wrap items-center justify-center gap-3">
         <a
-          href="/tools/merge-pdf"
+          href="/tools/merge-pdf/"
           class="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm text-white bg-slate-900 hover:bg-slate-800 active:scale-[0.98] shadow-button transition duration-150"
         >
           <span>Merge PDF Files</span>
@@ -196,7 +196,7 @@ const homeFaqSchema = {
           </svg>
         </a>
         <a
-          href="/tools/compress-pdf"
+          href="/tools/compress-pdf/"
           class="inline-flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm text-slate-700 bg-white hover:bg-slate-50 active:scale-[0.98] border border-slate-200/90 shadow-sm transition duration-150"
         >
           <span>Compress PDF</span>
@@ -276,7 +276,7 @@ const homeFaqSchema = {
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5" id="tools-grid">
       {sortedTools.map((tool) => (
         <a
-          href={`/tools/${tool.slug}`}
+          href={`/tools/${tool.slug}/`}
           data-tool-category={tool.data.category}
           data-tool-search={`${tool.data.title} ${tool.data.shortDescription} ${tool.slug} ${(tool.data.keywords || []).join(' ')}`.toLowerCase()}
           class="group tool-card relative flex flex-col justify-between bg-white rounded-2xl border border-slate-200/80 p-5 shadow-sm hover:shadow-panel-hover hover:border-slate-300 transition-all duration-200"

@@ -72,7 +72,7 @@ const webAppSchema = {
   '@context': 'https://schema.org',
   '@type': 'WebApplication',
   'name': `${tool.data.title} — AirPDF`,
-  'url': `https://airpdf.pages.dev/tools/${tool.slug}`,
+  'url': `https://airpdf.pages.dev/tools/${tool.slug}/`,
   'description': tool.data.description,
   'applicationCategory': 'UtilitiesApplication',
   'operatingSystem': 'Any',
@@ -108,7 +108,7 @@ const breadcrumbSchema = {
       '@type': 'ListItem',
       'position': 1,
       'name': 'Home',
-      'item': 'https://airpdf.pages.dev'
+      'item': 'https://airpdf.pages.dev/'
     },
     {
       '@type': 'ListItem',
@@ -120,7 +120,7 @@ const breadcrumbSchema = {
       '@type': 'ListItem',
       'position': 3,
       'name': tool.data.title,
-      'item': `https://airpdf.pages.dev/tools/${tool.slug}`
+      'item': `https://airpdf.pages.dev/tools/${tool.slug}/`
     }
   ]
 };
@@ -147,7 +147,7 @@ const howToSchema = {
     'position': idx + 1,
     'name': step.title,
     'text': step.description,
-    'url': `https://airpdf.pages.dev/tools/${tool.slug}#step-${idx + 1}`
+    'url': `https://airpdf.pages.dev/tools/${tool.slug}/#step-${idx + 1}`
   }))
 };
 
@@ -158,13 +158,13 @@ const keywordsString = (tool.data.keywords || []).join(', ');
 <BaseLayout
   title={tool.data.title}
   description={tool.data.description}
-  canonicalUrl={`https://airpdf.pages.dev/tools/${tool.slug}`}
+  canonicalUrl={`https://airpdf.pages.dev/tools/${tool.slug}/`}
 >
   <!-- SEO Keywords Meta -->
   <Fragment slot="head">
     {keywordsString && <meta name="keywords" content={keywordsString} />}
     <meta name="author" content="AirPDF" />
-    <link rel="alternate" hreflang="en" href={`https://airpdf.pages.dev/tools/${tool.slug}`} />
+    <link rel="alternate" hreflang="en" href={`https://airpdf.pages.dev/tools/${tool.slug}/`} />
   </Fragment>
 
   <!-- Inject Structured Data in schema slot -->

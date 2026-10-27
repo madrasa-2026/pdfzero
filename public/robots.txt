@@ -1,58 +1,6 @@
 User-agent: *
 Allow: /
-Disallow: /_astro/
-Disallow: /api/
 
-# Explicitly allow all tool pages for all crawlers
-Allow: /tools/
-
-# Google
-User-agent: Googlebot
-Allow: /
-Crawl-delay: 0
-
-# Bing
-User-agent: Bingbot
-Allow: /
-Crawl-delay: 1
-
-# DuckDuckGo
-User-agent: DuckDuckBot
-Allow: /
-
-# Yandex
-User-agent: YandexBot
-Allow: /
-
-# Baidu
-User-agent: Baiduspider
-Allow: /
-
-# Social Media Crawlers
-User-agent: Twitterbot
-Allow: /
-
-User-agent: facebookexternalhit
-Allow: /
-
-User-agent: LinkedInBot
-Allow: /
-
-# AI Crawlers (Optional - Allow for LLM indexing)
-User-agent: GPTBot
-Allow: /
-
-User-agent: Google-Extended
-Allow: /
-
-User-agent: ClaudeBot
-Allow: /
-
-User-agent: PerplexityBot
-Allow: /
-
-# Sitemap
+# Sitemaps (Direct URL set and index)
+Sitemap: https://airpdf.pages.dev/sitemap.xml
 Sitemap: https://airpdf.pages.dev/sitemap-index.xml
-
-# Host
-Host: https://airpdf.pages.dev
