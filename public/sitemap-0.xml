@@ -133,6 +133,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://airpdf.pages.dev/tools/html-to-pdf/</loc>
+    <lastmod>2026-11-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://airpdf.pages.dev/tools/inspect-pdf/</loc>
     <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>
