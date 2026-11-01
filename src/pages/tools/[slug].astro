@@ -51,6 +51,7 @@ import ExtractFontsPdfIsland from '../../components/tools/ExtractFontsPdfIsland.
 import DuplexSortPdfIsland from '../../components/tools/DuplexSortPdfIsland.astro';
 import StripOcrPdfIsland from '../../components/tools/StripOcrPdfIsland.astro';
 import PdfToPdfaIsland from '../../components/tools/PdfToPdfaIsland.astro';
+import ScanPdfIsland from '../../components/tools/ScanPdfIsland.astro';
 import AdSlot from '../../components/layout/AdSlot.astro';
 
 export async function getStaticPaths() {
@@ -304,6 +305,8 @@ const keywordsString = (tool.data.keywords || []).join(', ');
       <StripOcrPdfIsland />
     ) : tool.slug === 'pdf-to-pdfa' ? (
       <PdfToPdfaIsland />
+    ) : tool.slug === 'scan-pdf' ? (
+      <ScanPdfIsland />
     ) : (
       <ToolPlaceholderIsland toolSlug={tool.slug} toolTitle={tool.data.title} />
     )}

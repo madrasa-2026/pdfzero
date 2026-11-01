@@ -1,0 +1,592 @@
+---
+// src/components/tools/ScanPdfIsland.astro
+---
+
+<div class="w-full max-w-4xl mx-auto p-4 sm:p-6 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl backdrop-blur-md">
+  <!-- Header / Action bar -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+    <div>
+      <h2 class="text-xl font-bold text-white flex items-center gap-2">
+        <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+        </svg>
+        Document Scanner & Perspective Warper
+      </h2>
+      <p class="text-xs text-slate-400 mt-1">Capture with camera or upload photos, unskew angled pages, and export clean high-contrast PDFs.</p>
+    </div>
+
+    <!-- Capture / Upload Buttons -->
+    <div class="flex items-center gap-2 w-full sm:w-auto">
+      <button
+        id="camera-btn"
+        type="button"
+        class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-lg shadow-emerald-900/30"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+        </svg>
+        Camera Scan
+      </button>
+
+      <label
+        class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 cursor-pointer transition"
+      >
+        <svg class="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+        </svg>
+        Upload Photo
+        <input id="image-file-input" type="file" accept="image/*" class="hidden" multiple />
+      </label>
+    </div>
+  </div>
+
+  <!-- Camera Live Modal / Stream (Hidden by default) -->
+  <div id="camera-modal" class="hidden fixed inset-0 z-50 bg-black/85 backdrop-blur-sm flex flex-col items-center justify-center p-4">
+    <div class="relative w-full max-w-lg bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+      <div class="flex items-center justify-between p-4 border-b border-slate-800 bg-slate-950/50">
+        <span class="text-sm font-semibold text-white">Align Document Inside Frame</span>
+        <button id="close-camera-btn" type="button" class="text-slate-400 hover:text-white text-sm font-bold p-1">✕</button>
+      </div>
+
+      <div class="relative w-full aspect-[3/4] bg-black flex items-center justify-center overflow-hidden">
+        <video id="camera-video" autoplay playsinline class="w-full h-full object-cover"></video>
+        <!-- Document guide overlay -->
+        <div class="absolute inset-8 border-2 border-dashed border-emerald-400/70 rounded-xl pointer-events-none flex items-center justify-center">
+          <span class="text-emerald-300/80 text-xs font-mono uppercase bg-black/60 px-2.5 py-1 rounded-md">Center Document</span>
+        </div>
+      </div>
+
+      <div class="p-4 bg-slate-950 flex items-center justify-center gap-4">
+        <button
+          id="shutter-btn"
+          type="button"
+          class="w-16 h-16 rounded-full bg-emerald-500 hover:bg-emerald-400 border-4 border-white/20 flex items-center justify-center shadow-lg transition active:scale-95"
+          title="Capture Snapshot"
+        >
+          <div class="w-6 h-6 rounded-full bg-white"></div>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Workspace Area -->
+  <div id="empty-state" class="py-16 text-center">
+    <div class="w-16 h-16 mx-auto mb-4 rounded-2xl bg-slate-800/80 border border-slate-700/80 flex items-center justify-center text-emerald-400">
+      <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+      </svg>
+    </div>
+    <h3 class="text-base font-semibold text-white">No Document Page Loaded</h3>
+    <p class="text-xs text-slate-400 max-w-sm mx-auto mt-1">Click "Camera Scan" or "Upload Photo" to capture receipts, agreements, notes, or IDs.</p>
+  </div>
+
+  <div id="editor-state" class="hidden mt-6 space-y-6">
+    <!-- Top Bar for Current Page -->
+    <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 text-xs">
+      <div class="flex items-center gap-2">
+        <span id="current-page-label" class="font-bold text-white uppercase tracking-wider text-[11px] bg-slate-800 px-2 py-0.5 rounded">Page 1 of 1</span>
+        <button id="reset-corners-btn" type="button" class="text-emerald-400 hover:text-emerald-300 font-medium ml-2">Reset Corners</button>
+      </div>
+
+      <!-- Filter chips -->
+      <div class="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+        <span class="text-slate-400 text-[11px] mr-1">Filter:</span>
+        <button type="button" data-filter="bw" class="filter-chip px-2.5 py-1 rounded-lg text-xs font-medium transition bg-emerald-600 text-white">Photocopy B&W</button>
+        <button type="button" data-filter="grayscale" class="filter-chip px-2.5 py-1 rounded-lg text-xs font-medium transition bg-slate-800 text-slate-300 hover:bg-slate-700">Grayscale</button>
+        <button type="button" data-filter="color-boost" class="filter-chip px-2.5 py-1 rounded-lg text-xs font-medium transition bg-slate-800 text-slate-300 hover:bg-slate-700">Vivid Color</button>
+        <button type="button" data-filter="none" class="filter-chip px-2.5 py-1 rounded-lg text-xs font-medium transition bg-slate-800 text-slate-300 hover:bg-slate-700">Original</button>
+      </div>
+    </div>
+
+    <!-- Interactive Warping Canvas Container -->
+    <div class="relative w-full aspect-[4/3] bg-black/60 rounded-xl overflow-hidden border border-slate-800 flex items-center justify-center select-none touch-none" id="canvas-container">
+      <canvas id="display-canvas" class="max-w-full max-h-full object-contain pointer-events-none"></canvas>
+      <svg id="quad-svg" class="absolute inset-0 w-full h-full pointer-events-auto cursor-crosshair">
+        <!-- Connecting polygon lines -->
+        <polygon id="quad-polygon" points="" fill="rgba(16, 185, 129, 0.15)" stroke="#10b981" stroke-width="2" stroke-dasharray="4" />
+        <!-- Corner Handles -->
+        <circle id="pin-tl" cx="0" cy="0" r="14" fill="#10b981" stroke="#ffffff" stroke-width="2.5" class="cursor-move hover:scale-110 transition-transform" />
+        <circle id="pin-tr" cx="0" cy="0" r="14" fill="#10b981" stroke="#ffffff" stroke-width="2.5" class="cursor-move hover:scale-110 transition-transform" />
+        <circle id="pin-br" cx="0" cy="0" r="14" fill="#10b981" stroke="#ffffff" stroke-width="2.5" class="cursor-move hover:scale-110 transition-transform" />
+        <circle id="pin-bl" cx="0" cy="0" r="14" fill="#10b981" stroke="#ffffff" stroke-width="2.5" class="cursor-move hover:scale-110 transition-transform" />
+      </svg>
+    </div>
+
+    <!-- Multi-Page Thumbnail Reel -->
+    <div class="space-y-2">
+      <div class="flex items-center justify-between text-xs text-slate-400">
+        <span>Document Pages (<span id="page-count-badge">1</span>)</span>
+        <label class="text-emerald-400 hover:text-emerald-300 cursor-pointer font-medium">
+          + Add Page
+          <input id="add-more-input" type="file" accept="image/*" class="hidden" multiple />
+        </label>
+      </div>
+      <div id="thumbnails-reel" class="flex items-center gap-3 overflow-x-auto pb-2">
+        <!-- Thumbnails injected via JS -->
+      </div>
+    </div>
+
+    <!-- Bottom Controls & Export -->
+    <div class="pt-4 border-t border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3 w-full sm:w-auto text-xs text-slate-300">
+        <label for="paper-size-select" class="font-medium">Paper Format:</label>
+        <select id="paper-size-select" class="bg-slate-800 border border-slate-700 text-white rounded-lg px-2.5 py-1.5 focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+          <option value="a4" selected>A4 (210 × 297 mm)</option>
+          <option value="letter">US Letter (8.5 × 11 in)</option>
+          <option value="auto">Auto-Fit (Original Proportions)</option>
+        </select>
+      </div>
+
+      <button
+        id="export-pdf-btn"
+        type="button"
+        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold rounded-xl transition shadow-lg shadow-emerald-900/30"
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        Export Scanned PDF
+      </button>
+    </div>
+
+    <!-- Progress indicator -->
+    <div id="progress-container" class="hidden space-y-2">
+      <div class="flex justify-between text-xs font-semibold text-slate-300">
+        <span id="progress-status">Warping perspective and compiling pages...</span>
+        <span id="progress-percent">0%</span>
+      </div>
+      <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+        <div id="progress-bar" class="h-full bg-emerald-500 transition-all duration-200" style="width: 0%"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import {
+    warpPerspective,
+    applyScanFilter,
+    createScannedPdf,
+    type Point2D,
+    type ScanFilterType
+  } from '../../lib/pdf/scanEngine';
+
+  interface PageData {
+    id: string;
+    image: HTMLImageElement;
+    rawWidth: number;
+    rawHeight: number;
+    quad: [Point2D, Point2D, Point2D, Point2D]; // [TL, TR, BR, BL] in image coordinates
+    filter: ScanFilterType;
+  }
+
+  let pages: PageData[] = [];
+  let activeIndex = 0;
+  let activePin: number | null = null;
+  let mediaStream: MediaStream | null = null;
+
+  // DOM Elements
+  const emptyState = document.getElementById('empty-state')!;
+  const editorState = document.getElementById('editor-state')!;
+  const imageFileInput = document.getElementById('image-file-input') as HTMLInputElement;
+  const addMoreInput = document.getElementById('add-more-input') as HTMLInputElement;
+  const cameraBtn = document.getElementById('camera-btn')!;
+  const cameraModal = document.getElementById('camera-modal')!;
+  const closeCameraBtn = document.getElementById('close-camera-btn')!;
+  const cameraVideo = document.getElementById('camera-video') as HTMLVideoElement;
+  const shutterBtn = document.getElementById('shutter-btn')!;
+  const displayCanvas = document.getElementById('display-canvas') as HTMLCanvasElement;
+  const quadSvg = document.getElementById('quad-svg') as unknown as SVGSVGElement;
+  const quadPolygon = document.getElementById('quad-polygon')!;
+  const pinTl = document.getElementById('pin-tl')!;
+  const pinTr = document.getElementById('pin-tr')!;
+  const pinBr = document.getElementById('pin-br')!;
+  const pinBl = document.getElementById('pin-bl')!;
+  const pins = [pinTl, pinTr, pinBr, pinBl];
+  const currentPageLabel = document.getElementById('current-page-label')!;
+  const resetCornersBtn = document.getElementById('reset-corners-btn')!;
+  const thumbnailsReel = document.getElementById('thumbnails-reel')!;
+  const pageCountBadge = document.getElementById('page-count-badge')!;
+  const paperSizeSelect = document.getElementById('paper-size-select') as HTMLSelectElement;
+  const exportPdfBtn = document.getElementById('export-pdf-btn')!;
+  const progressContainer = document.getElementById('progress-container')!;
+  const progressBar = document.getElementById('progress-bar')!;
+  const progressPercent = document.getElementById('progress-percent')!;
+  const progressStatus = document.getElementById('progress-status')!;
+  const filterChips = document.querySelectorAll('.filter-chip');
+
+  // Open Camera
+  cameraBtn.addEventListener('click', async () => {
+    try {
+      mediaStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment', width: { ideal: 1920 }, height: { ideal: 1080 } }
+      });
+      cameraVideo.srcObject = mediaStream;
+      cameraModal.classList.remove('hidden');
+    } catch (err) {
+      alert('Unable to access camera. Please allow camera permissions or upload an image file.');
+    }
+  });
+
+  // Close Camera
+  function stopCamera() {
+    if (mediaStream) {
+      mediaStream.getTracks().forEach((track) => track.stop());
+      mediaStream = null;
+    }
+    cameraModal.classList.add('hidden');
+  }
+  closeCameraBtn.addEventListener('click', stopCamera);
+
+  // Capture Camera Frame
+  shutterBtn.addEventListener('click', () => {
+    if (!cameraVideo.videoWidth) return;
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = cameraVideo.videoWidth;
+    tempCanvas.height = cameraVideo.videoHeight;
+    const ctx = tempCanvas.getContext('2d')!;
+    ctx.drawImage(cameraVideo, 0, 0);
+
+    const img = new Image();
+    img.onload = () => {
+      addPageFromImage(img);
+      stopCamera();
+    };
+    img.src = tempCanvas.toDataURL('image/jpeg', 0.95);
+  });
+
+  // Handle File Input
+  function handleFiles(files: FileList | null) {
+    if (!files || files.length === 0) return;
+    Array.from(files).forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          addPageFromImage(img);
+        };
+        img.src = e.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  imageFileInput.addEventListener('change', () => handleFiles(imageFileInput.files));
+  addMoreInput.addEventListener('change', () => handleFiles(addMoreInput.files));
+
+  function addPageFromImage(img: HTMLImageElement) {
+    const w = img.naturalWidth || img.width;
+    const h = img.naturalHeight || img.height;
+
+    // Default corners with 6% inset
+    const marginX = w * 0.06;
+    const marginY = h * 0.06;
+
+    const newPage: PageData = {
+      id: Math.random().toString(36).substring(2, 9),
+      image: img,
+      rawWidth: w,
+      rawHeight: h,
+      quad: [
+        { x: marginX, y: marginY },
+        { x: w - marginX, y: marginY },
+        { x: w - marginX, y: h - marginY },
+        { x: marginX, y: h - marginY }
+      ],
+      filter: 'bw'
+    };
+
+    pages.push(newPage);
+    activeIndex = pages.length - 1;
+    updateUI();
+  }
+
+  function updateUI() {
+    if (pages.length === 0) {
+      emptyState.classList.remove('hidden');
+      editorState.classList.add('hidden');
+      return;
+    }
+
+    emptyState.classList.add('hidden');
+    editorState.classList.remove('hidden');
+
+    pageCountBadge.textContent = String(pages.length);
+    currentPageLabel.textContent = `Page ${activeIndex + 1} of ${pages.length}`;
+
+    // Update filter chip active state
+    const curPage = pages[activeIndex];
+    filterChips.forEach((chip) => {
+      const f = chip.getAttribute('data-filter');
+      if (f === curPage.filter) {
+        chip.className = 'filter-chip px-2.5 py-1 rounded-lg text-xs font-medium transition bg-emerald-600 text-white';
+      } else {
+        chip.className = 'filter-chip px-2.5 py-1 rounded-lg text-xs font-medium transition bg-slate-800 text-slate-300 hover:bg-slate-700';
+      }
+    });
+
+    renderCurrentPage();
+    renderThumbnails();
+  }
+
+  function renderCurrentPage() {
+    const cur = pages[activeIndex];
+    if (!cur) return;
+
+    displayCanvas.width = cur.rawWidth;
+    displayCanvas.height = cur.rawHeight;
+    const ctx = displayCanvas.getContext('2d')!;
+    ctx.drawImage(cur.image, 0, 0);
+
+    syncPinsWithQuad();
+  }
+
+  function syncPinsWithQuad() {
+    const cur = pages[activeIndex];
+    if (!cur) return;
+
+    const canvasRect = displayCanvas.getBoundingClientRect();
+    const svgRect = quadSvg.getBoundingClientRect();
+
+    const scaleX = canvasRect.width / cur.rawWidth;
+    const scaleY = canvasRect.height / cur.rawHeight;
+    const offsetX = canvasRect.left - svgRect.left;
+    const offsetY = canvasRect.top - svgRect.top;
+
+    const screenPts = cur.quad.map((pt) => ({
+      x: offsetX + pt.x * scaleX,
+      y: offsetY + pt.y * scaleY
+    }));
+
+    // Update SVG handles
+    pins.forEach((pin, i) => {
+      pin.setAttribute('cx', String(screenPts[i].x));
+      pin.setAttribute('cy', String(screenPts[i].y));
+    });
+
+    const pointsStr = screenPts.map((p) => `${p.x},${p.y}`).join(' ');
+    quadPolygon.setAttribute('points', pointsStr);
+  }
+
+  // Handle Dragging Corner Pins
+  function getSvgPoint(e: MouseEvent | TouchEvent): { x: number; y: number } {
+    const rect = quadSvg.getBoundingClientRect();
+    const clientX = 'touches' in e ? e.touches[0].clientX : (e as MouseEvent).clientX;
+    const clientY = 'touches' in e ? e.touches[0].clientY : (e as MouseEvent).clientY;
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  }
+
+  pins.forEach((pin, index) => {
+    const onStart = (e: Event) => {
+      e.preventDefault();
+      activePin = index;
+    };
+    pin.addEventListener('mousedown', onStart);
+    pin.addEventListener('touchstart', onStart, { passive: false });
+  });
+
+  const onMove = (e: MouseEvent | TouchEvent) => {
+    if (activePin === null || !pages[activeIndex]) return;
+    const pos = getSvgPoint(e);
+    const cur = pages[activeIndex];
+
+    const canvasRect = displayCanvas.getBoundingClientRect();
+    const svgRect = quadSvg.getBoundingClientRect();
+    const scaleX = cur.rawWidth / canvasRect.width;
+    const scaleY = cur.rawHeight / canvasRect.height;
+    const offsetX = canvasRect.left - svgRect.left;
+    const offsetY = canvasRect.top - svgRect.top;
+
+    const imgX = Math.max(0, Math.min(cur.rawWidth, (pos.x - offsetX) * scaleX));
+    const imgY = Math.max(0, Math.min(cur.rawHeight, (pos.y - offsetY) * scaleY));
+
+    cur.quad[activePin] = { x: imgX, y: imgY };
+    syncPinsWithQuad();
+  };
+
+  const onEnd = () => {
+    activePin = null;
+  };
+
+  window.addEventListener('mousemove', onMove);
+  window.addEventListener('touchmove', onMove, { passive: false });
+  window.addEventListener('mouseup', onEnd);
+  window.addEventListener('touchend', onEnd);
+  window.addEventListener('resize', syncPinsWithQuad);
+
+  // Reset corners button
+  resetCornersBtn.addEventListener('click', () => {
+    const cur = pages[activeIndex];
+    if (!cur) return;
+    const marginX = cur.rawWidth * 0.06;
+    const marginY = cur.rawHeight * 0.06;
+    cur.quad = [
+      { x: marginX, y: marginY },
+      { x: cur.rawWidth - marginX, y: marginY },
+      { x: cur.rawWidth - marginX, y: cur.rawHeight - marginY },
+      { x: marginX, y: cur.rawHeight - marginY }
+    ];
+    syncPinsWithQuad();
+  });
+
+  // Filter selection
+  filterChips.forEach((chip) => {
+    chip.addEventListener('click', () => {
+      const cur = pages[activeIndex];
+      if (!cur) return;
+      cur.filter = (chip.getAttribute('data-filter') as ScanFilterType) || 'none';
+      updateUI();
+    });
+  });
+
+  // Render Thumbnail Reel
+  function renderThumbnails() {
+    thumbnailsReel.innerHTML = '';
+    pages.forEach((page, i) => {
+      const thumb = document.createElement('div');
+      thumb.className = `relative flex-shrink-0 w-20 h-28 rounded-lg overflow-hidden border-2 cursor-pointer transition ${
+        i === activeIndex ? 'border-emerald-500 shadow-md ring-2 ring-emerald-500/30' : 'border-slate-800 hover:border-slate-700 opacity-75'
+      }`;
+
+      const img = document.createElement('img');
+      img.src = page.image.src;
+      img.className = 'w-full h-full object-cover';
+      thumb.appendChild(img);
+
+      const label = document.createElement('div');
+      label.className = 'absolute bottom-0 inset-x-0 bg-slate-950/80 text-[10px] text-center text-slate-300 py-0.5';
+      label.textContent = `P${i + 1}`;
+      thumb.appendChild(label);
+
+      // Remove button
+      const removeBtn = document.createElement('button');
+      removeBtn.className = 'absolute top-1 right-1 w-5 h-5 bg-red-600/90 hover:bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center';
+      removeBtn.innerHTML = '✕';
+      removeBtn.title = 'Remove Page';
+      removeBtn.onclick = (e) => {
+        e.stopPropagation();
+        pages.splice(i, 1);
+        if (activeIndex >= pages.length) {
+          activeIndex = Math.max(0, pages.length - 1);
+        }
+        updateUI();
+      };
+      thumb.appendChild(removeBtn);
+
+      thumb.onclick = () => {
+        activeIndex = i;
+        updateUI();
+      };
+
+      thumbnailsReel.appendChild(thumb);
+    });
+  }
+
+  // Export to PDF
+  exportPdfBtn.addEventListener('click', async () => {
+    if (pages.length === 0) return;
+
+    progressContainer.classList.remove('hidden');
+    exportPdfBtn.setAttribute('disabled', 'true');
+    exportPdfBtn.classList.add('opacity-50', 'cursor-not-allowed');
+
+    try {
+      const compiledPages: { imageBytes: Uint8Array; isPng: boolean }[] = [];
+      const total = pages.length;
+
+      for (let i = 0; i < total; i++) {
+        progressStatus.textContent = `Warping and enhancing page ${i + 1} of ${total}...`;
+        const pct = Math.round(((i + 0.5) / total) * 80);
+        progressBar.style.width = `${pct}%`;
+        progressPercent.textContent = `${pct}%`;
+
+        // Yield to browser UI
+        await new Promise((r) => setTimeout(r, 20));
+
+        const page = pages[i];
+        // 1. Calculate destination width and height based on quad edge lengths
+        const topW = Math.hypot(page.quad[1].x - page.quad[0].x, page.quad[1].y - page.quad[0].y);
+        const botW = Math.hypot(page.quad[2].x - page.quad[3].x, page.quad[2].y - page.quad[3].y);
+        const leftH = Math.hypot(page.quad[3].x - page.quad[0].x, page.quad[3].y - page.quad[0].y);
+        const rightH = Math.hypot(page.quad[2].x - page.quad[1].x, page.quad[2].y - page.quad[1].y);
+
+        const dstW = Math.max(300, Math.min(2400, Math.round(Math.max(topW, botW))));
+        const dstH = Math.max(300, Math.min(3200, Math.round(Math.max(leftH, rightH))));
+
+        // 2. Extract source image pixels
+        const srcCanvas = document.createElement('canvas');
+        srcCanvas.width = page.rawWidth;
+        srcCanvas.height = page.rawHeight;
+        const srcCtx = srcCanvas.getContext('2d')!;
+        srcCtx.drawImage(page.image, 0, 0);
+        const srcImgData = srcCtx.getImageData(0, 0, page.rawWidth, page.rawHeight);
+
+        // 3. Warp perspective
+        const warpedPixels = warpPerspective(
+          srcImgData.data,
+          page.rawWidth,
+          page.rawHeight,
+          page.quad,
+          dstW,
+          dstH
+        );
+
+        // 4. Apply filter
+        applyScanFilter(warpedPixels, page.filter);
+
+        // 5. Convert to JPEG bytes via offscreen canvas
+        const dstCanvas = document.createElement('canvas');
+        dstCanvas.width = dstW;
+        dstCanvas.height = dstH;
+        const dstCtx = dstCanvas.getContext('2d')!;
+        const dstImgData = new ImageData(warpedPixels, dstW, dstH);
+        dstCtx.putImageData(dstImgData, 0, 0);
+
+        const dataUrl = dstCanvas.toDataURL('image/jpeg', 0.90);
+        const base64Data = dataUrl.split(',')[1];
+        const binaryStr = atob(base64Data);
+        const bytes = new Uint8Array(binaryStr.length);
+        for (let b = 0; b < binaryStr.length; b++) {
+          bytes[b] = binaryStr.charCodeAt(b);
+        }
+
+        compiledPages.push({ imageBytes: bytes, isPng: false });
+      }
+
+      progressStatus.textContent = 'Generating PDF document...';
+      progressBar.style.width = '90%';
+      progressPercent.textContent = '90%';
+
+      const selectedPaper = paperSizeSelect.value as 'a4' | 'letter' | 'auto';
+      const pdfBytes = await createScannedPdf(compiledPages, selectedPaper);
+
+      progressBar.style.width = '100%';
+      progressPercent.textContent = '100%';
+      progressStatus.textContent = 'Scan complete!';
+
+      // Download
+      const blob = new Blob([pdfBytes], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `scanned-document-${Date.now()}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err: any) {
+      alert(`Scanning error: ${err.message}`);
+    } finally {
+      setTimeout(() => {
+        progressContainer.classList.add('hidden');
+        exportPdfBtn.removeAttribute('disabled');
+        exportPdfBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      }, 1000);
+    }
+  });
+</script>
