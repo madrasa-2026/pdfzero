@@ -121,6 +121,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://airpdf.pages.dev/tools/form-data-pdf/</loc>
+    <lastmod>2026-11-01</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://airpdf.pages.dev/tools/grayscale-pdf/</loc>
     <lastmod>2026-11-01</lastmod>
     <changefreq>weekly</changefreq>

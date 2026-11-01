@@ -1,0 +1,394 @@
+---
+// src/components/tools/FormDataPdfIsland.astro
+---
+
+<div class="w-full max-w-4xl mx-auto p-4 sm:p-6 bg-slate-900/90 border border-slate-800 rounded-2xl shadow-xl backdrop-blur-md">
+  <!-- Mode Selector Header -->
+  <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-800">
+    <div>
+      <h2 class="text-xl font-bold text-white flex items-center gap-2">
+        <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        PDF Form Data Exporter & Auto-Filler
+      </h2>
+      <p class="text-xs text-slate-400 mt-1">Extract form entries into Excel/CSV/JSON, or batch populate PDF templates 100% in-browser.</p>
+    </div>
+
+    <!-- Mode toggle tabs -->
+    <div class="flex items-center gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800 text-xs w-full sm:w-auto">
+      <button
+        id="mode-export-btn"
+        type="button"
+        class="flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg font-semibold transition bg-emerald-600 text-white shadow-sm"
+      >
+        Export Data (PDF ➔ CSV)
+      </button>
+      <button
+        id="mode-fill-btn"
+        type="button"
+        class="flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white"
+      >
+        Auto-Fill Form
+      </button>
+    </div>
+  </div>
+
+  <!-- Dropzone Area -->
+  <div id="dropzone-container" class="mt-6">
+    <div
+      id="pdf-dropzone"
+      class="border-2 border-dashed border-slate-700 hover:border-emerald-500/60 rounded-2xl p-8 sm:p-12 text-center transition cursor-pointer bg-slate-950/40 hover:bg-slate-950/80 group"
+    >
+      <input id="pdf-file-input" type="file" accept="application/pdf" class="hidden" />
+      <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-slate-800/80 group-hover:bg-emerald-950/40 border border-slate-700 group-hover:border-emerald-500/40 flex items-center justify-center text-slate-400 group-hover:text-emerald-400 transition">
+        <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+        </svg>
+      </div>
+      <h3 id="dropzone-heading" class="text-sm font-semibold text-white">Select or drop a filled PDF form</h3>
+      <p id="dropzone-subheading" class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">Supports government tax forms (W-9, I-9, 1040), intake questionnaires, and contract AcroForms.</p>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="loading-state" class="hidden py-12 text-center">
+    <div class="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-emerald-400 mb-3"></div>
+    <p class="text-xs text-slate-300 font-medium">Scanning PDF AcroForm dictionary...</p>
+  </div>
+
+  <!-- Work Area: After PDF Loaded -->
+  <div id="form-work-area" class="hidden mt-6 space-y-6">
+    <!-- File summary bar -->
+    <div class="flex flex-wrap items-center justify-between gap-3 p-3.5 bg-slate-950/70 rounded-xl border border-slate-800/80 text-xs">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 font-bold text-xs">
+          PDF
+        </div>
+        <div>
+          <p id="file-name-label" class="font-semibold text-white truncate max-w-xs sm:max-w-md">form-document.pdf</p>
+          <p id="field-stats-label" class="text-[11px] text-slate-400">14 fields detected</p>
+        </div>
+      </div>
+
+      <button id="change-file-btn" type="button" class="text-xs text-slate-400 hover:text-white transition">
+        Change File
+      </button>
+    </div>
+
+    <!-- MODE 1: EXPORT VIEW -->
+    <div id="export-view" class="space-y-4">
+      <!-- Search & Quick Action Toolbar -->
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <div class="relative flex-1 min-w-[200px]">
+          <input
+            id="field-search-input"
+            type="text"
+            placeholder="Search fields by name or value..."
+            class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:ring-1 focus:ring-emerald-500 focus:outline-none"
+          />
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            id="export-csv-btn"
+            type="button"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold rounded-xl transition shadow-sm"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Export CSV (Excel)
+          </button>
+
+          <button
+            id="export-json-btn"
+            type="button"
+            class="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700 transition"
+          >
+            Export JSON
+          </button>
+        </div>
+      </div>
+
+      <!-- Field Table -->
+      <div class="border border-slate-800 rounded-xl overflow-hidden bg-slate-950/50 max-h-[380px] overflow-y-auto">
+        <table class="w-full text-left text-xs">
+          <thead class="bg-slate-900/90 text-slate-400 font-semibold sticky top-0 border-b border-slate-800">
+            <tr>
+              <th class="p-3">Field Name</th>
+              <th class="p-3 w-28">Type</th>
+              <th class="p-3">Extracted Value</th>
+            </tr>
+          </thead>
+          <tbody id="fields-table-body" class="divide-y divide-slate-800/60 font-mono text-[11px]">
+            <!-- Injected via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- MODE 2: AUTO-FILL VIEW -->
+    <div id="fill-view" class="hidden space-y-4">
+      <div class="bg-slate-950/60 p-4 rounded-xl border border-slate-800/80 space-y-3">
+        <div class="flex items-center justify-between text-xs">
+          <span class="font-semibold text-white">Input Values (JSON or Key-Value)</span>
+          <button id="populate-sample-btn" type="button" class="text-emerald-400 hover:text-emerald-300 font-medium">
+            Load Template Schema
+          </button>
+        </div>
+
+        <textarea
+          id="fill-json-input"
+          class="w-full h-44 p-3 font-mono text-xs bg-slate-950 text-emerald-300 border border-slate-800 rounded-xl focus:ring-1 focus:ring-emerald-500 focus:outline-none resize-none leading-relaxed"
+          placeholder='{\n  "fullName": "Jane Doe",\n  "agreeTerms": true\n}'
+        ></textarea>
+
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pt-2 text-xs">
+          <label class="flex items-center gap-2 text-slate-300 cursor-pointer">
+            <input id="flatten-checkbox" type="checkbox" checked class="rounded border-slate-700 text-emerald-500 focus:ring-emerald-500" />
+            <span>Flatten Form (Prevent tampering / make read-only)</span>
+          </label>
+
+          <button
+            id="generate-filled-pdf-btn"
+            type="button"
+            class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition shadow-lg shadow-emerald-900/30"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Download Filled PDF
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  import {
+    extractFormData,
+    formFieldsToCsv,
+    formFieldsToJson,
+    populateForm,
+    type FormFieldRecord
+  } from '../../lib/pdf/formDataEngine';
+
+  let currentPdfBytes: Uint8Array | null = null;
+  let currentFileName = 'form-document.pdf';
+  let extractedFields: FormFieldRecord[] = [];
+  let currentMode: 'export' | 'fill' = 'export';
+
+  // DOM elements
+  const modeExportBtn = document.getElementById('mode-export-btn')!;
+  const modeFillBtn = document.getElementById('mode-fill-btn')!;
+  const dropzoneContainer = document.getElementById('dropzone-container')!;
+  const pdfDropzone = document.getElementById('pdf-dropzone')!;
+  const pdfFileInput = document.getElementById('pdf-file-input') as HTMLInputElement;
+  const dropzoneHeading = document.getElementById('dropzone-heading')!;
+  const dropzoneSubheading = document.getElementById('dropzone-subheading')!;
+  const loadingState = document.getElementById('loading-state')!;
+  const formWorkArea = document.getElementById('form-work-area')!;
+  const fileNameLabel = document.getElementById('file-name-label')!;
+  const fieldStatsLabel = document.getElementById('field-stats-label')!;
+  const changeFileBtn = document.getElementById('change-file-btn')!;
+  const exportView = document.getElementById('export-view')!;
+  const fillView = document.getElementById('fill-view')!;
+  const fieldSearchInput = document.getElementById('field-search-input') as HTMLInputElement;
+  const fieldsTableBody = document.getElementById('fields-table-body')!;
+  const exportCsvBtn = document.getElementById('export-csv-btn')!;
+  const exportJsonBtn = document.getElementById('export-json-btn')!;
+  const fillJsonInput = document.getElementById('fill-json-input') as HTMLTextAreaElement;
+  const populateSampleBtn = document.getElementById('populate-sample-btn')!;
+  const flattenCheckbox = document.getElementById('flatten-checkbox') as HTMLInputElement;
+  const generateFilledPdfBtn = document.getElementById('generate-filled-pdf-btn')!;
+
+  // Mode switching
+  modeExportBtn.addEventListener('click', () => {
+    currentMode = 'export';
+    modeExportBtn.className = 'flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg font-semibold transition bg-emerald-600 text-white shadow-sm';
+    modeFillBtn.className = 'flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white';
+    dropzoneHeading.textContent = 'Select or drop a filled PDF form';
+    dropzoneSubheading.textContent = 'Extract answers and field values into Excel CSV or JSON.';
+    exportView.classList.remove('hidden');
+    fillView.classList.add('hidden');
+  });
+
+  modeFillBtn.addEventListener('click', () => {
+    currentMode = 'fill';
+    modeFillBtn.className = 'flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg font-semibold transition bg-emerald-600 text-white shadow-sm';
+    modeExportBtn.className = 'flex-1 sm:flex-initial px-3.5 py-1.5 rounded-lg font-medium transition text-slate-400 hover:text-white';
+    dropzoneHeading.textContent = 'Select or drop a blank PDF template';
+    dropzoneSubheading.textContent = 'Auto-populate form fields using key-value data or JSON.';
+    exportView.classList.add('hidden');
+    fillView.classList.remove('hidden');
+  });
+
+  // Dropzone events
+  pdfDropzone.addEventListener('click', () => pdfFileInput.click());
+  pdfDropzone.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    pdfDropzone.classList.add('border-emerald-500');
+  });
+  pdfDropzone.addEventListener('dragleave', () => pdfDropzone.classList.remove('border-emerald-500'));
+  pdfDropzone.addEventListener('drop', (e) => {
+    e.preventDefault();
+    pdfDropzone.classList.remove('border-emerald-500');
+    if (e.dataTransfer?.files.length) {
+      handlePdfFile(e.dataTransfer.files[0]);
+    }
+  });
+  pdfFileInput.addEventListener('change', () => {
+    if (pdfFileInput.files?.length) {
+      handlePdfFile(pdfFileInput.files[0]);
+    }
+  });
+
+  changeFileBtn.addEventListener('click', () => {
+    formWorkArea.classList.add('hidden');
+    dropzoneContainer.classList.remove('hidden');
+    pdfFileInput.value = '';
+  });
+
+  async function handlePdfFile(file: File) {
+    currentFileName = file.name;
+    fileNameLabel.textContent = file.name;
+
+    dropzoneContainer.classList.add('hidden');
+    loadingState.classList.remove('hidden');
+
+    try {
+      const buffer = await file.arrayBuffer();
+      currentPdfBytes = new Uint8Array(buffer);
+      extractedFields = await extractFormData(currentPdfBytes);
+
+      fieldStatsLabel.textContent = `${extractedFields.length} AcroForm fields detected`;
+
+      renderFieldsTable(extractedFields);
+      populateSampleTemplate();
+
+      loadingState.classList.add('hidden');
+      formWorkArea.classList.remove('hidden');
+    } catch (err: any) {
+      loadingState.classList.add('hidden');
+      dropzoneContainer.classList.remove('hidden');
+      alert(`Error reading PDF form: ${err.message}`);
+    }
+  }
+
+  function renderFieldsTable(records: FormFieldRecord[]) {
+    fieldsTableBody.innerHTML = '';
+    const query = fieldSearchInput.value.toLowerCase().trim();
+
+    const filtered = records.filter(
+      (r) => r.name.toLowerCase().includes(query) || String(r.value).toLowerCase().includes(query)
+    );
+
+    if (filtered.length === 0) {
+      const row = document.createElement('tr');
+      row.innerHTML = `<td colspan="3" class="p-6 text-center text-slate-500 font-sans text-xs">No matching fields found.</td>`;
+      fieldsTableBody.appendChild(row);
+      return;
+    }
+
+    filtered.forEach((f) => {
+      const tr = document.createElement('tr');
+      tr.className = 'hover:bg-slate-900/60 transition';
+
+      const valDisplay = Array.isArray(f.value)
+        ? f.value.join(', ')
+        : typeof f.value === 'boolean'
+        ? f.value ? 'true (checked)' : 'false'
+        : f.value || '<span class="text-slate-600 italic">empty</span>';
+
+      tr.innerHTML = `
+        <td class="p-3 text-slate-200 font-semibold">${escapeHtml(f.name)}</td>
+        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-800 text-slate-300 uppercase">${f.type}</span></td>
+        <td class="p-3 text-emerald-400 truncate max-w-xs">${valDisplay}</td>
+      `;
+      fieldsTableBody.appendChild(tr);
+    });
+  }
+
+  fieldSearchInput.addEventListener('input', () => renderFieldsTable(extractedFields));
+
+  function escapeHtml(str: string) {
+    return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function populateSampleTemplate() {
+    const sampleObj: Record<string, any> = {};
+    extractedFields.forEach((f) => {
+      sampleObj[f.name] = f.value || (f.type === 'checkbox' ? true : 'Sample Value');
+    });
+    fillJsonInput.value = JSON.stringify(sampleObj, null, 2);
+  }
+
+  populateSampleBtn.addEventListener('click', populateSampleTemplate);
+
+  // Export CSV
+  exportCsvBtn.addEventListener('click', () => {
+    if (extractedFields.length === 0) return;
+    const csvData = formFieldsToCsv(extractedFields);
+    downloadFile(csvData, `${currentFileName.replace(/\.pdf$/i, '')}-form-data.csv`, 'text/csv');
+  });
+
+  // Export JSON
+  exportJsonBtn.addEventListener('click', () => {
+    if (extractedFields.length === 0) return;
+    const jsonData = formFieldsToJson(extractedFields);
+    downloadFile(jsonData, `${currentFileName.replace(/\.pdf$/i, '')}-form-data.json`, 'application/json');
+  });
+
+  // Generate Filled PDF
+  generateFilledPdfBtn.addEventListener('click', async () => {
+    if (!currentPdfBytes) return;
+
+    try {
+      const rawJson = fillJsonInput.value;
+      const dataMap = JSON.parse(rawJson);
+      const flatten = flattenCheckbox.checked;
+
+      generateFilledPdfBtn.setAttribute('disabled', 'true');
+      generateFilledPdfBtn.textContent = 'Populating fields...';
+
+      const filledBytes = await populateForm(currentPdfBytes, dataMap, { flatten });
+      downloadBinary(filledBytes, `${currentFileName.replace(/\.pdf$/i, '')}-filled.pdf`, 'application/pdf');
+    } catch (err: any) {
+      alert(`Auto-fill error: Please verify your JSON format. Details: ${err.message}`);
+    } finally {
+      generateFilledPdfBtn.removeAttribute('disabled');
+      generateFilledPdfBtn.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+        </svg>
+        Download Filled PDF
+      `;
+    }
+  });
+
+  function downloadFile(content: string, filename: string, mime: string) {
+    const blob = new Blob([content], { type: `${mime};charset=utf-8;` });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function downloadBinary(bytes: Uint8Array, filename: string, mime: string) {
+    const blob = new Blob([bytes], { type: mime });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+</script>
